@@ -33,8 +33,8 @@ const SEED_TASKS = [
 ];
 
 async function runSeed(req: NextRequest): Promise<NextResponse> {
-  if (process.env.NODE_ENV === 'production') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (process.env.NODE_ENV !== 'development') {
+    return NextResponse.json({ error: 'Not Found' }, { status: 404 });
   }
 
   const { searchParams } = req.nextUrl;
