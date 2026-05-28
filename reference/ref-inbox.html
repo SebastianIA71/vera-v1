@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<!--
+  VERA — Referencia visual: Inbox Detalle
+  ========================================
+  Implementar en:
+    src/app/(app)/inbox/page.tsx
+    src/components/inbox/InboxCard.tsx
+    src/components/inbox/ChipEditor.tsx
+
+  TRES ESTADOS EN SECUENCIA:
+    1. Entrada     — número grande de capturas + botón procesar
+    2. Carta activa — una captura por vez, clasificación Vera + chips editables
+    3. Vacío       — inbox despejado con stats de la sesión
+
+  MECÁNICA DE CARTAS:
+    - Swipe izquierda → descartar (rojo)
+    - Swipe derecha  → guardar como tarea (verde)
+    - Botones explícitos además del gesto (✕ y GUARDAR →)
+    - Efecto stack: 2 cartas detrás con escala reducida y translateY
+    - Contador "N de M" arriba
+
+  CHIPS DE CLASIFICACIÓN:
+    - Vera sugiere propiedad + prio + tipo automáticamente
+    - "+ AJUSTAR" dashed: al tocar, los chips se convierten en selectores inline
+    - NO abre pantalla nueva — edición inline sobre la carta
+    - ChipEditor: dropdown pequeño sobre el chip tocado con opciones disponibles
+
+  SWIPE IMPLEMENTATION:
+    - touch-action: pan-y en el contenedor del stack
+    - Detectar touchstart + touchmove + touchend
+    - Delta X > 80px → trigger acción
+    - Animación: translateX + rotate + opacity durante el gesto
+    - Snap back si no supera el threshold
+
+  NOTAS:
+    - Al guardar: POST /api/inbox/:id → { processed: true, taskId: newTaskId }
+    - Al descartar: PUT /api/inbox/:id → { processed: true, discarded: true }
+    - La siguiente carta sube desde abajo con animación
+    - Origen en azul (#5ba8e8) — código de color para info/viajes/datos externos
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VERA — Inbox [referencia]</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080a;--bg2:#0d0f12;--bg3:#131619;--bg4:#1a1d22;--text:#eceae2;--text2:#7d7c87;--text3:#3e3d48;--text4:#5f5e5a;--gold:#e8d5a3;--gold2:#c4a86a;--green:#4ecb8d;--red:#e05c5c;--blue:#5ba8e8;--purple:#9b7fe8;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#111;display:flex;gap:24px;justify-content:center;align-items:flex-start;padding:40px 20px;min-height:100vh;font-family:'DM Sans',sans-serif;flex-wrap:wrap;}
+.phone{width:320px;min-height:693px;background:var(--bg);border-radius:38px;border:.5px solid var(--bg4);overflow:hidden;position:relative;display:flex;flex-direction:column;color:var(--text);}
+.notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:84px;height:24px;background:#000;border-radius:12px;z-index:10;}
+.handle{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:36px;height:4px;background:#2c2c2a;border-radius:2px;z-index:11;}
+.screen{flex:1;padding:42px 22px 24px;display:flex;flex-direction:column;}
+
+/* Header */
+.hdr{display:flex;justify-content:space-between;align-items:center;padding-top:6px;margin-bottom:16px;}
+.brand{display:flex;align-items:center;gap:6px;font-family:'Syne',sans-serif;font-weight:600;font-size:11px;letter-spacing:.3em;color:var(--gold2);}
+.brand svg{width:9px;height:9px;}
+.swipe-hint{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.2em;color:var(--text3);}
+
+/* === ESTADO 1: ENTRADA === */
+.entry-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;}
+.num-big{font-family:'Syne',sans-serif;font-weight:500;font-size:72px;color:var(--gold);line-height:1;letter-spacing:-.04em;}
+.num-lbl{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.22em;color:var(--text2);}
+.src-pills{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap;justify-content:center;}
+.src-pill{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.14em;padding:4px 9px;border-radius:999px;border:.5px solid var(--bg4);color:var(--text2);}
+.cta-btn{width:100%;padding:14px;border-radius:14px;background:transparent;border:.5px solid var(--gold2);color:var(--gold);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.22em;cursor:pointer;margin-top:auto;}
+
+/* === ESTADO 2: CARTA ACTIVA === */
+.counter-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:var(--text4);text-align:center;margin-bottom:10px;}
+
+/* Stack de cartas */
+.card-stack{flex:1;position:relative;margin-bottom:12px;}
+/* Carta 3 (más al fondo): menor escala, más desplazada */
+.card-3{position:absolute;inset:14px 18px 0;background:var(--bg2);border:.5px solid var(--bg4);border-radius:16px;transform:translateY(12px) scale(.92);z-index:1;}
+/* Carta 2 (medio) */
+.card-2{position:absolute;inset:8px 10px 0;background:var(--bg2);border:.5px solid var(--bg4);border-radius:16px;transform:translateY(6px) scale(.96);z-index:2;}
+/* Carta activa (frente) */
+.card-1{position:absolute;inset:0;background:var(--bg2);border:.5px solid var(--bg4);border-radius:16px;z-index:3;padding:18px 16px;display:flex;flex-direction:column;}
+/* Origen de la captura: azul (#5ba8e8) */
+.card-src{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.18em;color:var(--blue);margin-bottom:10px;}
+.src-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);}
+/* Contenido de la captura */
+.card-text{font-family:'Syne',sans-serif;font-weight:400;font-size:15px;line-height:1.5;color:var(--text);flex:1;}
+/* Clasificación Vera */
+.vera-classify-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.22em;color:var(--purple);margin-top:14px;margin-bottom:8px;}
+.chips{display:flex;gap:6px;flex-wrap:wrap;}
+.chip{display:inline-flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;padding:4px 9px;border-radius:999px;border:.5px solid var(--bg4);color:var(--gold2);}
+.chip .cdot{width:6px;height:6px;border-radius:50%;}
+/* Colores de dot por categoría */
+.chip.prop .cdot{background:var(--purple);}
+.chip.prio .cdot{background:#e8a020;}
+.chip.type .cdot{background:var(--blue);}
+/* Chip editable: dashed, invita a tocar */
+.chip.edit{color:var(--text2);border-style:dashed;cursor:pointer;}
+/* Estado ajustando: el chip seleccionado tiene borde gold */
+.chip.adjusting{border-color:var(--gold2);color:var(--gold);}
+
+/* Hints de swipe */
+.swipe-hints{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.16em;padding:0 4px;margin-bottom:8px;}
+.sw-left{color:var(--red);}
+.sw-right{color:var(--green);}
+
+/* Botones de acción */
+.action-row{display:flex;gap:8px;}
+.btn-discard{padding:12px 16px;border-radius:12px;background:transparent;border:.5px solid var(--red);color:var(--red);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;}
+.btn-save{flex:1;padding:12px;border-radius:12px;background:transparent;border:.5px solid var(--green);color:var(--green);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.16em;cursor:pointer;}
+
+/* === ESTADO 3: VACÍO === */
+.empty-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+.empty-ring{width:64px;height:64px;border-radius:50%;border:.5px solid var(--gold2);display:flex;align-items:center;justify-content:center;position:relative;}
+.empty-ring::before{content:'';position:absolute;inset:-8px;border-radius:50%;border:.5px solid rgba(196,168,106,.18);}
+.empty-ring svg{width:20px;height:20px;color:var(--gold);}
+.empty-title{font-family:'Syne',sans-serif;font-weight:400;font-size:20px;color:var(--text);text-align:center;line-height:1.3;}
+.empty-title em{font-style:italic;color:var(--gold);}
+.empty-time{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:var(--text2);}
+.stats-row{display:flex;gap:20px;margin-top:4px;}
+.stat{text-align:center;}
+.stat .v{font-family:'Syne',sans-serif;font-size:24px;line-height:1;}
+.stat .v.green{color:var(--green);}
+.stat .v.red{color:var(--red);}
+.stat .k{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.18em;color:var(--text4);margin-top:3px;}
+.btn-ghost{width:100%;padding:12px;border-radius:12px;border:.5px solid var(--bg4);background:transparent;color:var(--text2);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;cursor:pointer;margin-top:auto;}
+
+.demo-label{text-align:center;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:#444;margin-top:10px;text-transform:uppercase;}
+</style>
+</head>
+<body>
+
+<!-- ESTADO 1: ENTRADA -->
+<div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="handle"></div>
+  <div class="screen">
+    <div class="hdr">
+      <span class="brand">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+        VERA
+      </span>
+      <span class="swipe-hint">SWIPE ↓</span>
+    </div>
+    <div class="entry-body">
+      <div class="num-big">4</div>
+      <div class="num-lbl">CAPTURAS PENDIENTES</div>
+      <div class="src-pills">
+        <span class="src-pill">2 INSTAGRAM</span>
+        <span class="src-pill">1 VOZ</span>
+        <span class="src-pill">1 NOTA</span>
+      </div>
+    </div>
+    <button class="cta-btn">PROCESAR →</button>
+  </div>
+</div>
+<div class="demo-label">1 · Entrada</div>
+</div>
+
+<!-- ESTADO 2: CARTA ACTIVA -->
+<div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="handle"></div>
+  <div class="screen">
+    <div class="hdr">
+      <span class="brand">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+        VERA
+      </span>
+      <span class="swipe-hint">SWIPE ↓</span>
+    </div>
+    <div class="counter-lbl">2 DE 4</div>
+    <div class="card-stack">
+      <!-- Cartas detrás: perspectiva y profundidad -->
+      <div class="card-3"></div>
+      <div class="card-2"></div>
+      <!-- Carta activa -->
+      <div class="card-1">
+        <!-- Origen: siempre en azul -->
+        <div class="card-src">
+          <span class="src-dot"></span>INSTAGRAM · HACE 2H
+        </div>
+        <!-- Contenido tal cual se capturó -->
+        <div class="card-text">
+          Gresite piscina Willy's — TotalTech CEYS se pega sin vaciar, resiste cloro
+        </div>
+        <!-- Vera clasifica automáticamente -->
+        <div class="vera-classify-lbl">✦ VERA CLASIFICA</div>
+        <div class="chips">
+          <span class="chip prop"><span class="cdot"></span>WILLY'S</span>
+          <span class="chip prio"><span class="cdot"></span>PRIO 1</span>
+          <span class="chip type"><span class="cdot"></span>INSPIRACIÓN</span>
+          <!-- Al tocar: se convierte en selector inline (ChipEditor) -->
+          <span class="chip edit">+ AJUSTAR</span>
+        </div>
+      </div>
+    </div>
+    <!-- Hints de gesto -->
+    <div class="swipe-hints">
+      <span class="sw-left">← DESCARTAR</span>
+      <span class="sw-right">GUARDAR →</span>
+    </div>
+    <div class="action-row">
+      <button class="btn-discard">✕</button>
+      <button class="btn-save">GUARDAR TAREA →</button>
+    </div>
+  </div>
+</div>
+<div class="demo-label">2 · Procesar carta</div>
+</div>
+
+<!-- ESTADO 3: INBOX VACÍO -->
+<div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="handle"></div>
+  <div class="screen">
+    <div class="hdr">
+      <span class="brand">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+        VERA
+      </span>
+      <span class="swipe-hint">SWIPE ↓</span>
+    </div>
+    <div class="empty-body">
+      <div class="empty-ring">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div class="empty-title">Inbox<br><em>despejado.</em></div>
+      <div class="empty-time">MIÉ · 27 MAY · 14:32</div>
+      <div class="stats-row">
+        <div class="stat"><div class="v green">3</div><div class="k">GUARDADAS</div></div>
+        <div class="stat"><div class="v red">1</div><div class="k">DESCARTADAS</div></div>
+      </div>
+    </div>
+    <button class="btn-ghost">IR AL DASHBOARD →</button>
+  </div>
+</div>
+<div class="demo-label">3 · Despejado</div>
+</div>
+
+</body>
+</html>

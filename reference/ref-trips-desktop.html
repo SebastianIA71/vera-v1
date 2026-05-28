@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<!--
+  VERA — Referencia visual: Viajes Desktop
+  ==========================================
+  Implementar en:
+    src/app/(app)/trips/page.tsx
+    src/components/trips/TripList.tsx
+    src/components/trips/TripDetail.tsx
+    src/components/trips/LogisticsGrid.tsx
+
+  LAYOUT: Nav colapsada (52px) + Lista viajes (320px fija) + Panel detalle (flex-1)
+
+  LISTA DE VIAJES:
+    Ordenada por startDate asc (próximo primero)
+    Cada card muestra:
+      - Nombre + días restantes (Syne 20px azul)
+      - Quién · fechas · estado resumido
+      - Pills de logística: ✈/🚂/🚗/🏨 con colores según estado
+    Barra lateral:
+      - Azul (#5ba8e8) → viaje más próximo
+      - Gold (#c4a86a) → viaje seleccionado (reemplaza azul)
+      - Sin barra → resto
+
+  PILLS DE ESTADO DE LOGÍSTICA:
+    .st.done  → verde  (#4ecb8d) — confirmado
+    .st.warn  → ámbar  (#e8a020) — pendiente
+    .st.na    → gris   (#3e3d48) — no aplica / sin datos
+
+  PANEL DETALLE:
+    Header: nombre + pill de estado (PLANNING / EN REFINAMIENTO / LISTO / EN CURSO)
+    Chips meta: fechas · quién · días restantes
+    Caja Vera (si hay algo urgente)
+    Logística 2×2: cada card con label + icono estado + nota
+    Pendientes: tareas de la DB con event.id en relatedEventId
+    Notas: texto libre del campo notes del evento
+
+  ESTADOS DEL VIAJE (campo status en tabla events):
+    planning   → gris — en planificación básica
+    refining   → ámbar — refinando detalles
+    ready      → verde — todo confirmado
+    active     → azul — viaje en curso
+
+  DATOS DE LOGÍSTICA:
+    Guardados en campo transport y accommodation como JSON (ver schema)
+    LogisticsGrid los parsea y renderiza como cards 2×2
+    Cards con pendientes: border-color ámbar, fondo rgba(amber, 0.04)
+
+  PENDIENTES:
+    Tareas de tabla tasks donde relatedEventId = event.id
+    O tareas con tags que incluyen el nombre del destino
+    Se pueden marcar como hechas directamente desde aquí
+    Al marcar: PUT /api/tasks/:id { status: 'done' }
+
+  NOTAS DE IMPLEMENTACIÓN:
+    - GET /api/events?type=viaje&sort=startDate — todos los viajes ordenados
+    - GET /api/tasks?relatedEventId=X — tareas del viaje seleccionado
+    - TripList: recibe events[], activeId, onSelect
+    - TripDetail: recibe event + tasks, carga datos frescos vía SWR
+    - LogisticsGrid: parsea transport y accommodation JSON del evento
+    - Al seleccionar viaje en lista: URL cambia a /trips?id=X (deep link)
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>VERA — Viajes Desktop [referencia]</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080a;--bg2:#0d0f12;--bg3:#131619;--bg4:#1a1d22;--text:#eceae2;--text2:#7d7c87;--text3:#3e3d48;--text4:#5f5e5a;--gold:#e8d5a3;--gold2:#c4a86a;--green:#4ecb8d;--red:#e05c5c;--amber:#e8a020;--blue:#5ba8e8;--purple:#9b7fe8;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow:hidden;}
+.topbar{height:44px;background:var(--bg);border-bottom:.5px solid var(--bg4);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.tb-left{display:flex;align-items:center;gap:16px;}
+.vera-logo{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;letter-spacing:.3em;color:var(--gold2);}
+.vera-logo svg{width:10px;height:10px;}
+.tb-clock{font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);letter-spacing:.12em;}
+.tb-center{display:flex;align-items:center;gap:8px;}
+.counter{display:flex;align-items:center;gap:6px;padding:4px 10px;border:.5px solid var(--bg4);border-radius:999px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;color:var(--text2);}
+.counter .dot{width:6px;height:6px;border-radius:50%;}
+.tb-right{display:flex;align-items:center;gap:10px;}
+.oye-btn{display:flex;align-items:center;gap:7px;padding:6px 14px;border:.5px solid var(--gold2);border-radius:999px;background:transparent;color:var(--gold);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;cursor:pointer;}
+.oye-btn svg{width:13px;height:13px;color:var(--gold2);}
+.layout{display:flex;height:calc(100vh - 44px);overflow:hidden;}
+.nav{width:52px;background:var(--bg);border-right:.5px solid var(--bg4);display:flex;flex-direction:column;padding:12px 0;flex-shrink:0;}
+.ni{width:52px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;}
+.ni svg{width:16px;height:16px;color:var(--text3);}
+.ni.active svg{color:var(--gold2);}
+.ni.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:2px;height:16px;background:var(--gold2);border-radius:1px;}
+.ni .badge{position:absolute;top:6px;right:8px;background:var(--red);color:#fff;font-family:'DM Mono',monospace;font-size:7px;padding:1px 4px;border-radius:999px;}
+.ndiv{height:.5px;background:var(--bg4);margin:6px 10px;}
+.nbottom{margin-top:auto;}
+
+/* LISTA */
+.trips-list{width:320px;display:flex;flex-direction:column;border-right:.5px solid var(--bg4);flex-shrink:0;}
+.list-hdr{padding:14px 18px 12px;border-bottom:.5px solid var(--bg4);flex-shrink:0;}
+.page-title{font-family:'Syne',sans-serif;font-weight:500;font-size:18px;color:var(--text);letter-spacing:-.01em;}
+.page-title em{font-style:italic;color:var(--gold);}
+.list-sub{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:var(--text4);margin-top:4px;}
+.trips-scroll{flex:1;overflow-y:auto;}
+.trips-scroll::-webkit-scrollbar{width:2px;}
+.trips-scroll::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:1px;}
+.trip-card{padding:14px 18px;border-bottom:.5px solid var(--bg2);cursor:pointer;position:relative;transition:background .1s;}
+.trip-card:hover{background:var(--bg2);}
+.trip-card.sel{background:var(--bg2);}
+.trip-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;}
+.trip-card.next::before{background:var(--blue);}
+.trip-card.sel::before{background:var(--gold2) !important;}
+.tc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;}
+.tc-name{font-family:'Syne',sans-serif;font-weight:500;font-size:14px;color:var(--text);letter-spacing:-.005em;line-height:1.2;}
+.tc-days-wrap{text-align:right;flex-shrink:0;margin-left:10px;}
+.tc-days{font-family:'Syne',sans-serif;font-weight:500;font-size:20px;color:var(--blue);line-height:1;}
+.tc-dlbl{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:.14em;color:var(--text2);}
+.tc-meta{display:flex;gap:8px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.1em;color:var(--text4);flex-wrap:wrap;margin-bottom:6px;}
+.tc-meta .who{color:var(--text2);}
+.tc-meta .pending{color:var(--amber);}
+.tc-meta .ok{color:var(--green);}
+.tc-status{display:flex;gap:5px;flex-wrap:wrap;}
+.st{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:.1em;padding:2px 6px;border-radius:999px;border:.5px solid;}
+.st.done{color:var(--green);border-color:#1a3328;}
+.st.warn{color:var(--amber);border-color:#2a2010;}
+.st.na{color:var(--text3);border-color:var(--bg4);}
+
+/* DETALLE */
+.detail{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.d-hdr{padding:14px 20px 12px;border-bottom:.5px solid var(--bg4);flex-shrink:0;}
+.d-hdr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.d-back{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.18em;color:var(--text3);cursor:pointer;}
+.d-back:hover{color:var(--text2);}
+.d-status{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.16em;padding:3px 9px;border-radius:999px;border:.5px solid;}
+.d-status.refining{color:var(--amber);border-color:#2a2010;}
+.d-status.ready{color:var(--green);border-color:#1a3328;}
+.d-status.planning{color:var(--text2);border-color:var(--bg4);}
+.d-name{font-family:'Syne',sans-serif;font-weight:500;font-size:20px;color:var(--text);letter-spacing:-.01em;margin-bottom:8px;}
+.d-chips{display:flex;gap:8px;flex-wrap:wrap;}
+.dc{display:inline-flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;padding:4px 9px;border-radius:999px;border:.5px solid var(--bg4);color:var(--gold2);}
+.dc .dot{width:5px;height:5px;border-radius:50%;}
+.dc.who .dot{background:var(--purple);}
+.dc.date .dot{background:var(--blue);}
+.dc.days{color:var(--blue);border-color:#1a2a3a;}
+.d-scroll{flex:1;overflow-y:auto;padding:16px 20px 20px;}
+.d-scroll::-webkit-scrollbar{display:none;}
+.d-sec{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.26em;color:var(--text3);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.d-sec-link{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:.14em;color:var(--text3);cursor:pointer;}
+.d-sec-link:hover{color:var(--text2);}
+.d-div{height:.5px;background:var(--bg4);margin:14px 0;}
+/* Vera box */
+.vera-box{background:transparent;border:.5px solid #2d2640;border-radius:10px;padding:11px 12px;position:relative;overflow:hidden;margin-bottom:14px;}
+.vera-box::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(155,127,232,.05),transparent 60%);pointer-events:none;}
+.vb-lbl{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:.22em;color:var(--purple);margin-bottom:5px;}
+.vb-text{font-family:'DM Sans',sans-serif;font-size:12px;color:#c8c6be;line-height:1.45;}
+.vb-text em{color:var(--gold);font-style:italic;}
+/* Grid logística */
+.lg-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}
+.lg-card{background:var(--bg2);border:.5px solid var(--bg4);border-radius:10px;padding:11px 12px;}
+.lg-card.warn{border-color:#2a2010;background:rgba(232,160,32,.03);}
+.lg-label{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.18em;color:var(--text4);margin-bottom:6px;}
+.lg-row{display:flex;align-items:center;gap:6px;}
+.lg-icon{width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.lg-icon.ok{background:rgba(78,203,141,.15);}
+.lg-icon.warn{background:rgba(232,160,32,.15);}
+.lg-icon svg{width:9px;height:9px;}
+.lg-val{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);line-height:1.3;}
+.lg-val.warn{color:var(--amber);}
+.lg-note{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.1em;color:var(--text4);margin-top:4px;}
+.lg-note.warn{color:var(--amber);}
+/* Pendientes */
+.pi{display:flex;align-items:flex-start;gap:8px;padding:9px 0;border-bottom:.5px solid var(--bg2);}
+.pi:last-child{border-bottom:none;}
+.pi-prio{font-family:'Syne',sans-serif;font-weight:600;font-size:11px;color:var(--gold);flex-shrink:0;min-width:16px;}
+.pi-check{width:14px;height:14px;border-radius:50%;border:.5px solid var(--text3);flex-shrink:0;margin-top:1px;}
+.pi-body{flex:1;}
+.pi-name{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);line-height:1.3;}
+.pi-meta{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.1em;color:var(--text4);margin-top:2px;}
+.pi-meta .urgent{color:var(--red);}
+.d-notes-text{font-family:'DM Sans',sans-serif;font-size:12px;line-height:1.6;color:#c8c6be;}
+</style>
+</head>
+<body>
+<div style="display:flex;flex-direction:column;height:100vh;">
+<div class="topbar">
+  <div class="tb-left">
+    <div class="vera-logo"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>VERA</div>
+    <div class="tb-clock">MIÉ · 27 MAY · 07:42</div>
+  </div>
+  <div class="tb-center">
+    <div class="counter"><span class="dot" style="background:#e05c5c"></span>2 URGENTES</div>
+    <div class="counter"><span class="dot" style="background:#e8a020"></span>1 STALE</div>
+    <div class="counter"><span class="dot" style="background:#4ecb8d"></span>4 INBOX</div>
+  </div>
+  <div class="tb-right">
+    <button class="oye-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>OYE VERA</button>
+  </div>
+</div>
+<div class="layout">
+<nav class="nav">
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg></div>
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="badge">4</span></div>
+  <div class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+  <div class="ndiv"></div>
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+  <div class="nbottom"><div class="ndiv"></div><div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div></div>
+</nav>
+
+<!-- LISTA -->
+<div class="trips-list">
+  <div class="list-hdr">
+    <div class="page-title">Viajes <em>2026</em></div>
+    <div class="list-sub">6 VIAJES · 2 CON PENDIENTES</div>
+  </div>
+  <div class="trips-scroll">
+    <div class="trip-card next">
+      <div class="tc-top"><div class="tc-name">Madrid · Bruno Mars</div><div class="tc-days-wrap"><div class="tc-days">15</div><div class="tc-dlbl">DÍAS</div></div></div>
+      <div class="tc-meta"><span class="who">PAREJA</span><span>·</span><span>11–12 JUL</span><span>·</span><span class="pending">1 PENDIENTE</span></div>
+      <div class="tc-status"><span class="st done">✈ VUELOS</span><span class="st done">🏨 HOTEL</span><span class="st warn">🎫 ENTRADAS</span></div>
+    </div>
+    <div class="trip-card sel">
+      <div class="tc-top"><div class="tc-name">Escandinavia</div><div class="tc-days-wrap"><div class="tc-days">49</div><div class="tc-dlbl">DÍAS</div></div></div>
+      <div class="tc-meta"><span class="who">FAMILIA</span><span>·</span><span>15–27 JUL</span><span>·</span><span class="pending">4 PENDIENTES</span></div>
+      <div class="tc-status"><span class="st done">✈ VUELOS</span><span class="st warn">🚂 TREN FLÅM</span><span class="st warn">🚗 COCHE</span><span class="st warn">🏨 BERGEN</span></div>
+    </div>
+    <div class="trip-card">
+      <div class="tc-top"><div class="tc-name">Alcudia / Pto. Pollença</div><div class="tc-days-wrap"><div class="tc-days">72</div><div class="tc-dlbl">DÍAS</div></div></div>
+      <div class="tc-meta"><span class="who">FAMILIA</span><span>·</span><span>7–9 AGO</span><span>·</span><span class="ok">TODO OK</span></div>
+      <div class="tc-status"><span class="st done">🏨 HOTEL</span><span class="st warn">🚗 TRANSPORTE</span></div>
+    </div>
+    <div class="trip-card">
+      <div class="tc-top"><div class="tc-name">Cofrentes</div><div class="tc-days-wrap"><div class="tc-days">79</div><div class="tc-dlbl">DÍAS</div></div></div>
+      <div class="tc-meta"><span class="who">FAMILIA</span><span>·</span><span>14–17 AGO</span><span>·</span><span class="ok">TODO OK</span></div>
+      <div class="tc-status"><span class="st done">⛴ BARCO</span><span class="st done">🏨 HOTEL</span></div>
+    </div>
+    <div class="trip-card">
+      <div class="tc-top"><div class="tc-name">Zaragoza</div><div class="tc-days-wrap"><div class="tc-days">136</div><div class="tc-dlbl">DÍAS</div></div></div>
+      <div class="tc-meta"><span class="who">AMIGOS</span><span>·</span><span>10–12 OCT</span><span>·</span><span class="ok">TODO OK</span></div>
+      <div class="tc-status"><span class="st done">✈ VUELOS</span><span class="st done">🏨 HOTEL</span></div>
+    </div>
+    <div class="trip-card">
+      <div class="tc-top"><div class="tc-name">Como + Milán · Navidad</div><div class="tc-days-wrap"><div class="tc-days">215</div><div class="tc-dlbl">DÍAS</div></div></div>
+      <div class="tc-meta"><span class="who">FAMILIA</span><span>·</span><span>28 DIC–1 ENE</span><span>·</span><span class="ok">TODO OK</span></div>
+      <div class="tc-status"><span class="st done">✈ VUELOS</span><span class="st done">🏨 HOTEL</span><span class="st na">🍽 RESTAURANTES</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- DETALLE: ESCANDINAVIA -->
+<div class="detail">
+  <div class="d-hdr">
+    <div class="d-hdr-top">
+      <span class="d-back">← VIAJES</span>
+      <span class="d-status refining">EN REFINAMIENTO</span>
+    </div>
+    <div class="d-name">Escandinavia</div>
+    <div class="d-chips">
+      <span class="dc date"><span class="dot"></span>15–27 JUL 2026</span>
+      <span class="dc who"><span class="dot"></span>FAMILIA</span>
+      <span class="dc days">49 DÍAS</span>
+    </div>
+  </div>
+  <div class="d-scroll">
+    <div class="vera-box">
+      <div class="vb-lbl">✦ VERA</div>
+      <div class="vb-text">Quedan <em>3 pendientes críticos</em>: el coche de Sogndal y el tren de Flåm son los más urgentes — julio en Noruega se llena. El alojamiento de Bergen también está sin confirmar.</div>
+    </div>
+    <div class="d-sec">LOGÍSTICA <span class="d-sec-link">EDITAR →</span></div>
+    <div class="lg-grid">
+      <div class="lg-card">
+        <div class="lg-label">VUELOS</div>
+        <div class="lg-row"><div class="lg-icon ok"><svg viewBox="0 0 24 24" fill="none" stroke="#4ecb8d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="lg-val">PMI→STO→CPH</div></div>
+        <div class="lg-note">KLM · Confirmado</div>
+      </div>
+      <div class="lg-card warn">
+        <div class="lg-label">TREN FLÅM</div>
+        <div class="lg-row"><div class="lg-icon warn"><svg viewBox="0 0 24 24" fill="none" stroke="#e8a020" stroke-width="2" stroke-linecap="round"><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="lg-val warn">Sin reservar</div></div>
+        <div class="lg-note warn">23 jul 13:45 · rail.no</div>
+      </div>
+      <div class="lg-card warn">
+        <div class="lg-label">COCHE SOGNDAL</div>
+        <div class="lg-row"><div class="lg-icon warn"><svg viewBox="0 0 24 24" fill="none" stroke="#e8a020" stroke-width="2" stroke-linecap="round"><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="lg-val warn">Sin reservar</div></div>
+        <div class="lg-note warn">Zona fiordos · Urgente</div>
+      </div>
+      <div class="lg-card warn">
+        <div class="lg-label">ALOJAMIENTO</div>
+        <div class="lg-row"><div class="lg-icon warn"><svg viewBox="0 0 24 24" fill="none" stroke="#e8a020" stroke-width="2" stroke-linecap="round"><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><div class="lg-val warn">Bergen pendiente</div></div>
+        <div class="lg-note">Estocolmo · CPH · Oslo ✓</div>
+      </div>
+    </div>
+    <div class="d-div"></div>
+    <div class="d-sec">PENDIENTES <span style="font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.14em;color:#5ba8e8;">4 TAREAS</span></div>
+    <div class="pi"><div class="pi-prio">9</div><div class="pi-check"></div><div class="pi-body"><div class="pi-name">Reservar tren Oslo→Flåm</div><div class="pi-meta"><span class="urgent">VENCE 19 D</span> · rail.no · 23 jul 13:45</div></div></div>
+    <div class="pi"><div class="pi-prio">8</div><div class="pi-check"></div><div class="pi-body"><div class="pi-name">Coche de alquiler en Sogndal</div><div class="pi-meta"><span class="urgent">VENCE 14 D</span> · Rentalcars · zona fiordos</div></div></div>
+    <div class="pi"><div class="pi-prio">5</div><div class="pi-check"></div><div class="pi-body"><div class="pi-name">Revisar duplicados alojamiento</div><div class="pi-meta">Booking + Airbnb · cancelar con margen</div></div></div>
+    <div class="pi"><div class="pi-prio">3</div><div class="pi-check"></div><div class="pi-body"><div class="pi-name">Hotel Bergen — buscar y reservar</div><div class="pi-meta">Noche 25 jul · zona centro</div></div></div>
+    <div class="d-div"></div>
+    <div class="d-sec">NOTAS</div>
+    <div class="d-notes-text">13 días. Ruta: Estocolmo → Karlstad → Oslo → Copenhagen → Oslo → Sogndal/Flåm → Bergen → Berlín (escala) → PMI. Verano en Noruega = disponibilidad limitada. Reservar transporte con urgencia.</div>
+  </div>
+</div>
+
+</div>
+</div>
+</body>
+</html>

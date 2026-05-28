@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<!--
+  VERA — Referencia visual: Tareas Desktop
+  ==========================================
+  Implementar en:
+    src/app/(app)/tasks/page.tsx
+    src/components/tasks/TaskList.tsx
+    src/components/tasks/TaskFilters.tsx
+    src/components/tasks/TaskDetailPanel.tsx
+
+  LAYOUT: 3 columnas
+    Nav colapsada (52px iconos) · Lista central (flex-1) · Panel detalle (300px)
+
+  FILTROS COMPOSABLES:
+    Definidos en src/lib/task-filters.ts como FILTER_GROUPS: FilterGroup[]
+    La UI los renderiza dinámicamente — añadir grupos sin tocar componentes.
+    Grupos actuales: Propiedad · Prioridad · Estado · Tipo · Contexto
+    Tipo 'single': solo un filtro activo del grupo a la vez
+    Tipo 'multi': varios activos simultáneamente
+    Tipo 'range': rango numérico de prioridad
+    Filtros combinables entre grupos (AND logic)
+    Botón LIMPIAR × resetea todos los filtros activos
+
+  LISTA DE TAREAS:
+    Dos secciones: NOW primero (badge ⚡) · Resto ordenado por prioFinal desc
+    Cada fila: prio · check · nombre · meta · badge NOW
+    Barra lateral izquierda: rojo urgente / ámbar stale / púrpura creativo/vera
+    Fila seleccionada: barra gold (reemplaza a la de color)
+    Click en fila → abre detalle en panel derecho (sin cambiar de página)
+
+  NUEVA TAREA:
+    Botón "+ NUEVA TAREA" en top bar (izquierda de OYE VERA)
+    Comando de voz "OYE VERA" también crea tareas
+    Ambos métodos activos simultáneamente
+
+  PANEL DERECHO — DETALLE:
+    Se activa al hacer click en cualquier fila de la lista
+    Misma información que la vista móvil de tarea individual
+    Header: "← LISTA" para cerrar · Editar · Voz
+    Prio + título + chips meta
+    Caja Vera (si hay sugerencia)
+    Detalle · Notas (auto-save debounce 1s) · Historial
+    FAB "MARCAR COMO HECHA" al pie del panel
+
+  NOTAS DE IMPLEMENTACIÓN:
+    - taskFilters.ts: exportar FILTER_GROUPS como configuración, no hardcodear en UI
+    - TaskFilters.tsx: recibe FILTER_GROUPS y activeFilters, emite onChange
+    - TaskList.tsx: recibe filteredTasks (ya filtradas en el servidor o cliente)
+    - TaskDetailPanel.tsx: recibe taskId, carga datos vía SWR/react-query
+    - Al marcar hecha: optimistic update en la lista + animación de salida de la fila
+    - Al crear tarea con botón: abre modal/sheet de creación rápida encima de la lista
+    - Colores de barra lateral (left border 2px):
+        #e05c5c → urgente (prio 8-9 o vence pronto)
+        #e8a020 → stale (sin movimiento > 14 días)
+        #9b7fe8 → creativo / sugerencia Vera
+        sin barra → tarea normal
+    - La barra gold (fila seleccionada) siempre reemplaza a la de color
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>VERA — Tareas Desktop [referencia]</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080a;--bg2:#0d0f12;--bg3:#131619;--bg4:#1a1d22;--text:#eceae2;--text2:#7d7c87;--text3:#3e3d48;--text4:#5f5e5a;--gold:#e8d5a3;--gold2:#c4a86a;--green:#4ecb8d;--red:#e05c5c;--amber:#e8a020;--blue:#5ba8e8;--purple:#9b7fe8;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow:hidden;}
+
+/* TOP BAR */
+.topbar{height:44px;background:var(--bg);border-bottom:.5px solid var(--bg4);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.tb-left{display:flex;align-items:center;gap:16px;}
+.vera-logo{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;letter-spacing:.3em;color:var(--gold2);}
+.vera-logo svg{width:10px;height:10px;}
+.tb-clock{font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);letter-spacing:.12em;}
+.tb-center{display:flex;align-items:center;gap:8px;}
+.counter{display:flex;align-items:center;gap:6px;padding:4px 10px;border:.5px solid var(--bg4);border-radius:999px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;color:var(--text2);}
+.counter .dot{width:6px;height:6px;border-radius:50%;}
+.tb-right{display:flex;align-items:center;gap:10px;}
+/* Botón nueva tarea — método 1 de 2 */
+.new-btn{display:flex;align-items:center;gap:6px;padding:6px 14px;border:.5px solid var(--bg4);border-radius:999px;background:transparent;color:var(--text2);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;cursor:pointer;}
+.new-btn:hover{border-color:var(--gold2);color:var(--gold);}
+.new-btn svg{width:12px;height:12px;}
+/* Botón OYE VERA — método 2 de 2 para crear por voz */
+.oye-btn{display:flex;align-items:center;gap:7px;padding:6px 14px;border:.5px solid var(--gold2);border-radius:999px;background:transparent;color:var(--gold);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;cursor:pointer;}
+.oye-btn svg{width:13px;height:13px;color:var(--gold2);}
+
+/* LAYOUT */
+.layout{display:flex;height:calc(100vh - 44px);overflow:hidden;}
+
+/* NAV — colapsada en esta vista */
+.nav{width:52px;background:var(--bg);border-right:.5px solid var(--bg4);display:flex;flex-direction:column;padding:12px 0;flex-shrink:0;}
+.nav-item{width:52px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;}
+.nav-item svg{width:16px;height:16px;color:var(--text3);}
+.nav-item.active svg{color:var(--gold2);}
+.nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:2px;height:16px;background:var(--gold2);border-radius:1px;}
+.nav-item .badge{position:absolute;top:6px;right:8px;background:var(--red);color:#fff;font-family:'DM Mono',monospace;font-size:7px;padding:1px 4px;border-radius:999px;}
+.nav-div{height:.5px;background:var(--bg4);margin:6px 10px;}
+.nav-bottom{margin-top:auto;}
+
+/* CENTRO: LISTA */
+.center{flex:1;display:flex;flex-direction:column;overflow:hidden;border-right:.5px solid var(--bg4);}
+.c-hdr{padding:14px 20px 0;flex-shrink:0;}
+.c-hdr-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px;}
+.page-title{font-family:'Syne',sans-serif;font-weight:500;font-size:18px;color:var(--text);letter-spacing:-.01em;}
+.page-title em{font-style:italic;color:var(--gold);}
+.task-count{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:var(--text4);}
+
+/* Filtros composables — renderizados desde FILTER_GROUPS */
+.filters{display:flex;gap:5px;flex-wrap:wrap;padding-bottom:12px;border-bottom:.5px solid var(--bg4);align-items:center;}
+.fg-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.18em;color:var(--text3);flex-shrink:0;}
+.fc{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;padding:4px 9px;border-radius:999px;border:.5px solid var(--bg4);color:var(--text2);cursor:pointer;white-space:nowrap;transition:all .1s;}
+.fc:hover{border-color:var(--text2);}
+/* Activos por color según categoría */
+.fc.on-gold{border-color:var(--gold2);color:var(--gold);background:rgba(196,168,106,.06);}
+.fc.on-red{border-color:var(--red);color:var(--red);background:rgba(224,92,92,.06);}
+.fc.on-green{border-color:var(--green);color:var(--green);background:rgba(78,203,141,.06);}
+.fc.on-blue{border-color:var(--blue);color:var(--blue);background:rgba(91,168,232,.06);}
+.fc.on-purple{border-color:var(--purple);color:var(--purple);background:rgba(155,127,232,.06);}
+.f-sep{width:.5px;height:16px;background:var(--bg4);margin:0 3px;flex-shrink:0;}
+.f-clear{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.18em;color:var(--text3);cursor:pointer;padding:4px 5px;}
+.f-clear:hover{color:var(--text2);}
+
+/* Lista de tareas */
+.task-list{flex:1;overflow-y:auto;}
+.task-list::-webkit-scrollbar{width:3px;}
+.task-list::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+
+/* Separador de sección dentro de la lista */
+.list-sec{padding:10px 20px 4px;display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.26em;color:var(--text3);}
+
+/* Fila de tarea */
+.tr{display:flex;align-items:center;gap:12px;padding:10px 20px;cursor:pointer;border-bottom:.5px solid var(--bg2);position:relative;transition:background .1s;}
+.tr:hover{background:var(--bg2);}
+/* Barra lateral izquierda de estado */
+.tr::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;border-radius:0;}
+.tr.red::before{background:var(--red);}
+.tr.amber::before{background:var(--amber);}
+.tr.purple-bar::before{background:var(--purple);}
+/* Fila seleccionada: barra gold, fondo sutil */
+.tr.sel{background:var(--bg2);}
+.tr.sel::before{background:var(--gold2) !important;}
+/* Contenido de la fila */
+.tr-prio{font-family:'Syne',sans-serif;font-weight:600;font-size:13px;color:var(--gold);min-width:20px;text-align:right;flex-shrink:0;}
+.tr-check{width:16px;height:16px;border-radius:50%;border:.5px solid var(--text3);flex-shrink:0;}
+.tr-body{flex:1;min-width:0;}
+.tr-name{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tr-meta{display:flex;gap:8px;margin-top:3px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.1em;color:var(--text4);}
+.tr-meta .p{color:var(--gold2);}
+.tr-meta .d{color:var(--red);}
+.tr-meta .a{color:var(--amber);}
+.tr-meta .s{color:var(--purple);}
+.tr-meta .sep{color:var(--text3);}
+/* Badge NoW */
+.now-badge{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:.14em;padding:2px 6px;border-radius:999px;border:.5px solid var(--gold2);color:var(--gold2);flex-shrink:0;}
+
+/* PANEL DERECHO: DETALLE */
+.right{width:300px;background:var(--bg);display:flex;flex-direction:column;flex-shrink:0;position:relative;}
+.d-hdr{padding:14px 16px 12px;border-bottom:.5px solid var(--bg4);flex-shrink:0;}
+.d-hdr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.d-back{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.18em;color:var(--text3);cursor:pointer;}
+.d-back:hover{color:var(--text2);}
+.d-acts{display:flex;gap:6px;}
+.d-btn{width:26px;height:26px;border-radius:7px;background:transparent;border:.5px solid var(--bg4);display:flex;align-items:center;justify-content:center;color:var(--text2);cursor:pointer;}
+.d-btn svg{width:12px;height:12px;}
+.d-prio-row{display:flex;align-items:flex-start;gap:10px;}
+.d-prio{font-family:'Syne',sans-serif;font-weight:600;font-size:24px;color:var(--gold);line-height:1.1;min-width:28px;}
+.d-title{font-family:'Syne',sans-serif;font-weight:400;font-size:15px;line-height:1.3;color:var(--text);letter-spacing:-.005em;}
+.d-chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px;}
+.dc{display:inline-flex;align-items:center;gap:4px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.1em;padding:3px 7px;border-radius:999px;border:.5px solid var(--bg4);color:var(--gold2);cursor:pointer;}
+.dc .dot{width:5px;height:5px;border-radius:50%;}
+.dc.prop .dot{background:var(--purple);}
+.dc.status .dot{background:var(--green);}
+.dc.status{color:var(--green);border-color:#1a3328;}
+.dc.due .dot{background:var(--red);}
+.dc.due{color:var(--red);border-color:#2a1414;}
+
+/* Scroll del detalle */
+.d-scroll{flex:1;overflow-y:auto;padding:12px 16px 72px;}
+.d-scroll::-webkit-scrollbar{display:none;}
+.d-sec{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.24em;color:var(--text3);margin-bottom:7px;}
+.d-text{font-family:'DM Sans',sans-serif;font-size:12px;line-height:1.6;color:#c8c6be;}
+.d-div{height:.5px;background:var(--bg4);margin:12px 0;}
+.d-notes{width:100%;background:transparent;border:.5px solid var(--bg4);border-radius:9px;padding:9px 10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;line-height:1.5;resize:none;min-height:56px;outline:none;}
+.d-notes:focus{border-color:var(--gold2);}
+.d-notes::placeholder{color:var(--text3);}
+
+/* Caja Vera en detalle */
+.d-vera{background:transparent;border:.5px solid #2d2640;border-radius:10px;padding:10px 11px;margin-bottom:12px;position:relative;overflow:hidden;}
+.d-vera::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(155,127,232,.05),transparent 60%);pointer-events:none;}
+.d-vera-lbl{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:.22em;color:var(--purple);margin-bottom:5px;}
+.d-vera-text{font-family:'DM Sans',sans-serif;font-size:11px;color:#c8c6be;line-height:1.45;}
+.d-vera-text em{color:var(--gold);font-style:italic;}
+
+/* Historial */
+.hist{display:flex;gap:8px;margin-bottom:10px;}
+.h-col{display:flex;flex-direction:column;align-items:center;flex-shrink:0;padding-top:2px;}
+.h-dot{width:7px;height:7px;border-radius:50%;}
+.h-dot.gold{background:var(--gold2);}
+.h-dot.purple{background:var(--purple);}
+.h-dot.gray{background:var(--bg4);}
+.h-line{width:.5px;flex:1;background:var(--bg4);margin-top:3px;min-height:12px;}
+.h-body{flex:1;}
+.h-text{font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text2);line-height:1.35;}
+.h-text em{font-style:normal;color:#c8c6be;}
+.h-time{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:.12em;color:var(--text3);margin-top:2px;}
+
+/* FAB al pie del panel */
+.d-fab{position:absolute;bottom:14px;left:14px;right:14px;padding:11px;border-radius:12px;background:transparent;border:.5px solid var(--green);color:var(--green);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.2em;cursor:pointer;text-align:center;}
+</style>
+</head>
+<body>
+<div style="display:flex;flex-direction:column;height:100vh;">
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="tb-left">
+    <div class="vera-logo">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+      VERA
+    </div>
+    <div class="tb-clock">MIÉ · 27 MAY · 07:42</div>
+  </div>
+  <div class="tb-center">
+    <div class="counter"><span class="dot" style="background:#e05c5c"></span>2 URGENTES</div>
+    <div class="counter"><span class="dot" style="background:#e8a020"></span>1 STALE</div>
+    <div class="counter"><span class="dot" style="background:#4ecb8d"></span>4 INBOX</div>
+  </div>
+  <div class="tb-right">
+    <button class="new-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      NUEVA TAREA
+    </button>
+    <button class="oye-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+      OYE VERA
+    </button>
+  </div>
+</div>
+
+<div class="layout">
+
+<!-- NAV COLAPSADA -->
+<nav class="nav">
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg></div>
+  <div class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="badge">4</span></div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+  <div class="nav-div"></div>
+  <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+  <div class="nav-bottom">
+    <div class="nav-div"></div>
+    <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+  </div>
+</nav>
+
+<!-- LISTA -->
+<div class="center">
+  <div class="c-hdr">
+    <div class="c-hdr-top">
+      <div class="page-title">Tareas <em>activas</em></div>
+      <div class="task-count">14 TAREAS · 3 NOW</div>
+    </div>
+    <!-- Filtros — renderizados dinámicamente desde FILTER_GROUPS en task-filters.ts -->
+    <div class="filters">
+      <span class="fg-lbl">DÓNDE</span>
+      <span class="fc on-blue">🏙 Flat</span>
+      <span class="fc">🌿 Sarapita</span>
+      <span class="fc">🎪 Willy's</span>
+      <span class="fc">· General</span>
+      <div class="f-sep"></div>
+      <span class="fg-lbl">PRIO</span>
+      <span class="fc on-red">8–9</span>
+      <span class="fc">6–7</span>
+      <span class="fc">0–5</span>
+      <div class="f-sep"></div>
+      <span class="fg-lbl">ESTADO</span>
+      <span class="fc on-green">Activa</span>
+      <span class="fc">Espera</span>
+      <span class="fc">Hecha</span>
+      <div class="f-sep"></div>
+      <span class="fg-lbl">CONTEXTO</span>
+      <span class="fc">NoW</span>
+      <span class="fc on-purple">Sin mover</span>
+      <span class="fc">Viaje</span>
+      <span class="fc">Capricho</span>
+      <div class="f-sep"></div>
+      <span class="f-clear">LIMPIAR ×</span>
+    </div>
+  </div>
+
+  <div class="task-list">
+    <div class="list-sec"><span>NOW · 3 TAREAS</span></div>
+
+    <!-- Fila seleccionada: barra gold reemplaza al color -->
+    <div class="tr red sel">
+      <div class="tr-prio">9</div>
+      <div class="tr-check"></div>
+      <div class="tr-body">
+        <div class="tr-name">Reservar tren Oslo→Flåm</div>
+        <div class="tr-meta"><span class="p">ESCANDINAVIA</span><span class="sep">·</span><span class="d">VENCE 19 D</span></div>
+      </div>
+      <div class="now-badge">⚡ NOW</div>
+    </div>
+
+    <div class="tr red">
+      <div class="tr-prio">8</div>
+      <div class="tr-check"></div>
+      <div class="tr-body">
+        <div class="tr-name">Coche de alquiler en Sogndal</div>
+        <div class="tr-meta"><span class="p">ESCANDINAVIA</span><span class="sep">·</span><span class="d">VENCE 14 D</span></div>
+      </div>
+      <div class="now-badge">⚡ NOW</div>
+    </div>
+
+    <div class="tr purple-bar">
+      <div class="tr-prio">7</div>
+      <div class="tr-check"></div>
+      <div class="tr-body">
+        <div class="tr-name">IAfont — definir slot y lanzar</div>
+        <div class="tr-meta"><span class="s">CREATIVO</span><span class="sep">·</span><span class="a">11 D SIN MOVER</span></div>
+      </div>
+      <div class="now-badge">⚡ NOW</div>
+    </div>
+
+    <div class="list-sec"><span>RESTO · 11 TAREAS</span></div>
+
+    <div class="tr">
+      <div class="tr-prio">7</div>
+      <div class="tr-check"></div>
+      <div class="tr-body">
+        <div class="tr-name">Guille hair — buscar centros en Palma</div>
+        <div class="tr-meta"><span class="p">GENERAL</span><span class="sep">·</span><span>GESTIÓN</span></div>
+      </div>
+    </div>
+
+    <div class="tr">
+      <div class="tr-prio">7</div>
+      <div class="tr-check"></div>
+      <div class="tr-body">
+        <div class="tr-name">Sonido escenario vmicro — Willy's</div>
+        <div class="tr-meta"><span class="p" style="color:var(--green)">WILLY'S</span><span class="sep">·</span><span>RECOVER</span></div>
+      </div>
+    </div>
+
+    <div class="tr amber">
+      <div class="tr-prio">6</div>
+      <div class="tr-check"></div>
+      <div class="tr-body">
+        <div class="tr-name">Revestimiento lateral habitación — Flat</div>
+        <div class="tr-meta"><span class="p" style="color:var(--blue)">FLAT</span><span class="sep">·</span><span class="a">8 D SIN MOVER</span></div>
+      </div>
+    </div>
+
+    <div class="tr">
+      <div class="tr-prio">6</div>
+      <div class="tr-check"></div>
+      <div class="tr-body">
+        <div class="tr-name">Barra · Plastonda · Pegatina fiestas</div>
+        <div class="tr-meta"><span class="p" style="color:var(--purple)">SARAPITA</span><span class="sep">·</span><span>COMPRA</span></div>
+      </div>
+    </div>
+
+    <div class="tr">
+      <div class="tr-prio">5</div>
+      <div class="tr-check"></div>
+      <div class="tr-body">
+        <div class="tr-name">Revisar duplicados alojamiento Escandinavia</div>
+        <div class="tr-meta"><span class="p">ESCANDINAVIA</span><span class="sep">·</span><span>GESTIÓN</span></div>
+      </div>
+    </div>
+
+    <div class="tr amber">
+      <div class="tr-prio">4</div>
+      <div class="tr-check"></div>
+      <div class="tr-body">
+        <div class="tr-name">Dermatólogo — comentar winx</div>
+        <div class="tr-meta"><span class="p">GENERAL</span><span class="sep">·</span><span>MÉDICO</span><span class="sep">·</span><span class="a">19 D SIN MOVER</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL DERECHO: DETALLE -->
+<div class="right">
+  <div class="d-hdr">
+    <div class="d-hdr-top">
+      <span class="d-back">← LISTA</span>
+      <div class="d-acts">
+        <div class="d-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+        <div class="d-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg></div>
+      </div>
+    </div>
+    <div class="d-prio-row">
+      <div class="d-prio">9</div>
+      <div class="d-title">Reservar tren Oslo→Flåm</div>
+    </div>
+    <div class="d-chips">
+      <span class="dc prop"><span class="dot"></span>ESCANDINAVIA</span>
+      <span class="dc status"><span class="dot"></span>ACTIVA</span>
+      <span class="dc due"><span class="dot"></span>VENCE 19 D</span>
+    </div>
+  </div>
+
+  <div class="d-scroll">
+    <div class="d-vera">
+      <div class="d-vera-lbl">✦ VERA</div>
+      <div class="d-vera-text">Los trenes noruegos en julio se llenan. <em>Reservar hoy</em> en rail.no antes de que suban los precios.</div>
+    </div>
+    <div class="d-sec">DETALLE</div>
+    <div class="d-text">23 jul 13:45 · Tren Flåm. Buscar en rail.no o trainline. El precio sube en julio — disponibilidad limitada.</div>
+    <div class="d-div"></div>
+    <div class="d-sec">NOTAS</div>
+    <textarea class="d-notes" placeholder="Añade una nota…"></textarea>
+    <div class="d-div"></div>
+    <div class="d-sec">HISTORIAL</div>
+    <div class="hist">
+      <div class="h-col"><div class="h-dot purple"></div><div class="h-line"></div></div>
+      <div class="h-body"><div class="h-text">Vera recomienda <em>reservar hoy</em></div><div class="h-time">HOY · 07:30</div></div>
+    </div>
+    <div class="hist">
+      <div class="h-col"><div class="h-dot gold"></div><div class="h-line"></div></div>
+      <div class="h-body"><div class="h-text">Prio subida a <em>9</em> — vence en 19 días</div><div class="h-time">20 MAY · 06:31</div></div>
+    </div>
+    <div class="hist">
+      <div class="h-col"><div class="h-dot gray"></div></div>
+      <div class="h-body"><div class="h-text">Tarea creada</div><div class="h-time">14 ABR · 11:22</div></div>
+    </div>
+  </div>
+
+  <button class="d-fab">MARCAR COMO HECHA ✓</button>
+</div>
+
+</div>
+</div>
+</body>
+</html>

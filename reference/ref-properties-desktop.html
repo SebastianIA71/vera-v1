@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<!--
+  VERA — Referencia visual: Propiedades Desktop
+  ===============================================
+  Implementar en:
+    src/app/(app)/properties/page.tsx
+    src/components/properties/PropertyColumn.tsx
+    src/components/properties/PropertyEventPill.tsx
+
+  LAYOUT: Nav colapsada (52px) + 3 columnas iguales (grid 1fr 1fr 1fr)
+
+  PROPIEDADES FIJAS (no configurables — siempre estas 3):
+    Flat     · Palma     · color #5ba8e8 · icono 🏙
+    Sarapita · Campos    · color #9b7fe8 · icono 🌿
+    Willy's  · Marratxí  · color #4ecb8d · icono 🎪
+
+  CADA COLUMNA contiene:
+    1. Header: nombre + dot color + botón "+" añadir tarea
+    2. Stats: N tareas · N stale · N eventos (en colores)
+    3. Pill de evento próximo (si lo hay) — solo si event.startDate < 90 días
+    4. Lista de tareas de esa propiedad (ordenadas por prioFinal desc)
+    5. Footer "VER TODAS →" si hay más de 8 tareas
+
+  PILL DE EVENTO:
+    - Fondo: rgba(color_propiedad, 0.06)
+    - Borde: rgba(color_propiedad, 0.2)
+    - Punto de color + nombre del evento + días restantes en color
+    - Solo aparece si hay evento próximo con startDate < 90 días
+    - Click → navega a /viajes con ese evento seleccionado
+
+  TAREAS EN LA COLUMNA:
+    - Misma lógica de barra lateral que en TaskList:
+        rojo   → urgente (prio 8-9 o vence pronto)
+        ámbar  → stale (sin movimiento > 14 días)
+        sin barra → normal
+    - Badge ⚡ si la tarea está en NoW
+    - Meta: estado · tipo (más compacto que en TaskList — sin propiedad porque ya está implícita)
+    - Al hacer click: abre panel de detalle derecho (mismo componente que TaskDetailPanel)
+    - Botón + en el header: crea tarea con propertyId preseleccionado
+
+  STATS DE COLOR:
+    N tareas  → color de la propiedad
+    N stale   → ámbar (#e8a020) si > 0, gris si = 0
+    N eventos → azul (#5ba8e8) si > 0, gris si = 0
+
+  NOTAS DE IMPLEMENTACIÓN:
+    - GET /api/tasks?propertyId=flat,sarapita,willys — una sola llamada, separar en cliente
+    - GET /api/events?upcoming=90 — eventos próximos (< 90 días)
+    - PropertyColumn recibe { property, tasks, events } como props
+    - El botón "+" llama a POST /api/tasks con { propertyId } preseleccionado
+    - El scroll de cada columna es independiente (overflow-y: auto en .col-list)
+    - Las columnas tienen altura igual al viewport disponible
+    - "VER TODAS →" navega a /tasks?propertyId=X con el filtro de propiedad preseleccionado
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>VERA — Propiedades Desktop [referencia]</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080a;--bg2:#0d0f12;--bg3:#131619;--bg4:#1a1d22;--text:#eceae2;--text2:#7d7c87;--text3:#3e3d48;--text4:#5f5e5a;--gold:#e8d5a3;--gold2:#c4a86a;--green:#4ecb8d;--red:#e05c5c;--amber:#e8a020;--blue:#5ba8e8;--purple:#9b7fe8;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow:hidden;}
+
+/* TOP BAR */
+.topbar{height:44px;background:var(--bg);border-bottom:.5px solid var(--bg4);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.tb-left{display:flex;align-items:center;gap:16px;}
+.vera-logo{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;letter-spacing:.3em;color:var(--gold2);}
+.vera-logo svg{width:10px;height:10px;}
+.tb-clock{font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);letter-spacing:.12em;}
+.tb-center{display:flex;align-items:center;gap:8px;}
+.counter{display:flex;align-items:center;gap:6px;padding:4px 10px;border:.5px solid var(--bg4);border-radius:999px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;color:var(--text2);}
+.counter .dot{width:6px;height:6px;border-radius:50%;}
+.tb-right{display:flex;align-items:center;gap:10px;}
+.oye-btn{display:flex;align-items:center;gap:7px;padding:6px 14px;border:.5px solid var(--gold2);border-radius:999px;background:transparent;color:var(--gold);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;cursor:pointer;}
+.oye-btn svg{width:13px;height:13px;color:var(--gold2);}
+
+/* LAYOUT */
+.layout{display:flex;height:calc(100vh - 44px);overflow:hidden;}
+
+/* NAV colapsada */
+.nav{width:52px;background:var(--bg);border-right:.5px solid var(--bg4);display:flex;flex-direction:column;padding:12px 0;flex-shrink:0;}
+.ni{width:52px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;}
+.ni svg{width:16px;height:16px;color:var(--text3);}
+.ni.active svg{color:var(--gold2);}
+.ni.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:2px;height:16px;background:var(--gold2);border-radius:1px;}
+.ni .badge{position:absolute;top:6px;right:8px;background:var(--red);color:#fff;font-family:'DM Mono',monospace;font-size:7px;padding:1px 4px;border-radius:999px;}
+.ndiv{height:.5px;background:var(--bg4);margin:6px 10px;}
+.nbottom{margin-top:auto;}
+
+/* CONTENEDOR PRINCIPAL */
+.props-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.props-hdr{padding:14px 20px 12px;border-bottom:.5px solid var(--bg4);display:flex;align-items:baseline;justify-content:space-between;flex-shrink:0;}
+.page-title{font-family:'Syne',sans-serif;font-weight:500;font-size:18px;color:var(--text);letter-spacing:-.01em;}
+.page-title em{font-style:italic;color:var(--gold);}
+.props-sub{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:var(--text4);}
+
+/* 3 COLUMNAS IGUALES */
+.cols{flex:1;display:grid;grid-template-columns:repeat(3,1fr);overflow:hidden;}
+
+/* COLUMNA */
+.col{display:flex;flex-direction:column;overflow:hidden;border-right:.5px solid var(--bg4);}
+.col:last-child{border-right:none;}
+
+/* Header de columna */
+.col-hdr{padding:14px 16px 12px;flex-shrink:0;border-bottom:.5px solid var(--bg4);}
+.col-hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+/* Nombre con dot de color de la propiedad */
+.prop-name{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-weight:600;font-size:14px;letter-spacing:.04em;}
+.prop-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+/* Botón + para crear tarea con propertyId preseleccionado */
+.col-add{width:24px;height:24px;border-radius:7px;background:transparent;border:.5px solid var(--bg4);display:flex;align-items:center;justify-content:center;color:var(--text3);cursor:pointer;transition:all .1s;}
+.col-add:hover{border-color:var(--gold2);color:var(--gold2);}
+.col-add svg{width:11px;height:11px;}
+
+/* Stats de la propiedad */
+.prop-stats{display:flex;gap:12px;}
+.pstat{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;}
+.pstat .v{display:inline;font-weight:500;}
+.pstat .k{color:var(--text4);}
+
+/* Pill de evento próximo — solo si hay evento < 90 días */
+.prop-event{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;margin-top:8px;}
+.ev-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.ev-text{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.12em;color:var(--text2);}
+.ev-days{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.1em;margin-left:auto;font-weight:500;}
+
+/* Lista de tareas de la columna */
+.col-list{flex:1;overflow-y:auto;}
+.col-list::-webkit-scrollbar{width:2px;}
+.col-list::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:1px;}
+
+/* Fila de tarea en columna — más compacta que en TaskList */
+.pt{display:flex;align-items:center;gap:8px;padding:9px 16px;cursor:pointer;border-bottom:.5px solid var(--bg2);position:relative;transition:background .1s;}
+.pt:hover{background:var(--bg2);}
+.pt::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:transparent;}
+.pt.red::before{background:var(--red);}
+.pt.amber::before{background:var(--amber);}
+.pt-prio{font-family:'Syne',sans-serif;font-weight:600;font-size:12px;color:var(--gold);min-width:16px;text-align:right;flex-shrink:0;}
+.pt-check{width:14px;height:14px;border-radius:50%;border:.5px solid var(--text3);flex-shrink:0;}
+.pt-body{flex:1;min-width:0;}
+.pt-name{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* Meta más compacta — sin propiedad (ya está implícita en la columna) */
+.pt-meta{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.08em;color:var(--text4);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pt-meta .a{color:var(--amber);}
+.pt-meta .d{color:var(--red);}
+/* Badge ⚡ NOW */
+.pt-now{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:.1em;padding:1px 5px;border-radius:999px;border:.5px solid var(--gold2);color:var(--gold2);flex-shrink:0;}
+
+/* Footer de columna */
+.col-footer{padding:9px 16px;border-top:.5px solid var(--bg4);flex-shrink:0;}
+.col-footer a{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.2em;color:var(--text3);cursor:pointer;}
+.col-footer a:hover{color:var(--text2);}
+</style>
+</head>
+<body>
+<div style="display:flex;flex-direction:column;height:100vh;">
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="tb-left">
+    <div class="vera-logo">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+      VERA
+    </div>
+    <div class="tb-clock">MIÉ · 27 MAY · 07:42</div>
+  </div>
+  <div class="tb-center">
+    <div class="counter"><span class="dot" style="background:var(--red)"></span>2 URGENTES</div>
+    <div class="counter"><span class="dot" style="background:var(--amber)"></span>1 STALE</div>
+    <div class="counter"><span class="dot" style="background:var(--green)"></span>4 INBOX</div>
+  </div>
+  <div class="tb-right">
+    <button class="oye-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+      OYE VERA
+    </button>
+  </div>
+</div>
+
+<div class="layout">
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg></div>
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="badge">4</span></div>
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+  <div class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+  <div class="ndiv"></div>
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+  <div class="nbottom"><div class="ndiv"></div>
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div></div>
+</nav>
+
+<div class="props-wrap">
+  <div class="props-hdr">
+    <div class="page-title">Propiedades <em>&amp; inmuebles</em></div>
+    <div class="props-sub">3 PROPIEDADES · 28 TAREAS ACTIVAS</div>
+  </div>
+
+  <div class="cols">
+
+    <!-- ═══════════════════════════
+         FLAT · PALMA · #5ba8e8
+         ═══════════════════════════ -->
+    <div class="col">
+      <div class="col-hdr">
+        <div class="col-hdr-top">
+          <div class="prop-name" style="color:#5ba8e8;">
+            <span class="prop-dot" style="background:#5ba8e8;"></span>
+            🏙 Flat · Palma
+          </div>
+          <!-- Botón + crea tarea con propertyId='flat' preseleccionado -->
+          <div class="col-add">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+        </div>
+        <div class="prop-stats">
+          <div class="pstat" style="color:#5ba8e8;"><span class="v">8</span> <span class="k">tareas</span></div>
+          <div class="pstat" style="color:#e8a020;"><span class="v">2</span> <span class="k">stale</span></div>
+          <div class="pstat" style="color:#5f5e5a;"><span class="v">0</span> <span class="k">eventos</span></div>
+        </div>
+        <!-- Sin evento próximo — no aparece pill -->
+      </div>
+      <div class="col-list">
+        <div class="pt red">
+          <div class="pt-prio">9</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Revestimiento lateral habitación</div><div class="pt-meta">ACTIVA · WEEK</div></div>
+          <div class="pt-now">⚡</div>
+        </div>
+        <div class="pt">
+          <div class="pt-prio">7</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Esquinero cuarto baño niños</div><div class="pt-meta">WEEK · COMPRA</div></div>
+        </div>
+        <div class="pt">
+          <div class="pt-prio">6</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Revisar techo Guille + pared</div><div class="pt-meta">WEEK · GESTIÓN</div></div>
+        </div>
+        <div class="pt amber">
+          <div class="pt-prio">4</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Sillas exterior + telas + tumbonas</div><div class="pt-meta"><span class="a">12 D SIN MOVER</span></div></div>
+        </div>
+        <div class="pt">
+          <div class="pt-prio">3</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Cargador inalámbrico iPhones</div><div class="pt-meta">WEEK · COMPRA</div></div>
+        </div>
+        <div class="pt">
+          <div class="pt-prio">2</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Zona desayunos cocina</div><div class="pt-meta">WAIT · DESIGN</div></div>
+        </div>
+        <div class="pt amber">
+          <div class="pt-prio">2</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Bajo del fregadero</div><div class="pt-meta"><span class="a">18 D SIN MOVER</span></div></div>
+        </div>
+        <div class="pt">
+          <div class="pt-prio">0</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Esquina mampara baño nuestro</div><div class="pt-meta">WAIT · SIN EVALUAR</div></div>
+        </div>
+      </div>
+      <div class="col-footer"><a>VER TODAS →</a></div>
+    </div>
+
+    <!-- ═══════════════════════════
+         SARAPITA · CAMPOS · #9b7fe8
+         ═══════════════════════════ -->
+    <div class="col">
+      <div class="col-hdr">
+        <div class="col-hdr-top">
+          <div class="prop-name" style="color:#9b7fe8;">
+            <span class="prop-dot" style="background:#9b7fe8;"></span>
+            🌿 Sarapita · Campos
+          </div>
+          <div class="col-add">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+        </div>
+        <div class="prop-stats">
+          <div class="pstat" style="color:#9b7fe8;"><span class="v">4</span> <span class="k">tareas</span></div>
+          <div class="pstat" style="color:#5f5e5a;"><span class="v">0</span> <span class="k">stale</span></div>
+          <div class="pstat" style="color:#5ba8e8;"><span class="v">1</span> <span class="k">evento</span></div>
+        </div>
+        <!-- Pill de evento próximo: fondo y borde del color de la propiedad -->
+        <div class="prop-event" style="background:rgba(155,127,232,.06);border:.5px solid rgba(155,127,232,.22);">
+          <span class="ev-dot" style="background:#9b7fe8;"></span>
+          <span class="ev-text">Fiestas Sarapita</span>
+          <span class="ev-days" style="color:#9b7fe8;">~66 D</span>
+        </div>
+      </div>
+      <div class="col-list">
+        <div class="pt red">
+          <div class="pt-prio">7</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">XAVI Starlink — baja IBRED + llaves</div><div class="pt-meta"><span class="d">VENCE 7 D</span> · GESTIÓN</div></div>
+          <div class="pt-now">⚡</div>
+        </div>
+        <div class="pt">
+          <div class="pt-prio">6</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Barra · Plastonda · Pegatina fiestas</div><div class="pt-meta">WEEK · COMPRA</div></div>
+        </div>
+        <div class="pt">
+          <div class="pt-prio">4</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Inscripción fiestas en barra</div><div class="pt-meta">DESIGN · PDF</div></div>
+        </div>
+        <div class="pt">
+          <div class="pt-prio">2</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Árboles casa — planificar corte</div><div class="pt-meta">WEEK · GESTIÓN</div></div>
+        </div>
+      </div>
+      <div class="col-footer"><a>VER TODAS →</a></div>
+    </div>
+
+    <!-- ═══════════════════════════
+         WILLY'S · MARRATXÍ · #4ecb8d
+         ═══════════════════════════ -->
+    <div class="col">
+      <div class="col-hdr">
+        <div class="col-hdr-top">
+          <div class="prop-name" style="color:#4ecb8d;">
+            <span class="prop-dot" style="background:#4ecb8d;"></span>
+            🎪 Willy's · Marratxí
+          </div>
+          <div class="col-add">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+        </div>
+        <div class="prop-stats">
+          <div class="pstat" style="color:#4ecb8d;"><span class="v">6</span> <span class="k">tareas</span></div>
+          <div class="pstat" style="color:#e8a020;"><span class="v">1</span> <span class="k">stale</span></div>
+          <div class="pstat" style="color:#5ba8e8;"><span class="v">1</span> <span class="k">evento</span></div>
+        </div>
+        <div class="prop-event" style="background:rgba(78,203,141,.06);border:.5px solid rgba(78,203,141,.22);">
+          <span class="ev-dot" style="background:#4ecb8d;"></span>
+          <span class="ev-text">Fiestas Willy's</span>
+          <span class="ev-days" style="color:#4ecb8d;">~65 D</span>
+        </div>
+      </div>
+      <div class="col-list">
+        <div class="pt red">
+          <div class="pt-prio">7</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Sonido escenario vmicro</div><div class="pt-meta">RECOVER · URGENTE</div></div>
+          <div class="pt-now">⚡</div>
+        </div>
+        <div class="pt">
+          <div class="pt-prio">6</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Caseta madera — centrar</div><div class="pt-meta">WEEK · OBRA</div></div>
+        </div>
+        <div class="pt">
+          <div class="pt-prio">4</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Paellaworld — materiales</div><div class="pt-meta">RECOVER · COMPRA</div></div>
+        </div>
+        <div class="pt">
+          <div class="pt-prio">2</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Food Truck — puesta a punto</div><div class="pt-meta">ACTIVE · VEHÍCULO</div></div>
+        </div>
+        <div class="pt amber">
+          <div class="pt-prio">1</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Gresite piscina — TotalTech CEYS</div><div class="pt-meta"><span class="a">9 D SIN MOVER</span> · INSPIRACIÓN</div></div>
+        </div>
+        <div class="pt">
+          <div class="pt-prio">0</div><div class="pt-check"></div>
+          <div class="pt-body"><div class="pt-name">Toldo escenario</div><div class="pt-meta">WAIT · COMPRA</div></div>
+        </div>
+      </div>
+      <div class="col-footer"><a>VER TODAS →</a></div>
+    </div>
+
+  </div>
+</div>
+</div>
+</div>
+</body>
+</html>

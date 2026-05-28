@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<!--
+  VERA — Referencia visual: Home Móvil
+  =====================================
+  Implementar en: src/app/(app)/page.tsx
+  Componentes: MobileHome, NowSection, InboxStrip, WeightCard, UpcomingCard, ProactiveCard, FAB
+
+  ESTRUCTURA (scroll único, sin tab bar):
+    1. Header: VERA wordmark + botón ajustes
+    2. Greeting: saludo Syne 26px + status line DM Mono
+    3. NoW: 3 tareas urgentes con código de color en borde lateral
+    4. Inbox: strip borde dashed + número capturas pendientes
+    5. Peso: número 32px + curva SVG 14 días + 5 toggles SNM
+    6. Upcoming: próximo viaje + días en azul + pendiente en ámbar
+    7. Vera: una sugerencia proactiva [Sí / Mañana / Ignorar]
+    FAB: micrófono gold, 62px, fijo abajo derecha, z-index 50
+
+  NOTAS:
+    - Finanzas: NO aparecen en home (regla estricta)
+    - Saludo en inglés con <em class="anchor"> = cursiva #e8d5a3
+    - Viaje en status line: color gold2 (#c4a86a) para destacar
+    - Curva SVG generada dinámicamente con últimos 14 weightLog
+    - SNM .on = fondo verde sutil + borde verde / .off = opacity 0.25
+    - Sección Vera: header sec-lbl en púrpura, no gold
+    - FAB: nunca ocultar salvo en modales
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VERA — Home Móvil [referencia]</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080a;--bg2:#0d0f12;--bg3:#131619;--bg4:#1a1d22;--text:#eceae2;--text2:#7d7c87;--text3:#3e3d48;--text4:#5f5e5a;--gold:#e8d5a3;--gold2:#c4a86a;--green:#4ecb8d;--red:#e05c5c;--amber:#e8a020;--blue:#5ba8e8;--purple:#9b7fe8;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#111;display:flex;justify-content:center;padding:40px 20px;min-height:100vh;font-family:'DM Sans',sans-serif;}
+.phone-wrap{position:relative;}
+.phone{width:375px;height:812px;background:var(--bg);border-radius:44px;border:1px solid var(--bg4);overflow:hidden;position:relative;color:var(--text);}
+.notch{position:absolute;top:14px;left:50%;transform:translateX(-50%);width:126px;height:34px;background:#000;border-radius:20px;z-index:10;}
+.status-bar{position:absolute;top:0;left:0;right:0;height:52px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 28px 8px;z-index:5;}
+.s-time{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;color:var(--text);}
+.s-icons{font-family:'DM Mono',monospace;font-size:12px;color:var(--text);}
+.scroll{position:absolute;inset:52px 0 0 0;overflow-y:auto;padding:16px 22px 100px;}
+.scroll::-webkit-scrollbar{display:none;}
+.top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;}
+.brand{display:flex;align-items:center;gap:7px;font-family:'Syne',sans-serif;font-weight:600;font-size:11px;letter-spacing:.3em;color:var(--gold2);}
+.brand svg{width:9px;height:9px;}
+.settings-btn{width:32px;height:32px;border-radius:50%;border:.5px solid var(--bg4);background:transparent;display:flex;align-items:center;justify-content:center;color:var(--text2);cursor:pointer;}
+.settings-btn svg{width:14px;height:14px;}
+.greeting{margin-bottom:24px;}
+.salute{font-family:'Syne',sans-serif;font-weight:400;font-size:26px;line-height:1.15;color:var(--text);letter-spacing:-.01em;}
+.salute .anchor{font-style:italic;color:var(--gold);}
+.status-line{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--text2);margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;}
+.status-line .accent{color:var(--gold2);}
+.status-line .sep{color:var(--text3);}
+.section{margin-bottom:28px;}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;}
+.sec-lbl{font-family:'Syne',sans-serif;font-weight:500;font-size:13px;letter-spacing:.22em;color:var(--gold2);text-transform:uppercase;}
+.sec-meta{font-family:'DM Mono',monospace;font-size:9px;color:var(--text4);letter-spacing:.12em;}
+.sec-link{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:var(--text2);}
+.now-card{background:var(--bg2);border:.5px solid var(--bg4);border-radius:14px;padding:13px 13px 13px 14px;margin-bottom:7px;display:flex;align-items:flex-start;gap:10px;}
+.now-card.red{border-left:2px solid var(--red);}
+.now-card.amber{border-left:2px solid var(--amber);}
+.now-card.purple{border-left:2px solid var(--purple);}
+.prio{font-family:'Syne',sans-serif;font-weight:600;font-size:13px;color:var(--gold);min-width:20px;padding-top:1px;}
+.now-body{flex:1;min-width:0;}
+.now-title{font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.35;color:var(--text);}
+.now-meta{display:flex;gap:8px;margin-top:5px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;color:var(--text2);flex-wrap:wrap;}
+.now-meta .prop{color:var(--gold2);}
+.now-meta .due{color:var(--red);}
+.now-meta .stale{color:var(--amber);}
+.now-meta .sug{color:var(--purple);}
+.now-meta .sep{color:var(--text3);}
+.check{width:20px;height:20px;border-radius:50%;border:.5px solid var(--text3);flex-shrink:0;margin-top:2px;}
+.inbox-strip{border:.5px dashed #2c2c2a;border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;}
+.inbox-num{font-family:'Syne',sans-serif;font-weight:500;font-size:28px;color:var(--gold);line-height:1;min-width:32px;}
+.inbox-body .h{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);}
+.inbox-body .s{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.16em;color:var(--text2);margin-top:4px;}
+.inbox-arrow{color:var(--text2);font-size:16px;}
+.weight-card{background:var(--bg2);border:.5px solid var(--bg4);border-radius:14px;padding:16px 16px 12px;}
+.weight-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.weight-num{font-family:'Syne',sans-serif;font-weight:500;font-size:32px;color:var(--text);line-height:1;letter-spacing:-.02em;}
+.weight-unit{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);margin-top:4px;letter-spacing:.1em;}
+.trend-pill{display:inline-flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.14em;padding:4px 8px;border-radius:999px;border:.5px solid var(--bg4);color:var(--green);}
+.trend-dot{width:5px;height:5px;border-radius:50%;background:var(--green);}
+.snm-row{display:flex;gap:6px;margin-top:14px;padding-top:12px;border-top:.5px solid var(--bg4);}
+.snm{flex:1;background:var(--bg3);border:.5px solid var(--bg4);border-radius:10px;padding:10px 4px;text-align:center;font-size:16px;cursor:pointer;}
+.snm.on{background:rgba(78,203,141,.08);border-color:var(--green);}
+.snm.off{opacity:.25;}
+.upcoming-card{background:var(--bg2);border:.5px solid var(--bg4);border-radius:14px;padding:14px 16px;}
+.upcoming-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.upcoming-title{font-family:'Syne',sans-serif;font-weight:500;font-size:15px;color:var(--text);letter-spacing:-.01em;}
+.upcoming-dates{font-family:'DM Mono',monospace;font-size:9px;color:var(--text2);letter-spacing:.12em;margin-top:5px;}
+.upcoming-days{font-family:'Syne',sans-serif;font-weight:500;font-size:28px;color:var(--blue);line-height:1;text-align:right;}
+.upcoming-dlabel{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.18em;color:var(--text2);margin-top:2px;text-align:right;}
+.upcoming-pending{display:flex;align-items:center;gap:7px;margin-top:12px;padding-top:10px;border-top:.5px solid var(--bg4);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--amber);}
+.upcoming-pending .dot{width:5px;height:5px;border-radius:50%;background:var(--amber);flex-shrink:0;}
+.proactive-card{background:transparent;border:.5px solid #2d2640;border-radius:14px;padding:16px;position:relative;overflow:hidden;}
+.proactive-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(155,127,232,.06) 0%,transparent 60%);pointer-events:none;}
+.p-icon{width:28px;height:28px;border-radius:8px;background:rgba(155,127,232,.12);display:flex;align-items:center;justify-content:center;margin-bottom:10px;}
+.p-icon svg{width:14px;height:14px;color:var(--purple);}
+.p-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.24em;color:var(--purple);margin-bottom:8px;}
+.p-text{font-family:'Syne',sans-serif;font-weight:400;font-size:14px;line-height:1.45;color:var(--text);}
+.p-text .anchor{font-style:italic;color:var(--gold);}
+.p-actions{display:flex;gap:7px;margin-top:14px;}
+.p-actions button{flex:1;padding:9px 4px;border-radius:10px;border:.5px solid var(--bg4);background:transparent;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.16em;cursor:pointer;color:var(--text2);}
+.p-actions .yes{border-color:var(--purple);color:var(--purple);}
+.fab{position:absolute;right:22px;bottom:28px;width:62px;height:62px;border-radius:50%;background:var(--bg);border:.5px solid var(--gold2);display:flex;align-items:center;justify-content:center;z-index:50;cursor:pointer;}
+.fab::before{content:'';position:absolute;inset:-7px;border-radius:50%;border:.5px solid rgba(196,168,106,.15);}
+.fab svg{width:23px;height:23px;color:var(--gold);}
+.home-indicator{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:130px;height:4px;background:var(--text);border-radius:2px;opacity:.35;}
+</style>
+</head>
+<body>
+<div class="phone-wrap">
+<div class="phone">
+  <div class="notch"></div>
+  <div class="status-bar">
+    <span class="s-time">7:42</span>
+    <span class="s-icons">●●● ◐ ⬡</span>
+  </div>
+  <div class="scroll">
+    <div class="top-row">
+      <span class="brand">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+        VERA
+      </span>
+      <button class="settings-btn" aria-label="ajustes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+    <div class="greeting">
+      <div class="salute">Wednesday, <em class="anchor">quiet morning</em>.</div>
+      <div class="status-line">
+        <span>78.4 KG</span><span class="sep">·</span>
+        <span class="accent">ESCANDINAVIA · 49 D</span><span class="sep">·</span>
+        <span>IAFONT · 33 D</span>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-head"><span class="sec-lbl">Now</span><span class="sec-meta">3 ACTIVAS</span></div>
+      <div class="now-card red"><div class="prio">9</div><div class="now-body"><div class="now-title">Reservar tren Oslo→Flåm</div><div class="now-meta"><span class="prop">ESCANDINAVIA</span><span class="sep">·</span><span class="due">VENCE 19 D</span></div></div><div class="check"></div></div>
+      <div class="now-card red"><div class="prio">8</div><div class="now-body"><div class="now-title">Coche de alquiler en Sogndal</div><div class="now-meta"><span class="prop">ESCANDINAVIA</span><span class="sep">·</span><span class="due">VENCE 14 D</span></div></div><div class="check"></div></div>
+      <div class="now-card purple"><div class="prio" style="color:#9b7fe8">7</div><div class="now-body"><div class="now-title">IAfont — definir slot y lanzar</div><div class="now-meta"><span class="sug">CREATIVO</span><span class="sep">·</span><span class="stale">11 D SIN MOVER</span></div></div><div class="check"></div></div>
+    </div>
+    <div class="section">
+      <div class="sec-head"><span class="sec-lbl">Inbox</span><a class="sec-link" href="#">ABRIR →</a></div>
+      <div class="inbox-strip"><div class="inbox-num">4</div><div class="inbox-body"><div class="h">capturas sin procesar</div><div class="s">2 INSTAGRAM · 1 VOZ · 1 NOTA</div></div><span class="inbox-arrow">→</span></div>
+    </div>
+    <div class="section">
+      <div class="sec-head"><span class="sec-lbl">Peso</span><span class="sec-meta">14 DÍAS</span></div>
+      <div class="weight-card">
+        <div class="weight-top"><div><div class="weight-num">78.4</div><div class="weight-unit">KG · HOY</div></div><div class="trend-pill"><span class="trend-dot"></span>ESTABLE</div></div>
+        <svg width="100%" height="56" viewBox="0 0 331 56" preserveAspectRatio="none">
+          <defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ecb8d" stop-opacity=".18"/><stop offset="100%" stop-color="#4ecb8d" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0 34 C22 32,44 29,66 32 C88 35,110 37,132 34 C154 31,176 27,198 29 C220 31,242 33,264 30 C286 27,308 24,331 22 L331 56 L0 56 Z" fill="url(#wg)"/>
+          <path d="M0 34 C22 32,44 29,66 32 C88 35,110 37,132 34 C154 31,176 27,198 29 C220 31,242 33,264 30 C286 27,308 24,331 22" stroke="#4ecb8d" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <circle cx="331" cy="22" r="3.5" fill="#4ecb8d"/>
+          <line x1="0" y1="40" x2="331" y2="40" stroke="#1a1d22" stroke-width=".5" stroke-dasharray="3 5"/>
+        </svg>
+        <div class="snm-row">
+          <div class="snm on">💧</div><div class="snm on">🚶</div><div class="snm off">💪</div><div class="snm on">🧘</div><div class="snm off">🍴</div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-head"><span class="sec-lbl">Upcoming</span><a class="sec-link" href="#">VER TODO →</a></div>
+      <div class="upcoming-card">
+        <div class="upcoming-top"><div><div class="upcoming-title">Madrid · Bruno Mars</div><div class="upcoming-dates">11–12 JUL · PAREJA</div></div><div><div class="upcoming-days">15</div><div class="upcoming-dlabel">DÍAS</div></div></div>
+        <div class="upcoming-pending"><span class="dot"></span><span>1 PENDIENTE · CONFIRMAR ENTRADAS</span></div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-head"><span class="sec-lbl" style="color:#9b7fe8">Vera</span><span class="sec-meta">1 SUGERENCIA</span></div>
+      <div class="proactive-card">
+        <div class="p-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z"/></svg></div>
+        <div class="p-label">VERA SUGIERE</div>
+        <div class="p-text">IAfont lleva <em class="anchor">11 días sin movimiento</em>. El deadline de junio está a 33 días. ¿Le damos un slot esta semana?</div>
+        <div class="p-actions"><button class="yes">SÍ</button><button>MAÑANA</button><button>IGNORAR</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="fab" role="button" aria-label="captura rápida">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+  </div>
+  <div class="home-indicator"></div>
+</div>
+</div>
+</body>
+</html>

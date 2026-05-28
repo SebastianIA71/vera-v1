@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<!--
+  VERA — Referencia visual: Command Centre Desktop
+  ==================================================
+  Implementar en: src/app/(app)/dashboard/page.tsx
+  Componentes:
+    src/components/command/OrbitalMap.tsx
+    src/components/command/BottomBar.tsx
+    src/components/command/RightPanel.tsx
+    src/components/nav/SideNav.tsx
+
+  LAYOUT: 3 columnas fijas
+    Nav izquierda: 200px (colapsable a 52px solo iconos)
+    Centro: flex-1 (orbital)
+    Panel derecho: 280px (fijo, no colapsable)
+
+  TOP BAR (44px):
+    Izquierda: logo VERA + reloj con segundos
+    Centro: pills contadores (urgentes / stale / inbox)
+    Derecha: pill SISTEMA ACTIVO + botón OYE VERA
+
+  ORBITAL (440x440px centrado):
+    4 anillos concéntricos (140/260/380/440px)
+    Núcleo VERA 80px: fondo bg, borde gold, dos anillos exteriores sutiles
+    6 nodos en posición de reloj (12h/2h/5h/6h/8h/10h)
+    Líneas de conexión centro→nodo (activos pulsan, idle casi invisibles)
+
+  ESTADOS DE NODO:
+    running: borde gold, icono gold, box-shadow pulsante, dot gold animado
+    active:  borde verde, icono verde, dot verde
+    idle:    borde #1a1d22, icono #3e3d48, dot gris
+
+  POLLING: useInterval(() => fetch('/api/agents/status'), 8000)
+  Al clicar nodo: setActiveAgent(id) → panel detalle (pendiente de diseñar)
+
+  BOTTOM BAR (32px):
+    Estado real de los 6 agentes en tiempo real
+    Mismo polling que OrbitalMap (compartir estado via context)
+    Derecha: info técnica (versión, Turso, plataforma)
+
+  PANEL DERECHO: 3 pestañas
+    PUNCH LIST: tareas del día con código de color
+    INBOX: capturas con badge numérico
+    ALERTAS: alertas activas con tipo coloreado
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>VERA — Command Centre [referencia]</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080a;--bg2:#0d0f12;--bg3:#131619;--bg4:#1a1d22;--text:#eceae2;--text2:#7d7c87;--text3:#3e3d48;--text4:#5f5e5a;--gold:#e8d5a3;--gold2:#c4a86a;--green:#4ecb8d;--red:#e05c5c;--amber:#e8a020;--blue:#5ba8e8;--purple:#9b7fe8;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow:hidden;}
+
+/* TOP BAR */
+.topbar{height:44px;background:var(--bg);border-bottom:.5px solid var(--bg4);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;z-index:20;position:relative;}
+.tb-left{display:flex;align-items:center;gap:16px;}
+.vera-logo{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;letter-spacing:.3em;color:var(--gold2);}
+.vera-logo svg{width:10px;height:10px;}
+.tb-clock{font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);letter-spacing:.12em;}
+.tb-center{display:flex;align-items:center;gap:8px;}
+.counter{display:flex;align-items:center;gap:6px;padding:4px 10px;border:.5px solid var(--bg4);border-radius:999px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;color:var(--text2);}
+.counter .dot{width:6px;height:6px;border-radius:50%;}
+.counter .dot.red{background:var(--red);}
+.counter .dot.amber{background:var(--amber);}
+.counter .dot.green{background:var(--green);}
+.tb-right{display:flex;align-items:center;gap:10px;}
+.oye-btn{display:flex;align-items:center;gap:7px;padding:6px 14px;border:.5px solid var(--gold2);border-radius:999px;background:transparent;color:var(--gold);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;cursor:pointer;}
+.oye-btn svg{width:13px;height:13px;color:var(--gold2);}
+.status-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border:.5px solid var(--bg4);border-radius:999px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--green);}
+.status-pill .dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 2s ease-in-out infinite;}
+
+/* LAYOUT */
+.layout{display:flex;height:calc(100vh - 44px - 32px);overflow:hidden;}
+
+/* NAV */
+.nav{width:200px;background:var(--bg);border-right:.5px solid var(--bg4);display:flex;flex-direction:column;padding:12px 0;flex-shrink:0;transition:width .25s ease;overflow:hidden;}
+.nav.collapsed{width:52px;}
+.nav-toggle{display:flex;align-items:center;justify-content:flex-end;padding:0 14px 10px;cursor:pointer;flex-shrink:0;}
+.nav.collapsed .nav-toggle{justify-content:center;}
+.nav-toggle svg{width:14px;height:14px;color:var(--text3);transition:transform .25s;}
+.nav.collapsed .nav-toggle svg{transform:rotate(180deg);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 14px;border-radius:0;cursor:pointer;white-space:nowrap;position:relative;margin:1px 0;}
+.nav-item:hover{background:var(--bg2);}
+.nav-item.active{background:var(--bg2);}
+.nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:2px;height:16px;background:var(--gold2);border-radius:1px;}
+.nav-item svg{width:16px;height:16px;color:var(--text2);flex-shrink:0;}
+.nav-item.active svg{color:var(--gold2);}
+.nav-lbl{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--text2);transition:opacity .15s;}
+.nav-item.active .nav-lbl{color:var(--gold2);}
+.nav.collapsed .nav-lbl{opacity:0;pointer-events:none;}
+.nav-divider{height:.5px;background:var(--bg4);margin:6px 14px;}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-family:'DM Mono',monospace;font-size:7px;padding:2px 5px;border-radius:999px;flex-shrink:0;}
+.nav.collapsed .nav-badge{display:none;}
+.nav-bottom{margin-top:auto;}
+
+/* CENTER */
+.center{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.center-hdr{padding:16px 24px 0;display:flex;justify-content:space-between;align-items:baseline;flex-shrink:0;}
+.center-hdr .title{font-family:'Syne',sans-serif;font-weight:500;font-size:18px;color:var(--text);letter-spacing:-.01em;}
+.center-hdr .title em{font-style:italic;color:var(--gold);}
+.center-hdr .sub{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:var(--text4);}
+.orbital-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+
+/* ORBITAL */
+.orbital{position:relative;width:440px;height:440px;flex-shrink:0;}
+/* Anillos */
+.ring{position:absolute;border-radius:50%;border:.5px solid var(--bg4);top:50%;left:50%;transform:translate(-50%,-50%);}
+.ring.r1{width:140px;height:140px;border-color:var(--gold2);opacity:.22;}
+.ring.r2{width:260px;height:260px;}
+.ring.r3{width:380px;height:380px;}
+.ring.r4{width:440px;height:440px;border-style:dashed;border-color:var(--bg3);}
+/* Núcleo */
+.core{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80px;height:80px;border-radius:50%;background:var(--bg);border:.5px solid var(--gold2);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:5;}
+.core::before{content:'';position:absolute;inset:-8px;border-radius:50%;border:.5px solid rgba(196,168,106,.18);}
+.core::after{content:'';position:absolute;inset:-18px;border-radius:50%;border:.5px solid rgba(196,168,106,.07);}
+.core-name{font-family:'Syne',sans-serif;font-weight:700;font-size:11px;letter-spacing:.3em;color:var(--gold2);}
+.core-st{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:.2em;color:var(--green);margin-top:2px;}
+/* Líneas conector */
+.conn{position:absolute;top:50%;left:50%;transform-origin:0 0;height:.5px;background:rgba(196,168,106,.12);z-index:1;}
+.conn.active{background:rgba(196,168,106,.35);animation:pulse-conn 2s ease-in-out infinite;}
+@keyframes pulse-conn{0%,100%{opacity:.35}50%{opacity:.8}}
+/* Nodos */
+.agent{position:absolute;transform:translate(-50%,-50%);z-index:4;cursor:pointer;}
+.agent-node{width:52px;height:52px;border-radius:50%;background:var(--bg2);border:.5px solid var(--bg4);display:flex;align-items:center;justify-content:center;position:relative;transition:border-color .2s;}
+.agent-node:hover{border-color:var(--gold2);}
+.agent-node svg{width:20px;height:20px;}
+/* running: gold + pulso */
+.agent-node.running{border-color:var(--gold2);animation:node-pulse 1.5s ease-in-out infinite;}
+.agent-node.running svg{color:var(--gold2);}
+@keyframes node-pulse{0%,100%{box-shadow:0 0 0 0 rgba(196,168,106,0)}50%{box-shadow:0 0 0 8px rgba(196,168,106,.08)}}
+/* active: verde */
+.agent-node.active-node{border-color:var(--green);}
+.agent-node.active-node svg{color:var(--green);}
+/* idle: gris */
+.agent-node.idle{border-color:var(--bg4);}
+.agent-node.idle svg{color:var(--text3);}
+/* Dot de estado */
+.status-dot{position:absolute;top:2px;right:2px;width:8px;height:8px;border-radius:50%;border:.5px solid var(--bg);}
+.status-dot.gold{background:var(--gold2);animation:blink 1.5s ease-in-out infinite;}
+.status-dot.green{background:var(--green);}
+.status-dot.gray{background:var(--text3);}
+/* Label del agente */
+.agent-lbl{position:absolute;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.14em;color:var(--text2);white-space:nowrap;text-align:center;width:80px;left:50%;transform:translateX(-50%);}
+.agent-lbl.above{bottom:calc(100% + 6px);}
+.agent-lbl.below{top:calc(100% + 6px);}
+
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* BOTTOM BAR */
+.bottom{height:32px;background:var(--bg);border-top:.5px solid var(--bg4);display:flex;align-items:center;padding:0 24px;gap:18px;flex-shrink:0;}
+.agent-pill{display:flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;color:var(--text4);}
+.agent-pill .dot{width:5px;height:5px;border-radius:50%;}
+.agent-pill.on{color:var(--text2);}
+.bottom-info{margin-left:auto;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.14em;color:var(--text3);}
+
+/* RIGHT PANEL */
+.right{width:280px;background:var(--bg);border-left:.5px solid var(--bg4);display:flex;flex-direction:column;flex-shrink:0;}
+.tabs{display:flex;border-bottom:.5px solid var(--bg4);flex-shrink:0;}
+.tab{flex:1;padding:10px 4px;text-align:center;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.18em;color:var(--text4);cursor:pointer;border-bottom:1.5px solid transparent;position:relative;}
+.tab.active{color:var(--gold2);border-bottom-color:var(--gold2);}
+.tab .badge{position:absolute;top:6px;right:6px;background:var(--red);color:#fff;font-size:7px;padding:1px 4px;border-radius:999px;}
+.panel{flex:1;overflow-y:auto;padding:14px;}
+.panel::-webkit-scrollbar{display:none;}
+.p-sec-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.24em;color:var(--text4);margin:0 0 8px;display:flex;justify-content:space-between;}
+.punch{background:var(--bg2);border:.5px solid var(--bg4);border-radius:10px;padding:10px 12px;margin-bottom:6px;display:flex;gap:8px;align-items:flex-start;}
+.punch.red{border-left:2px solid var(--red);}
+.punch.amber{border-left:2px solid var(--amber);}
+.punch.purple{border-left:2px solid var(--purple);}
+.punch-prio{font-family:'Syne',sans-serif;font-size:11px;font-weight:600;color:var(--gold);min-width:16px;}
+.punch-body{flex:1;min-width:0;}
+.punch-title{font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text);line-height:1.3;}
+.punch-meta{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.1em;color:var(--text2);margin-top:3px;}
+.punch-meta .p{color:var(--gold2);}
+.punch-meta .d{color:var(--red);}
+.punch-meta .a{color:var(--amber);}
+.punch-check{width:16px;height:16px;border-radius:50%;border:.5px solid var(--text3);flex-shrink:0;margin-top:1px;}
+.trip-card{background:var(--bg2);border:.5px solid var(--bg4);border-radius:10px;padding:10px 12px;margin-top:6px;}
+.trip-top{display:flex;justify-content:space-between;align-items:baseline;}
+.trip-name{font-family:'Syne',sans-serif;font-size:13px;color:var(--text);}
+.trip-days{font-family:'Syne',sans-serif;font-size:20px;color:var(--blue);line-height:1;}
+.trip-d{font-family:'DM Mono',monospace;font-size:8px;color:var(--text2);letter-spacing:.1em;margin-top:4px;}
+</style>
+</head>
+<body>
+
+<div style="display:flex;flex-direction:column;height:100vh;">
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="tb-left">
+    <div class="vera-logo">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+      VERA
+    </div>
+    <!-- Reloj con segundos — comunica que el sistema está vivo -->
+    <div class="tb-clock" id="clock">MIÉ · 27 MAY · 07:42:18</div>
+  </div>
+  <div class="tb-center">
+    <div class="counter"><span class="dot red"></span>2 URGENTES</div>
+    <div class="counter"><span class="dot amber"></span>1 STALE</div>
+    <div class="counter"><span class="dot green"></span>4 INBOX</div>
+  </div>
+  <div class="tb-right">
+    <div class="status-pill"><span class="dot"></span>SISTEMA ACTIVO</div>
+    <button class="oye-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+      OYE VERA
+    </button>
+  </div>
+</div>
+
+<div class="layout">
+
+<!-- NAV IZQUIERDA -->
+<nav class="nav" id="nav">
+  <div class="nav-toggle" onclick="document.getElementById('nav').classList.toggle('collapsed')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+  </div>
+  <!-- COMMAND activo -->
+  <div class="nav-item active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+    <span class="nav-lbl">COMMAND</span>
+  </div>
+  <div class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <span class="nav-lbl">TAREAS</span>
+  </div>
+  <div class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span class="nav-lbl">INBOX</span>
+    <span class="nav-badge">4</span>
+  </div>
+  <div class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span class="nav-lbl">VIAJES</span>
+  </div>
+  <div class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+    <span class="nav-lbl">PROPIEDADES</span>
+  </div>
+  <div class="nav-divider"></div>
+  <div class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    <span class="nav-lbl">FINANZAS</span>
+  </div>
+  <div class="nav-bottom">
+    <div class="nav-divider"></div>
+    <div class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="nav-lbl">AJUSTES</span>
+    </div>
+  </div>
+</nav>
+
+<!-- CENTRO: ORBITAL -->
+<div class="center">
+  <div class="center-hdr">
+    <div class="title">Command <em>Centre</em></div>
+    <div class="sub">6 AGENTES · 2 ACTIVOS · SYNC 07:30</div>
+  </div>
+  <div class="orbital-wrap">
+    <div class="orbital">
+      <div class="ring r1"></div>
+      <div class="ring r2"></div>
+      <div class="ring r3"></div>
+      <div class="ring r4"></div>
+      <!-- Líneas de conexión: centro(220,220) → cada nodo -->
+      <!-- VOICE activo: pulsa -->
+      <div class="conn active" style="width:181px;top:220px;left:220px;transform:rotate(-90deg)"></div>
+      <!-- PRIO activo -->
+      <div class="conn active" style="width:187px;top:220px;left:220px;transform:rotate(-40deg)"></div>
+      <!-- Resto: idle, casi invisibles -->
+      <div class="conn" style="width:185px;top:220px;left:220px;transform:rotate(35deg)"></div>
+      <div class="conn" style="width:172px;top:220px;left:220px;transform:rotate(90deg)"></div>
+      <div class="conn" style="width:200px;top:220px;left:220px;transform:rotate(148deg)"></div>
+      <div class="conn" style="width:195px;top:220px;left:220px;transform:rotate(-128deg)"></div>
+      <!-- Núcleo -->
+      <div class="core">
+        <div class="core-name">VERA</div>
+        <div class="core-st">● ACTIVA</div>
+      </div>
+      <!-- 6 Nodos -->
+      <!-- VOICE 12h — running -->
+      <div class="agent" style="top:40px;left:220px">
+        <div class="agent-node running">
+          <div class="status-dot gold"></div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+        </div>
+        <div class="agent-lbl above">VOICE</div>
+      </div>
+      <!-- PRIO 2h — active -->
+      <div class="agent" style="top:72px;left:372px">
+        <div class="agent-node active-node">
+          <div class="status-dot green"></div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        </div>
+        <div class="agent-lbl above">PRIO</div>
+      </div>
+      <!-- ALERT 5h — idle -->
+      <div class="agent" style="top:336px;left:380px">
+        <div class="agent-node idle">
+          <div class="status-dot gray"></div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <div class="agent-lbl below">ALERT</div>
+      </div>
+      <!-- SOLUTION 6h — idle -->
+      <div class="agent" style="top:392px;left:220px">
+        <div class="agent-node idle">
+          <div class="status-dot gray"></div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </div>
+        <div class="agent-lbl below">SOLUTION</div>
+      </div>
+      <!-- EXECUTOR 8h — idle -->
+      <div class="agent" style="top:328px;left:58px">
+        <div class="agent-node idle">
+          <div class="status-dot gray"></div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </div>
+        <div class="agent-lbl below">EXECUTOR</div>
+      </div>
+      <!-- SEARCH 10h — idle -->
+      <div class="agent" style="top:96px;left:68px">
+        <div class="agent-node idle">
+          <div class="status-dot gray"></div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <div class="agent-lbl above">SEARCH</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL DERECHO -->
+<div class="right">
+  <div class="tabs">
+    <div class="tab active">PUNCH LIST</div>
+    <div class="tab">INBOX<span class="badge">4</span></div>
+    <div class="tab">ALERTAS</div>
+  </div>
+  <div class="panel">
+    <div class="p-sec-lbl"><span>HOY · 5 TAREAS</span><span>VER TODAS →</span></div>
+    <div class="punch red"><div class="punch-prio">9</div><div class="punch-body"><div class="punch-title">Reservar tren Oslo→Flåm</div><div class="punch-meta"><span class="p">ESCANDINAVIA</span> · <span class="d">VENCE 19 D</span></div></div><div class="punch-check"></div></div>
+    <div class="punch red"><div class="punch-prio">8</div><div class="punch-body"><div class="punch-title">Coche de alquiler en Sogndal</div><div class="punch-meta"><span class="p">ESCANDINAVIA</span> · <span class="d">VENCE 14 D</span></div></div><div class="punch-check"></div></div>
+    <div class="punch amber"><div class="punch-prio">7</div><div class="punch-body"><div class="punch-title">IAfont — definir slot</div><div class="punch-meta"><span class="a">11 D SIN MOVER</span></div></div><div class="punch-check"></div></div>
+    <div class="punch"><div class="punch-prio" style="color:#5f5e5a">6</div><div class="punch-body"><div class="punch-title">Barra · Plastonda · Sarapita</div><div class="punch-meta"><span class="p">SARAPITA</span> · COMPRA</div></div><div class="punch-check"></div></div>
+    <div class="punch purple"><div class="punch-prio" style="color:#9b7fe8">✦</div><div class="punch-body"><div class="punch-title">Revisar duplicados alojamiento</div><div class="punch-meta" style="color:#9b7fe8">VERA SUGIERE</div></div><div class="punch-check"></div></div>
+    <div class="p-sec-lbl" style="margin-top:16px"><span>PRÓXIMO VIAJE</span></div>
+    <div class="trip-card">
+      <div class="trip-top">
+        <div class="trip-name">Madrid · Bruno Mars</div>
+        <div class="trip-days">15<span style="font-family:'DM Mono',monospace;font-size:9px;color:#7d7c87;margin-left:2px">D</span></div>
+      </div>
+      <div class="trip-d">11–12 JUL · PAREJA · 1 PENDIENTE</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /layout -->
+
+<!-- BOTTOM BAR -->
+<div class="bottom">
+  <div class="agent-pill on"><span class="dot" style="background:#c4a86a;animation:blink 1.5s ease-in-out infinite"></span>VOICE — ESCUCHANDO</div>
+  <div class="agent-pill on"><span class="dot" style="background:#4ecb8d"></span>PRIO — SYNC 07:30</div>
+  <div class="agent-pill"><span class="dot" style="background:#3e3d48"></span>ALERT — IDLE</div>
+  <div class="agent-pill"><span class="dot" style="background:#3e3d48"></span>SEARCH — IDLE</div>
+  <div class="agent-pill"><span class="dot" style="background:#3e3d48"></span>EXECUTOR — IDLE</div>
+  <div class="agent-pill"><span class="dot" style="background:#3e3d48"></span>SOLUTION — IDLE</div>
+  <div class="bottom-info">VERA v0.2 · TURSO SYNC OK · VERCEL</div>
+</div>
+
+</div><!-- /flex col -->
+
+<script>
+// Reloj en tiempo real con segundos
+function tick(){
+  const d=new Date();
+  const days=['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+  const months=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+  const pad=n=>String(n).padStart(2,'0');
+  document.getElementById('clock').textContent=
+    `${days[d.getDay()]} · ${d.getDate()} ${months[d.getMonth()]} · ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+tick();setInterval(tick,1000);
+</script>
+</body>
+</html>

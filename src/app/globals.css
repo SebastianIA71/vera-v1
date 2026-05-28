@@ -1,26 +1,63 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg:     #07080a;
+  --bg2:    #0d0f12;
+  --bg3:    #131619;
+  --bg4:    #1a1d22;
+  --text:   #eceae2;
+  --text2:  #7d7c87;
+  --text3:  #3e3d48;
+  --text4:  #5f5e5a;
+  --gold:   #e8d5a3;
+  --gold2:  #c4a86a;
+  --green:  #4ecb8d;
+  --red:    #e05c5c;
+  --amber:  #e8a020;
+  --blue:   #5ba8e8;
+  --purple: #9b7fe8;
+  --cyan:   #3ecfcf;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-dm-sans), 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Vera sparkle SVG path helper */
+.vera-star path {
+  fill: currentColor;
+}
+
+/* Anchor word in quotes — gold italic */
+em.anchor {
+  font-style: italic;
+  color: var(--gold);
+}
+
+/* PIN shake animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-6px); }
+  40%       { transform: translateX(6px); }
+  60%       { transform: translateX(-4px); }
+  80%       { transform: translateX(4px); }
+}
+
+.shake {
+  animation: shake 0.35s ease;
+}
+
+/* Loading dots */
+.loading-dots::after {
+  content: '···';
+  font-family: var(--font-dm-mono), 'DM Mono', monospace;
+  color: var(--gold2);
 }

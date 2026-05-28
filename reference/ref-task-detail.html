@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<!--
+  VERA — Referencia visual: Vista de Tarea Individual (Móvil)
+  ===========================================================
+  Implementar en:
+    src/app/(app)/tasks/[id]/page.tsx
+    src/components/tasks/TaskDetail.tsx
+    src/components/tasks/TaskHistory.tsx
+
+  APERTURA: pantalla completa — reemplaza la vista actual (no sheet, no modal)
+  CIERRE: botón ← ATRÁS en el header
+
+  DOS ESTADOS:
+    Activo    — tarea en curso, FAB "MARCAR COMO HECHA" verde al pie
+    Completado — ribbon verde arriba, título tachado, FAB desactivado
+
+  CAMPOS MOSTRADOS (scroll):
+    1. Prio (Syne 28px gold) + Título (Syne 20px)
+    2. Meta chips: propiedad · estado · fecha vencimiento (tocables para editar)
+    3. Caja Vera (si hay sugerencia relevante) — púrpura, opcional
+    4. Detalle — DM Sans 13px color atenuado #c8c6be
+    5. Notas — textarea editable, borde gold al enfocar
+    6. Historial — timeline vertical con dots de color
+
+  HEADER:
+    - ← ATRÁS (DM Mono, volver a la pantalla anterior)
+    - Editar (lápiz) + Voz (micrófono) — iconos 30×30px bordes sutiles
+
+  FAB "MARCAR COMO HECHA":
+    - Posición: fixed dentro del scroll, bottom 28px, ancho completo
+    - Estado activo: borde verde, texto verde
+    - Estado completado: borde gris, texto gris, disabled
+    - Al marcar: ribbon aparece, título se tacha, chips actualizan
+
+  HISTORIAL — DOTS DE COLOR:
+    - Gold (#c4a86a)   → PrioAgent / acción del sistema
+    - Púrpura (#9b7fe8) → sugerencia o acción de Vera
+    - Verde (#4ecb8d)  → marcada como hecha
+    - Gris (#1a1d22)   → creación o evento neutro
+
+  ESTADO COMPLETADO — CAMBIOS VISUALES:
+    - Ribbon verde (3px) en el borde superior de la pantalla
+    - Número de prio en gris (#3e3d48)
+    - Título tachado, color #5f5e5a
+    - Chip de estado → "HECHA · fecha" en verde
+    - Primera entrada del historial → "Marcada como hecha" en verde
+    - FAB → "COMPLETADA ✓", borde y texto gris, disabled
+
+  NOTAS DE IMPLEMENTACIÓN:
+    - Textarea de notas: POST /api/tasks/:id con debounce 1s (auto-save)
+    - Chips meta: al tocar → popover/dropdown inline con opciones
+    - Historial: cargado desde campo agentData de la tarea (JSON array de eventos)
+    - Botón voz: abre CaptureSheet en modo "nota para tarea" — transcript se añade a notas
+    - Marcar hecha: PUT /api/tasks/:id { status: 'done' } → recarga el historial
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VERA — Tarea Individual [referencia]</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080a;--bg2:#0d0f12;--bg3:#131619;--bg4:#1a1d22;--text:#eceae2;--text2:#7d7c87;--text3:#3e3d48;--text4:#5f5e5a;--gold:#e8d5a3;--gold2:#c4a86a;--green:#4ecb8d;--red:#e05c5c;--amber:#e8a020;--purple:#9b7fe8;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#111;display:flex;gap:24px;justify-content:center;align-items:flex-start;padding:40px 20px;min-height:100vh;font-family:'DM Sans',sans-serif;flex-wrap:wrap;}
+.phone{width:340px;min-height:736px;background:var(--bg);border-radius:40px;border:.5px solid var(--bg4);overflow:hidden;position:relative;display:flex;flex-direction:column;color:var(--text);}
+.notch{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:90px;height:26px;background:#000;border-radius:13px;z-index:10;}
+
+/* Ribbon verde de estado completado — 3px en borde superior */
+.done-ribbon{position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--green),#3ecfcf);z-index:20;}
+
+.screen{position:absolute;inset:0;overflow:hidden;display:flex;flex-direction:column;}
+
+/* Header fijo */
+.task-hdr{padding:46px 22px 12px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-bottom:.5px solid var(--bg4);}
+.back-btn{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:var(--text2);background:transparent;border:none;cursor:pointer;}
+.back-btn svg{width:14px;height:14px;}
+.hdr-actions{display:flex;gap:8px;}
+/* Botones de acción en el header: 30×30px con borde sutil */
+.hdr-btn{width:30px;height:30px;border-radius:8px;background:transparent;border:.5px solid var(--bg4);display:flex;align-items:center;justify-content:center;color:var(--text2);cursor:pointer;}
+.hdr-btn svg{width:14px;height:14px;}
+
+/* Área de scroll */
+.task-scroll{flex:1;overflow-y:auto;padding:18px 22px 100px;}
+.task-scroll::-webkit-scrollbar{display:none;}
+
+/* Título + prio */
+.prio-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px;}
+/* Prio: Syne 28px gold */
+.prio-num{font-family:'Syne',sans-serif;font-weight:600;font-size:28px;color:var(--gold);line-height:1.1;min-width:32px;}
+.prio-num.done{color:var(--text3);}
+/* Título: Syne 20px */
+.task-title{font-family:'Syne',sans-serif;font-weight:400;font-size:20px;line-height:1.25;color:var(--text);letter-spacing:-.01em;}
+.task-title.done{color:var(--text4);text-decoration:line-through;text-decoration-color:var(--text3);}
+
+/* Meta chips: tocables para editar inline */
+.meta-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px;}
+.meta-chip{display:inline-flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.12em;padding:5px 10px;border-radius:999px;border:.5px solid var(--bg4);color:var(--gold2);cursor:pointer;}
+.meta-chip .cdot{width:6px;height:6px;border-radius:50%;}
+/* Colores de chip por tipo */
+.meta-chip.prop .cdot{background:var(--purple);}
+.meta-chip.status .cdot{background:var(--green);}
+.meta-chip.status{color:var(--green);border-color:#1a3328;}
+.meta-chip.status.done-st .cdot{background:var(--text3);}
+.meta-chip.status.done-st{color:var(--text4);border-color:var(--bg4);}
+.meta-chip.done-date .cdot{background:var(--green);}
+.meta-chip.done-date{color:var(--green);border-color:#1a3328;}
+.meta-chip.due .cdot{background:var(--red);}
+.meta-chip.due{color:var(--red);border-color:#2a1414;}
+
+/* Separador */
+.divider{height:.5px;background:var(--bg4);margin:14px 0;}
+
+/* Etiqueta de sección */
+.sec-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.24em;color:var(--text4);margin-bottom:8px;}
+
+/* Caja Vera — solo aparece si hay sugerencia relevante */
+.vera-box{background:transparent;border:.5px solid #2d2640;border-radius:12px;padding:12px 13px;margin-bottom:14px;position:relative;overflow:hidden;}
+.vera-box::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(155,127,232,.05) 0%,transparent 60%);pointer-events:none;}
+.vera-box-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.22em;color:var(--purple);margin-bottom:5px;}
+.vera-box-text{font-family:'DM Sans',sans-serif;font-size:12px;color:#c8c6be;line-height:1.45;}
+.vera-box-text em{color:var(--gold);font-style:italic;}
+
+/* Texto de detalle: DM Sans, color atenuado */
+.detail-text{font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6;color:#c8c6be;margin-bottom:4px;}
+
+/* Notas: textarea auto-guardado con debounce */
+.notes-area{width:100%;background:transparent;border:.5px solid var(--bg4);border-radius:10px;padding:10px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6;resize:none;min-height:72px;outline:none;transition:border-color .2s;}
+.notes-area::placeholder{color:var(--text3);}
+.notes-area:focus{border-color:var(--gold2);}
+
+/* Historial — timeline vertical */
+.hist-item{display:flex;gap:10px;margin-bottom:12px;align-items:flex-start;}
+.hist-dot-col{display:flex;flex-direction:column;align-items:center;flex-shrink:0;padding-top:3px;}
+.hist-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+/* Colores de dot */
+.hist-dot.gold{background:var(--gold2);}
+.hist-dot.purple{background:var(--purple);}
+.hist-dot.green{background:var(--green);}
+.hist-dot.gray{background:var(--bg4);}
+/* Línea vertical conectora entre dots */
+.hist-line{width:.5px;flex:1;background:var(--bg4);margin-top:4px;min-height:14px;}
+.hist-body{flex:1;padding-bottom:4px;}
+.hist-text{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text2);line-height:1.4;}
+.hist-text em{font-style:normal;color:#c8c6be;}
+.hist-text.completed{color:var(--green);}
+.hist-time{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.12em;color:var(--text3);margin-top:3px;}
+
+/* FAB HECHO — fijo al pie, ancho completo */
+.fab-done{position:absolute;bottom:28px;left:22px;right:22px;padding:15px;border-radius:14px;background:transparent;border:.5px solid var(--green);color:var(--green);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.22em;cursor:pointer;text-align:center;z-index:10;}
+/* Estado completado: gris, disabled */
+.fab-done.disabled{border-color:var(--text3);color:var(--text3);cursor:default;}
+
+.demo-label{text-align:center;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:#444;margin-top:10px;text-transform:uppercase;}
+</style>
+</head>
+<body>
+
+<!-- ESTADO ACTIVO -->
+<div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+    <div class="task-hdr">
+      <button class="back-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+        </svg>
+        ATRÁS
+      </button>
+      <div class="hdr-actions">
+        <div class="hdr-btn" title="Editar tarea">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </div>
+        <!-- Botón voz: abre CaptureSheet en modo "nota para tarea" -->
+        <div class="hdr-btn" title="Añadir nota por voz">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+               stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="3" width="6" height="13" rx="3"/>
+            <path d="M5 11a7 7 0 0 0 14 0"/>
+            <line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="8" y1="22" x2="16" y2="22"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="task-scroll">
+      <div class="prio-row">
+        <div class="prio-num">7</div>
+        <div class="task-title">IAfont — definir slot y lanzar</div>
+      </div>
+
+      <div class="meta-row">
+        <span class="meta-chip prop"><span class="cdot"></span>CREATIVO</span>
+        <span class="meta-chip status"><span class="cdot"></span>ACTIVA</span>
+        <span class="meta-chip due"><span class="cdot"></span>VENCE 33 D</span>
+      </div>
+
+      <!-- Caja Vera: solo si hay algo relevante -->
+      <div class="vera-box">
+        <div class="vera-box-lbl">✦ VERA</div>
+        <div class="vera-box-text">
+          Llevas <em>11 días sin moverla</em>. Si no defines el slot esta semana, junio se come solo.
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="sec-lbl">DETALLE</div>
+      <div class="detail-text">
+        Substack sobre IA — casi listo técnicamente. El bloqueo no es técnico, es de decisión y energía de lanzamiento. Deadline autoimpuesto: junio 2026.
+      </div>
+
+      <div class="divider"></div>
+      <div class="sec-lbl">NOTAS</div>
+      <!-- Auto-guardado con debounce 1s -->
+      <textarea class="notes-area" placeholder="Añade una nota…"></textarea>
+
+      <div class="divider"></div>
+      <div class="sec-lbl">HISTORIAL</div>
+
+      <div class="hist-item">
+        <div class="hist-dot-col">
+          <div class="hist-dot purple"></div>
+          <div class="hist-line"></div>
+        </div>
+        <div class="hist-body">
+          <div class="hist-text">Vera sugirió bloquear <em>jueves tarde</em> para el slot</div>
+          <div class="hist-time">HOY · 07:32</div>
+        </div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-dot-col">
+          <div class="hist-dot gold"></div>
+          <div class="hist-line"></div>
+        </div>
+        <div class="hist-body">
+          <div class="hist-text">Prio subida a <em>7</em> por PrioAgent — deadline en 33 días</div>
+          <div class="hist-time">16 MAY · 06:31</div>
+        </div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-dot-col">
+          <div class="hist-dot gray"></div>
+        </div>
+        <div class="hist-body">
+          <div class="hist-text">Tarea creada por voz</div>
+          <div class="hist-time">12 MAR · 09:14</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="fab-done">MARCAR COMO HECHA ✓</button>
+  </div>
+</div>
+<div class="demo-label">Estado activo</div>
+</div>
+
+<!-- ESTADO COMPLETADO -->
+<div>
+<div class="phone">
+  <div class="notch"></div>
+  <!-- Ribbon verde: señal visual inequívoca de completado -->
+  <div class="done-ribbon"></div>
+  <div class="screen">
+    <div class="task-hdr">
+      <button class="back-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+        </svg>
+        ATRÁS
+      </button>
+      <div class="hdr-actions">
+        <div class="hdr-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </div>
+        <div class="hdr-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+               stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="3" width="6" height="13" rx="3"/>
+            <path d="M5 11a7 7 0 0 0 14 0"/>
+            <line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="8" y1="22" x2="16" y2="22"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="task-scroll">
+      <!-- Prio en gris, título tachado -->
+      <div class="prio-row">
+        <div class="prio-num done">7</div>
+        <div class="task-title done">IAfont — definir slot y lanzar</div>
+      </div>
+
+      <!-- Chips actualizados: estado HECHA + fecha -->
+      <div class="meta-row">
+        <span class="meta-chip prop" style="color:var(--text4);border-color:var(--bg4);">
+          <span class="cdot" style="background:var(--text3);"></span>CREATIVO
+        </span>
+        <span class="meta-chip status done-st"><span class="cdot"></span>HECHA</span>
+        <span class="meta-chip done-date"><span class="cdot"></span>HOY · 14:32</span>
+      </div>
+
+      <div class="divider"></div>
+      <div class="sec-lbl">DETALLE</div>
+      <div class="detail-text" style="color:var(--text4);">
+        Substack sobre IA — casi listo técnicamente. El bloqueo no es técnico, es de decisión y energía de lanzamiento.
+      </div>
+
+      <div class="divider"></div>
+      <div class="sec-lbl">NOTAS</div>
+      <div class="detail-text">
+        Slot bloqueado: jueves 4 jun tarde. Primer post programado para el 10.
+      </div>
+
+      <div class="divider"></div>
+      <div class="sec-lbl">HISTORIAL</div>
+
+      <!-- Primera entrada: marcada como hecha — en verde -->
+      <div class="hist-item">
+        <div class="hist-dot-col">
+          <div class="hist-dot green"></div>
+          <div class="hist-line"></div>
+        </div>
+        <div class="hist-body">
+          <div class="hist-text completed">Marcada como <em>hecha</em></div>
+          <div class="hist-time">HOY · 14:32</div>
+        </div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-dot-col">
+          <div class="hist-dot purple"></div>
+          <div class="hist-line"></div>
+        </div>
+        <div class="hist-body">
+          <div class="hist-text">Vera sugirió bloquear <em>jueves tarde</em> para el slot</div>
+          <div class="hist-time">HOY · 07:32</div>
+        </div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-dot-col">
+          <div class="hist-dot gold"></div>
+          <div class="hist-line"></div>
+        </div>
+        <div class="hist-body">
+          <div class="hist-text">Prio subida a <em>7</em> por PrioAgent</div>
+          <div class="hist-time">16 MAY · 06:31</div>
+        </div>
+      </div>
+
+      <div class="hist-item">
+        <div class="hist-dot-col">
+          <div class="hist-dot gray"></div>
+        </div>
+        <div class="hist-body">
+          <div class="hist-text">Tarea creada por voz</div>
+          <div class="hist-time">12 MAR · 09:14</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAB desactivado -->
+    <button class="fab-done disabled" disabled>COMPLETADA ✓</button>
+  </div>
+</div>
+<div class="demo-label">Estado completado</div>
+</div>
+
+</body>
+</html>

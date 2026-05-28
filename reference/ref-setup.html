@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<!--
+  VERA — Referencia visual: Setup / Primer Arranque
+  ==================================================
+  Implementar en: src/app/setup/page.tsx
+  Ruta pública — fuera del grupo (app), sin auth check.
+
+  CUÁNDO SE MUESTRA:
+    Si tabla `auth` está vacía → redirect a /setup desde middleware.
+    Se ve UNA SOLA VEZ en la vida del sistema.
+
+  TRES PASOS:
+    1. Elegir PIN (6 dígitos)
+    2. Confirmar PIN (repetir)
+    3. Listo → redirect a /morning
+
+  LÓGICA:
+    - Si PINs no coinciden: dots en rojo + animación shake + vuelve al paso 1
+    - Al confirmar: POST /api/auth/setup → crea hash+salt → deriva clave AES
+    - Redirect final: /morning (ritual matutino, primer día)
+
+  INDICADOR DE PROGRESO:
+    3 segmentos horizontales arriba:
+      active: linear-gradient gold
+      done: color gold2 sólido
+      pending: color bg4
+
+  NOTAS DE IMPLEMENTACIÓN:
+    - No usar <form> — usar onClick handlers
+    - El PIN nunca viaja al servidor en claro
+    - Cliente: bcrypt(pin + salt) para verificar, PBKDF2 para clave AES
+    - Hint "NO SE GUARDA EN NINGÚN SERVIDOR" — refuerza el modelo de privacidad
+    - Pantalla simple sin florituras — se ve una sola vez
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VERA — Setup [referencia]</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080a;--bg2:#0d0f12;--bg3:#131619;--bg4:#1a1d22;--text:#eceae2;--text2:#7d7c87;--text3:#3e3d48;--text4:#5f5e5a;--gold:#e8d5a3;--gold2:#c4a86a;--green:#4ecb8d;--red:#e05c5c;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#111;display:flex;gap:32px;justify-content:center;align-items:flex-start;padding:40px 20px;min-height:100vh;font-family:'DM Sans',sans-serif;flex-wrap:wrap;}
+.phone{width:340px;min-height:736px;background:var(--bg);border-radius:40px;border:.5px solid var(--bg4);overflow:hidden;position:relative;display:flex;flex-direction:column;color:var(--text);}
+.notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:90px;height:24px;background:#000;border-radius:12px;z-index:10;}
+.screen{flex:1;padding:42px 26px 28px;display:flex;flex-direction:column;}
+
+/* Barra de progreso: 3 segmentos */
+.step-line{display:flex;gap:6px;margin-bottom:28px;}
+.seg{flex:1;height:2px;border-radius:1px;background:var(--bg4);}
+.seg.active{background:linear-gradient(90deg,var(--gold2),var(--gold));}
+.seg.done{background:var(--gold2);}
+
+/* Logo centrado */
+.vera-mark{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:24px;}
+.vera-mark svg{width:14px;height:14px;}
+.vera-mark span{font-family:'Syne',sans-serif;font-weight:600;font-size:13px;letter-spacing:.3em;color:var(--gold2);}
+
+/* Título */
+.h1{font-family:'Syne',sans-serif;font-weight:400;font-size:22px;line-height:1.2;letter-spacing:-.01em;color:var(--text);margin-bottom:5px;}
+.h1 em{font-style:italic;color:var(--gold);}
+.sub{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:var(--text2);margin-bottom:20px;}
+
+/* Dots de progreso PIN: 6 círculos */
+.pin-dots{display:flex;justify-content:center;gap:14px;margin:16px 0 20px;}
+.pin-dot{width:13px;height:13px;border-radius:50%;border:.5px solid var(--text3);background:transparent;}
+.pin-dot.filled{background:var(--gold);border-color:var(--gold);}
+/* Estado error: dots rojos con animación shake */
+.pin-dot.error{background:var(--red);border-color:var(--red);}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+.pin-dots.shaking .pin-dot{animation:shake .3s ease;}
+
+/* Teclado PIN */
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:auto;}
+.key{aspect-ratio:1.6/1;border-radius:12px;background:var(--bg2);border:.5px solid var(--bg3);color:var(--text);font-family:'Syne',sans-serif;font-weight:500;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .1s;}
+.key:active{background:var(--bg3);}
+.key.empty{background:transparent;border:none;pointer-events:none;}
+.key.action{background:transparent;border:none;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--text2);}
+
+/* Hint inferior */
+.hint{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.18em;color:var(--text3);text-align:center;margin-top:12px;}
+
+/* Estado 3: confirmación */
+.confirm-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+.check-ring{width:72px;height:72px;position:relative;margin-bottom:4px;}
+.check-ring svg.outer{transform:rotate(-90deg);}
+.check-ring .inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.check-ring .inner svg{width:22px;height:22px;color:var(--green);}
+.confirm-title{font-family:'Syne',sans-serif;font-weight:400;font-size:20px;color:var(--text);text-align:center;line-height:1.3;}
+.confirm-title em{font-style:italic;color:var(--gold);}
+.confirm-sub{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:var(--text2);text-align:center;}
+.cta-btn{width:100%;padding:14px;border-radius:14px;background:transparent;border:.5px solid var(--gold2);color:var(--gold);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.22em;cursor:pointer;margin-top:auto;}
+
+/* Labels demo */
+.demo-label{text-align:center;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:#444;margin-top:10px;text-transform:uppercase;}
+</style>
+</head>
+<body>
+
+<!-- PASO 1: ELEGIR PIN -->
+<div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+    <div class="step-line">
+      <div class="seg active"></div>
+      <div class="seg"></div>
+      <div class="seg"></div>
+    </div>
+    <div class="vera-mark">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+      <span>VERA</span>
+    </div>
+    <div class="h1">Elige tu<br><em>PIN.</em></div>
+    <div class="sub">6 DÍGITOS · SOLO TÚ LO SABRÁS</div>
+
+    <!-- 3 de 6 dígitos introducidos (ejemplo) -->
+    <div class="pin-dots">
+      <span class="pin-dot filled"></span>
+      <span class="pin-dot filled"></span>
+      <span class="pin-dot filled"></span>
+      <span class="pin-dot"></span>
+      <span class="pin-dot"></span>
+      <span class="pin-dot"></span>
+    </div>
+
+    <div class="pin-pad">
+      <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+      <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+      <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+      <div class="key empty"></div><div class="key">0</div>
+      <div class="key action">CLR</div>
+    </div>
+
+    <!-- Refuerza el modelo de privacidad — se ve una sola vez -->
+    <div class="hint">NO SE GUARDA EN NINGÚN SERVIDOR</div>
+  </div>
+</div>
+<div class="demo-label">Paso 1 · Elegir</div>
+</div>
+
+<!-- PASO 2: CONFIRMAR PIN -->
+<div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+    <div class="step-line">
+      <div class="seg done"></div>
+      <div class="seg active"></div>
+      <div class="seg"></div>
+    </div>
+    <div class="vera-mark">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+      <span>VERA</span>
+    </div>
+    <div class="h1">Confírmalo<br><em>otra vez.</em></div>
+    <div class="sub">REPITE EL MISMO PIN</div>
+
+    <!-- 2 de 6 introducidos -->
+    <div class="pin-dots">
+      <span class="pin-dot filled"></span>
+      <span class="pin-dot filled"></span>
+      <span class="pin-dot"></span>
+      <span class="pin-dot"></span>
+      <span class="pin-dot"></span>
+      <span class="pin-dot"></span>
+    </div>
+
+    <div class="pin-pad">
+      <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+      <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+      <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+      <div class="key empty"></div><div class="key">0</div>
+      <div class="key action">CLR</div>
+    </div>
+
+    <!-- Si PINs no coinciden: dots pasan a .error + animación shake + vuelve al paso 1 -->
+    <div class="hint">SI NO COINCIDE, VUELVES AL PASO 1</div>
+  </div>
+</div>
+<div class="demo-label">Paso 2 · Confirmar</div>
+</div>
+
+<!-- PASO 3: LISTO -->
+<div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="screen">
+    <div class="step-line">
+      <div class="seg done"></div>
+      <div class="seg done"></div>
+      <div class="seg done"></div>
+    </div>
+    <div class="vera-mark">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+      <span>VERA</span>
+    </div>
+
+    <div class="confirm-area">
+      <!-- Anillo verde completo con check — distinto del anillo gold de progreso -->
+      <div class="check-ring">
+        <svg class="outer" width="72" height="72" viewBox="0 0 72 72">
+          <circle cx="36" cy="36" r="30" fill="none" stroke="#1a1d22" stroke-width="2"/>
+          <circle cx="36" cy="36" r="30" fill="none" stroke="#4ecb8d" stroke-width="2"
+                  stroke-dasharray="188.4" stroke-dashoffset="0" stroke-linecap="round"/>
+        </svg>
+        <div class="inner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="confirm-title">Vera está<br><em>lista.</em></div>
+      <div class="confirm-sub">PIN GUARDADO · ACCESO ASEGURADO</div>
+    </div>
+
+    <!-- Redirige a /morning -->
+    <button class="cta-btn">EMPEZAR →</button>
+    <div class="hint">REDIRIGE AL RITUAL MATUTINO</div>
+  </div>
+</div>
+<div class="demo-label">Paso 3 · Listo</div>
+</div>
+
+</body>
+</html>

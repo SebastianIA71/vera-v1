@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<!--
+  VERA — Referencia visual: Ritual Matutino (5 pasos)
+  =====================================================
+  Implementar en: src/components/morning/MorningRitual.tsx
+  Acceso: apertura app 7:00–7:30. Si ya completado hoy → resumen directo.
+
+  NAVEGACIÓN:
+    - Deslizar horizontalmente + botón Siguiente (ambos)
+    - CSS scroll-snap horizontal O Swiper
+    - Cualquier paso saltable: "SALTAR →" arriba derecha (DM Mono gris oscuro)
+
+  PROGRESO:
+    - Línea gold en borde superior: width = (paso/5)*100%
+    - transition: width 0.4s ease
+    - Sin números ni puntos — solo la línea crece
+
+  CARGA:
+    - PrioAgent recalcula en background al montar el paso 1
+    - POST /api/agents/prio/run en useEffect del paso 1
+    - Sin splash, sin espera — datos frescos para cuando llegues al paso 3
+
+  PASOS:
+    1. Saludo + max 3 notificaciones (rojo/ámbar/púrpura)
+    2. Peso (botones ajuste rápido) + SNM toggles
+    3. Foco del día (3 urgentes PrioAgent + 2 sugeridas Vera)
+    4. Briefing Claude (Syne 13px #c8c6be) + sugerencia proactiva mini
+    5. Resumen: anillo gold completo + 4 stats + mensaje Vera + CTA
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>VERA — Ritual Matutino [referencia]</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080a;--bg2:#0d0f12;--bg3:#131619;--bg4:#1a1d22;--text:#eceae2;--text2:#7d7c87;--text3:#3e3d48;--text4:#5f5e5a;--gold:#e8d5a3;--gold2:#c4a86a;--green:#4ecb8d;--red:#e05c5c;--amber:#e8a020;--blue:#5ba8e8;--purple:#9b7fe8;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0a0a0a;display:flex;gap:16px;justify-content:center;align-items:flex-start;padding:32px 16px;min-height:100vh;font-family:'DM Sans',sans-serif;flex-wrap:wrap;}
+.phone{width:300px;min-height:640px;background:var(--bg);border-radius:36px;border:.5px solid var(--bg4);overflow:hidden;position:relative;display:flex;flex-direction:column;color:var(--text);}
+.notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:90px;height:24px;background:#000;border-radius:12px;z-index:10;}
+/* Línea de progreso: crece de izquierda a derecha */
+.prog-track{position:absolute;top:0;left:0;right:0;height:2px;background:var(--bg4);z-index:9;}
+.prog-bar{position:absolute;top:0;left:0;height:2px;background:linear-gradient(90deg,var(--gold2),var(--gold));z-index:10;}
+.screen{flex:1;padding:42px 18px 18px;display:flex;flex-direction:column;}
+.step-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.step-id{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.26em;color:var(--text4);}
+.skip{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.2em;color:var(--text3);cursor:pointer;}
+.h1{font-family:'Syne',sans-serif;font-weight:400;font-size:20px;line-height:1.2;letter-spacing:-.01em;color:var(--text);margin-bottom:4px;}
+.h1 em{font-style:italic;color:var(--gold);}
+.sub{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.16em;color:var(--text2);margin-bottom:16px;}
+/* Notif */
+.notif{background:var(--bg2);border:.5px solid var(--bg4);border-radius:11px;padding:10px 12px;margin-bottom:6px;display:flex;gap:8px;align-items:flex-start;}
+.notif.red{border-left:2px solid var(--red);}
+.notif.amber{border-left:2px solid var(--amber);}
+.notif.purple{border-left:2px solid var(--purple);}
+.n-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.n-dot.red{background:var(--red);}
+.n-dot.amber{background:var(--amber);}
+.n-dot.purple{background:var(--purple);}
+.n-title{font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text);line-height:1.3;}
+.n-meta{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.12em;color:var(--text2);margin-top:3px;}
+/* Peso */
+.w-btns{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:12px;}
+.wb{background:var(--bg2);border:.5px solid var(--bg4);border-radius:7px;padding:7px 2px;text-align:center;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.04em;color:var(--text);cursor:pointer;}
+.wb.active{background:rgba(196,168,106,.1);border-color:var(--gold2);color:var(--gold);}
+.voice-row{display:flex;align-items:center;gap:7px;background:var(--bg2);border:.5px solid var(--bg4);border-radius:8px;padding:9px 10px;margin-bottom:12px;}
+.voice-row svg{width:14px;height:14px;color:var(--text2);}
+.voice-row span{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.16em;color:var(--text4);}
+.w-big{font-family:'Syne',sans-serif;font-weight:500;font-size:44px;color:var(--text);line-height:1;letter-spacing:-.03em;}
+.w-unit{font-family:'DM Mono',monospace;font-size:10px;color:var(--text2);letter-spacing:.1em;display:inline;margin-left:6px;}
+.w-change{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--green);margin-left:10px;}
+.snm-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.22em;color:var(--text2);margin:12px 0 7px;}
+.snm-row{display:flex;gap:5px;}
+.snm{flex:1;background:var(--bg2);border:.5px solid var(--bg4);border-radius:9px;padding:9px 3px;text-align:center;font-size:14px;}
+.snm.on{background:rgba(78,203,141,.08);border-color:var(--green);}
+/* Focus */
+.fc{background:var(--bg2);border:.5px solid var(--bg4);border-radius:11px;padding:11px 12px;margin-bottom:6px;display:flex;gap:8px;align-items:flex-start;}
+.fc.vera{background:transparent;border:.5px solid #2d2640;}
+.fp{font-family:'Syne',sans-serif;font-weight:600;font-size:12px;color:var(--gold);min-width:16px;}
+.fb{flex:1;min-width:0;}
+.ft{font-family:'DM Sans',sans-serif;font-size:11px;line-height:1.3;color:var(--text);}
+.fm{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.1em;color:var(--text2);margin-top:3px;}
+.fm .p{color:var(--gold2);}
+.fm .d{color:var(--red);}
+.fm .s{color:var(--purple);}
+.fm .a{color:var(--amber);}
+.fch{width:17px;height:17px;border-radius:50%;border:.5px solid var(--text3);flex-shrink:0;margin-top:1px;}
+.vera-tag{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.18em;color:var(--purple);margin-bottom:3px;}
+.voice-add{display:flex;align-items:center;gap:7px;border:.5px dashed #2c2c2a;border-radius:9px;padding:8px 10px;margin-top:7px;}
+.voice-add svg{width:12px;height:12px;color:var(--text4);}
+.voice-add span{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.18em;color:var(--text3);}
+/* Briefing */
+.brief-box{background:var(--bg2);border:.5px solid var(--bg4);border-radius:11px;padding:13px;margin-bottom:10px;}
+.brief-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.26em;color:var(--text4);margin-bottom:8px;}
+/* Texto briefing: Syne 12px color atenuado #c8c6be — diferente del texto de UI */
+.brief-text{font-family:'Syne',sans-serif;font-weight:400;font-size:12px;line-height:1.6;color:#c8c6be;}
+.brief-text em{color:var(--gold);font-style:italic;}
+.p-mini{background:transparent;border:.5px solid #2d2640;border-radius:11px;padding:11px 12px;}
+.pm-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.22em;color:var(--purple);margin-bottom:5px;}
+.pm-text{font-family:'DM Sans',sans-serif;font-size:11px;line-height:1.35;color:var(--text);}
+.pm-text em{color:var(--gold);font-style:italic;}
+.pm-actions{display:flex;gap:5px;margin-top:9px;}
+.pm-actions button{flex:1;padding:7px 2px;border-radius:8px;border:.5px solid var(--bg4);background:transparent;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.12em;color:var(--text2);cursor:pointer;}
+.pm-actions .yes{border-color:var(--purple);color:var(--purple);}
+/* Summary */
+.sum-ring{width:68px;height:68px;margin:4px auto 14px;position:relative;}
+.sum-ring svg{transform:rotate(-90deg);}
+.sum-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.sum-mins{font-family:'Syne',sans-serif;font-weight:500;font-size:17px;color:var(--gold);line-height:1;}
+.sum-mlbl{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:.18em;color:var(--text2);}
+.sum-stats{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:12px;}
+.stat{background:var(--bg2);border:.5px solid var(--bg4);border-radius:9px;padding:9px;text-align:center;}
+.stat .v{font-family:'Syne',sans-serif;font-size:17px;color:var(--text);line-height:1;}
+.stat .k{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:.16em;color:var(--text2);margin-top:3px;}
+.sum-msg{background:transparent;border:.5px solid #2d2640;border-radius:9px;padding:11px;text-align:center;margin-bottom:11px;}
+.sum-msg p{font-family:'Syne',sans-serif;font-weight:400;font-size:12px;color:#c8c6be;line-height:1.45;}
+.sum-msg em{color:var(--gold);font-style:italic;}
+.cta{width:100%;padding:11px;border-radius:11px;background:transparent;border:.5px solid var(--gold2);color:var(--gold);font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;cursor:pointer;}
+.demo-lbl{text-align:center;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.2em;color:#333;margin-top:8px;text-transform:uppercase;}
+</style>
+</head>
+<body>
+
+<!-- PASO 1 -->
+<div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="prog-track"></div>
+  <div class="prog-bar" style="width:20%"></div>
+  <div class="screen">
+    <div class="step-meta"><span class="step-id">RITUAL · 1 DE 5</span><span class="skip">SALTAR →</span></div>
+    <div class="h1">Good morning,<br><em>Sebastián.</em></div>
+    <div class="sub">MIÉRCOLES · 7:14 · 3 AVISOS</div>
+    <div class="notif red"><span class="n-dot red"></span><div><div class="n-title">Coche Sogndal vence en 14 días</div><div class="n-meta">URGENTE · ESCANDINAVIA</div></div></div>
+    <div class="notif amber"><span class="n-dot amber"></span><div><div class="n-title">IAfont lleva 11 días sin movimiento</div><div class="n-meta">STALE · CREATIVO · 33 D</div></div></div>
+    <div class="notif purple"><span class="n-dot purple"></span><div><div class="n-title">Duplicados alojamiento Escandinavia</div><div class="n-meta">SUGERENCIA VERA</div></div></div>
+    <div style="margin-top:auto;text-align:center;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.2em;color:#3e3d48">DESLIZA →</div>
+  </div>
+</div>
+<div class="demo-lbl">1 · Saludo</div>
+</div>
+
+<!-- PASO 2 -->
+<div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="prog-track"></div>
+  <div class="prog-bar" style="width:40%"></div>
+  <div class="screen">
+    <div class="step-meta"><span class="step-id">RITUAL · 2 DE 5</span><span class="skip">SALTAR →</span></div>
+    <div class="h1">¿Cuánto pesas<br><em>hoy?</em></div>
+    <div class="sub">ÚLTIMO · 78.4 KG · AYER</div>
+    <div class="w-btns">
+      <div class="wb">−0.5</div><div class="wb">−0.2</div><div class="wb active">78.4</div><div class="wb">+0.2</div><div class="wb">+0.5</div>
+    </div>
+    <div class="voice-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+      <span>O DI UN NÚMERO</span>
+    </div>
+    <div><span class="w-big">78.4</span><span class="w-unit">KG</span><span class="w-change">= AYER</span></div>
+    <div class="snm-lbl">INTENCIONES DE HOY</div>
+    <div class="snm-row">
+      <div class="snm on">💧</div><div class="snm on">🚶</div><div class="snm">💪</div><div class="snm on">🧘</div><div class="snm">🍴</div>
+    </div>
+  </div>
+</div>
+<div class="demo-lbl">2 · Peso + SNM</div>
+</div>
+
+<!-- PASO 3 -->
+<div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="prog-track"></div>
+  <div class="prog-bar" style="width:60%"></div>
+  <div class="screen">
+    <div class="step-meta"><span class="step-id">RITUAL · 3 DE 5</span><span class="skip">SALTAR →</span></div>
+    <div class="h1">Foco de<br><em>hoy.</em></div>
+    <div class="sub">3 URGENTES · 2 SUGERIDAS</div>
+    <div class="fc"><div class="fp">9</div><div class="fb"><div class="ft">Reservar tren Oslo→Flåm</div><div class="fm"><span class="p">ESCANDINAVIA</span> · <span class="d">VENCE 19 D</span></div></div><div class="fch"></div></div>
+    <div class="fc"><div class="fp">8</div><div class="fb"><div class="ft">Coche de alquiler en Sogndal</div><div class="fm"><span class="p">ESCANDINAVIA</span> · <span class="d">VENCE 14 D</span></div></div><div class="fch"></div></div>
+    <div class="fc"><div class="fp">7</div><div class="fb"><div class="ft">IAfont — definir slot y lanzar</div><div class="fm"><span class="s">CREATIVO</span> · <span class="a">11 D SIN MOVER</span></div></div><div class="fch"></div></div>
+    <div class="fc vera"><div class="fp" style="color:#9b7fe8">✦</div><div class="fb"><div class="vera-tag">VERA SUGIERE</div><div class="ft">Revisar duplicados alojamiento</div><div class="fm"><span class="s">PUEDE EVITAR GASTO</span></div></div><div class="fch"></div></div>
+    <div class="voice-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg><span>AÑADIR POR VOZ</span></div>
+  </div>
+</div>
+<div class="demo-lbl">3 · Foco</div>
+</div>
+
+<!-- PASO 4 -->
+<div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="prog-track"></div>
+  <div class="prog-bar" style="width:80%"></div>
+  <div class="screen">
+    <div class="step-meta"><span class="step-id">RITUAL · 4 DE 5</span><span class="skip">SALTAR →</span></div>
+    <div class="h1">Vera<br><em>habla.</em></div>
+    <div class="brief-box">
+      <div class="brief-lbl">BRIEFING · MIÉ 27 MAY</div>
+      <!-- Texto Claude: Syne 12px color #c8c6be (diferente del texto UI) -->
+      <!-- Párrafo, nunca lista. Key en cursiva gold -->
+      <div class="brief-text">Tienes <em>dos pendientes críticos</em> de Escandinavia con deadline real — el coche de Sogndal es el más urgente. IAfont lleva 11 días parado: si no defines el slot <em>esta semana</em>, junio se come solo.</div>
+    </div>
+    <div class="p-mini">
+      <div class="pm-lbl">VERA SUGIERE</div>
+      <div class="pm-text">¿Bloqueamos <em>jueves tarde</em> para IAfont? Llevas sin slot definido dos semanas.</div>
+      <div class="pm-actions"><button class="yes">SÍ</button><button>MAÑANA</button><button>IGNORAR</button></div>
+    </div>
+  </div>
+</div>
+<div class="demo-lbl">4 · Briefing</div>
+</div>
+
+<!-- PASO 5 -->
+<div>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="prog-track"></div>
+  <div class="prog-bar" style="width:100%"></div>
+  <div class="screen">
+    <div class="step-meta"><span class="step-id">RITUAL · COMPLETADO</span></div>
+    <div style="height:8px"></div>
+    <!-- Anillo gold completo: 100% completado -->
+    <div class="sum-ring">
+      <svg width="68" height="68" viewBox="0 0 68 68">
+        <circle cx="34" cy="34" r="28" fill="none" stroke="#1a1d22" stroke-width="2"/>
+        <circle cx="34" cy="34" r="28" fill="none" stroke="#c4a86a" stroke-width="2" stroke-dasharray="175.9" stroke-dashoffset="0" stroke-linecap="round"/>
+      </svg>
+      <div class="sum-inner"><div class="sum-mins">4</div><div class="sum-mlbl">MIN</div></div>
+    </div>
+    <div class="h1" style="text-align:center;font-size:17px;margin-bottom:10px">Ritual<br><em>completado.</em></div>
+    <div class="sum-stats">
+      <div class="stat"><div class="v">78.4</div><div class="k">KG HOY</div></div>
+      <div class="stat"><div class="v">3</div><div class="k">FOCO DÍA</div></div>
+      <div class="stat"><div class="v" style="color:#4ecb8d">3/5</div><div class="k">SNM ACTIVO</div></div>
+      <div class="stat"><div class="v" style="color:#9b7fe8">1</div><div class="k">SUGERENCIA</div></div>
+    </div>
+    <!-- Mensaje final: específico y accionable -->
+    <div class="sum-msg"><p>Escandinavia en <em>49 días</em>. Mueve el coche de Sogndal hoy.</p></div>
+    <button class="cta">IR AL DASHBOARD →</button>
+  </div>
+</div>
+<div class="demo-lbl">5 · Resumen</div>
+</div>
+
+</body>
+</html>

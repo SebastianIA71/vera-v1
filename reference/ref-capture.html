@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<!--
+  VERA — Referencia visual: Captura Rápida
+  =========================================
+  Implementar en:
+    src/components/capture/CaptureSheet.tsx
+    src/components/capture/useVoice.ts
+
+  TRES ESTADOS EN SECUENCIA:
+    Estado 1: Reposo      — micrófono grande en espera
+    Estado 2: Grabando    — mic rojo, transcript en vivo
+    Estado 3: Confirmación — chips clasificación + countdown 2s
+
+  NOTAS DE IMPLEMENTACIÓN:
+    - Implementar como bottom sheet (position fixed, translateY)
+    - Gesto de cierre: swipe down con delta > 80px (touch-action: pan-y)
+    - Handle (36×4px gris) comunica el gesto — siempre visible
+    - Voz: window.SpeechRecognition || window.webkitSpeechRecognition
+    - Transcript en vivo: evento onresult del SpeechRecognition
+    - Al parar: POST /api/voice → Vera clasifica → mostrar estado 3
+    - Countdown 2s: setTimeout(2000, saveToInbox) — guarda por inacción
+    - Método TEXT: textarea + teclado (pendiente de diseñar)
+    - Método PHOTO: cámara nativa iOS + OCR (pendiente de diseñar)
+    - Autenticación: Face ID requerido antes de abrir la sheet
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VERA — Captura Rápida [referencia]</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07080a; --bg2: #0d0f12; --bg3: #131619; --bg4: #1a1d22;
+    --text: #eceae2; --text2: #7d7c87; --text3: #3e3d48; --text4: #5f5e5a;
+    --gold: #e8d5a3; --gold2: #c4a86a;
+    --green: #4ecb8d; --red: #e05c5c; --amber: #e8a020;
+    --blue: #5ba8e8; --purple: #9b7fe8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111;
+    font-family: 'DM Sans', sans-serif;
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px;
+    min-height: 100vh;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 340px;
+    min-height: 736px;
+    background: var(--bg);
+    border-radius: 40px;
+    border: 1px solid var(--bg4);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .notch {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 100px; height: 28px; background: #000; border-radius: 14px; z-index: 10;
+  }
+  /* Handle — siempre visible, indica gesto de cierre */
+  .handle {
+    width: 36px; height: 4px;
+    background: #2c2c2a;
+    border-radius: 2px;
+    margin: 12px auto 0;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 11;
+  }
+
+  .screen {
+    flex: 1;
+    padding: 16px 22px 24px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header: hora + VERA + SWIPE ↓ */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    margin-bottom: 0;
+  }
+  .clock { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text2); letter-spacing: .1em; }
+  .brand { display: flex; align-items: center; gap: 6px; font-family: 'Syne', sans-serif; font-weight: 600; font-size: 11px; letter-spacing: .3em; color: var(--gold2); }
+  .brand svg { width: 9px; height: 9px; }
+  .swipe-hint { font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: .2em; color: var(--text3); }
+
+  /* Label de estado */
+  .state-label-top {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .24em;
+    margin-top: 20px;
+    margin-bottom: 0;
+    text-align: center;
+  }
+
+  /* === ESTADO 1: REPOSO === */
+  /* Área central con micrófono como protagonista absoluto */
+  .mic-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+  }
+
+  /* Micrófono principal — 168px es el tamaño aprobado
+     Imposible de fallar con el pulgar sin mirar */
+  .mic-btn {
+    width: 168px;
+    height: 168px;
+    border-radius: 50%;
+    background: transparent;
+    border: 0.5px solid var(--gold2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  /* Anillo exterior 1 */
+  .mic-btn::before {
+    content: '';
+    position: absolute; inset: -12px;
+    border-radius: 50%;
+    border: 0.5px solid rgba(196, 168, 106, 0.22);
+  }
+  /* Anillo exterior 2 */
+  .mic-btn::after {
+    content: '';
+    position: absolute; inset: -26px;
+    border-radius: 50%;
+    border: 0.5px solid rgba(196, 168, 106, 0.10);
+  }
+  .mic-btn svg { width: 52px; height: 52px; color: var(--gold); }
+
+  /* Estado grabando: todo pasa a rojo */
+  .mic-btn.recording {
+    border-color: var(--red);
+  }
+  .mic-btn.recording::before { border-color: rgba(224, 92, 92, 0.30); animation: pulse-ring 1.4s ease-in-out infinite; }
+  .mic-btn.recording::after  { border-color: rgba(224, 92, 92, 0.15); animation: pulse-ring 1.4s ease-in-out infinite 0.3s; }
+  .mic-btn.recording svg { color: var(--red); }
+
+  @keyframes pulse-ring {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.06); opacity: 0.6; }
+  }
+
+  .mic-hint {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .24em;
+    color: var(--text2);
+    text-align: center;
+  }
+
+  /* Botones secundarios: TEXT y PHOTO
+     56×56px cuadrado redondeado — secundarios, no compiten con el mic */
+  .secondary-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+  }
+  .sec-btn {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    background: var(--bg2);
+    border: 0.5px solid var(--bg4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+  .sec-btn svg { width: 20px; height: 20px; color: var(--text2); }
+  .sec-btn span {
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    letter-spacing: .18em;
+    color: var(--text4);
+  }
+
+  /* === ESTADO 2: GRABANDO === */
+  .timer {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--red);
+    letter-spacing: .18em;
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  /* Transcript en vivo — aparece al empezar a grabar */
+  .transcript-area {
+    border-top: 0.5px solid var(--bg4);
+    padding: 16px 0 0;
+    margin-top: 20px;
+  }
+  .transcript-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: .24em;
+    color: var(--text4);
+    margin-bottom: 8px;
+  }
+  .transcript-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 1.4;
+    color: var(--text);
+  }
+  /* Cursor parpadeante gold — muestra que está transcribiendo */
+  .cursor {
+    display: inline-block;
+    width: 8px; height: 17px;
+    background: var(--gold2);
+    vertical-align: -3px;
+    margin-left: 2px;
+    animation: blink 1s steps(2) infinite;
+  }
+  @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+  /* Botón stop */
+  .stop-row { display: flex; justify-content: center; margin-top: 16px; }
+  .btn-stop {
+    background: transparent;
+    border: 0.5px solid var(--bg4);
+    border-radius: 999px;
+    padding: 10px 28px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .18em;
+    cursor: pointer;
+  }
+
+  /* === ESTADO 3: CONFIRMACIÓN === */
+
+  /* Review card — lo que Vera entendió */
+  .review-card {
+    background: var(--bg2);
+    border: 0.5px solid var(--bg4);
+    border-radius: 16px;
+    padding: 18px 16px;
+    margin-top: 18px;
+  }
+  .review-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: .24em;
+    color: var(--text4);
+    margin-bottom: 10px;
+  }
+  /* El texto es la tarea limpia — Vera elimina meta-instrucciones
+     ("añade en Willy's... prio 7" → "Revisar el generador") */
+  .review-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 400;
+    font-size: 15px;
+    line-height: 1.45;
+    color: var(--text);
+  }
+
+  /* Chips de clasificación */
+  .chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 0.5px solid var(--bg4);
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: .1em;
+    padding: 4px 9px;
+    border-radius: 999px;
+    border: 0.5px solid var(--bg4);
+    color: var(--gold2);
+    background: transparent;
+  }
+  .chip-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+  /* Colores de dot según categoría:
+     Propiedad/contexto → púrpura
+     Prioridad           → ámbar
+     Tipo de tarea       → azul
+     Editable/incierto   → gris, borde dashed */
+  .chip.prop  .chip-dot { background: var(--purple); }
+  .chip.prio  .chip-dot { background: var(--amber); }
+  .chip.type  .chip-dot { background: var(--blue); }
+  .chip.edit  { color: var(--text2); border-style: dashed; }
+
+  /* Countdown — guarda por inacción en 2 segundos
+     Si no se hace nada → saveToInbox()
+     Si se toca EDIT → abre pantalla de edición
+     Si se toca SAVE NOW → guarda inmediatamente */
+  .countdown-wrap {
+    text-align: center;
+    margin-top: 18px;
+  }
+  .countdown-ring {
+    width: 48px; height: 48px;
+    position: relative;
+    margin: 0 auto;
+  }
+  .countdown-ring svg { transform: rotate(-90deg); }
+  .countdown-num {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    color: var(--gold2);
+  }
+  .countdown-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: .24em;
+    color: var(--text4);
+    margin-top: 8px;
+  }
+
+  /* Acciones */
+  .confirm-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .confirm-actions button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    border: 0.5px solid var(--bg4);
+    background: transparent;
+    color: var(--text2);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .18em;
+    cursor: pointer;
+  }
+  /* SAVE NOW es el primario */
+  .confirm-actions .btn-primary {
+    border-color: var(--gold2);
+    color: var(--gold);
+  }
+
+  /* Labels de demo */
+  .demo-label {
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .2em;
+    color: #444;
+    margin-top: 12px;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════
+     ESTADO 1 — REPOSO
+     ══════════════════════════ -->
+<div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="handle"></div>
+    <div class="screen">
+      <div class="header">
+        <span class="clock">14:32</span>
+        <span class="brand">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+          VERA
+        </span>
+        <span class="swipe-hint">SWIPE ↓</span>
+      </div>
+
+      <div class="state-label-top" style="color:#7d7c87">CAPTURE</div>
+      <div style="font-family:'Syne',sans-serif;font-size:13px;color:#5f5e5a;text-align:center;margin-top:5px">
+        Say it. Type it. Snap it.
+      </div>
+
+      <div class="mic-area">
+        <!-- Micrófono 168px — protagonista absoluto -->
+        <button class="mic-btn" aria-label="iniciar grabación de voz">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="3" width="6" height="13" rx="3"/>
+            <path d="M5 11a7 7 0 0 0 14 0"/>
+            <line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="8" y1="22" x2="16" y2="22"/>
+          </svg>
+        </button>
+
+        <div class="mic-hint">TAP TO SPEAK</div>
+
+        <!-- Métodos secundarios — cuadrado redondeado, no círculo -->
+        <div class="secondary-row">
+          <button class="sec-btn" aria-label="capturar por texto">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="4 7 4 4 20 4 20 7"/>
+              <line x1="9" y1="20" x2="15" y2="20"/>
+              <line x1="12" y1="4" x2="12" y2="20"/>
+            </svg>
+            <span>TEXT</span>
+          </button>
+          <button class="sec-btn" aria-label="capturar por foto">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+            <span>PHOTO</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="demo-label">1 · Reposo</div>
+</div>
+
+
+<!-- ══════════════════════════
+     ESTADO 2 — GRABANDO
+     ══════════════════════════ -->
+<div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="handle"></div>
+    <div class="screen">
+      <div class="header">
+        <span class="clock">14:32</span>
+        <span class="brand">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+          VERA
+        </span>
+        <span class="swipe-hint">SWIPE ↓</span>
+      </div>
+
+      <!-- Label cambia a LISTENING en rojo -->
+      <div class="state-label-top" style="color:#e05c5c">LISTENING</div>
+
+      <div class="mic-area" style="gap: 6px;">
+        <!-- Mic en rojo con anillos pulsantes -->
+        <button class="mic-btn recording" aria-label="grabando — tocar para parar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="3" width="6" height="13" rx="3"/>
+            <path d="M5 11a7 7 0 0 0 14 0"/>
+            <line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="8" y1="22" x2="16" y2="22"/>
+          </svg>
+        </button>
+        <!-- Timer en rojo -->
+        <div class="timer">0:04</div>
+      </div>
+
+      <!-- Transcript en vivo — aparece inmediatamente al empezar -->
+      <div class="transcript-area">
+        <div class="transcript-label">LIVE TRANSCRIPT</div>
+        <div class="transcript-text">
+          Añade en Willy's revisar el generador, prio 7<span class="cursor"></span>
+        </div>
+      </div>
+
+      <!-- Botón stop — también se puede tocar el mic directamente -->
+      <div class="stop-row">
+        <button class="btn-stop">TAP TO STOP</button>
+      </div>
+    </div>
+  </div>
+  <div class="demo-label">2 · Grabando</div>
+</div>
+
+
+<!-- ══════════════════════════
+     ESTADO 3 — CONFIRMACIÓN
+     ══════════════════════════ -->
+<div>
+  <div class="phone">
+    <div class="notch"></div>
+    <div class="handle"></div>
+    <div class="screen">
+      <div class="header">
+        <span class="clock">14:32</span>
+        <span class="brand">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+          VERA
+        </span>
+        <span class="swipe-hint">SWIPE ↓</span>
+      </div>
+
+      <!-- Label en verde → éxito -->
+      <div class="state-label-top" style="color:#4ecb8d">CAPTURED</div>
+
+      <!-- Review card — texto limpio extraído por Vera
+           La frase original era: "Añade en Willy's revisar el generador, prio 7"
+           Vera extrae: "Revisar el generador" + propiedad + prio como chips -->
+      <div class="review-card">
+        <div class="review-label">VERA UNDERSTOOD</div>
+        <div class="review-text">Revisar el generador</div>
+        <div class="chips">
+          <span class="chip prop">
+            <span class="chip-dot"></span>WILLY'S
+          </span>
+          <span class="chip prio">
+            <span class="chip-dot"></span>PRIO 7
+          </span>
+          <span class="chip type">
+            <span class="chip-dot"></span>TAREA
+          </span>
+          <!-- Chip editable — invita a añadir más contexto -->
+          <span class="chip edit">+ EDIT</span>
+        </div>
+      </div>
+
+      <!-- Countdown: guarda por inacción en 2 segundos
+           El anillo gold va de completo (stroke-dashoffset 0)
+           a vacío (stroke-dashoffset 125.6) en 2s con CSS animation -->
+      <div class="countdown-wrap">
+        <div class="countdown-ring">
+          <svg width="48" height="48" viewBox="0 0 48 48">
+            <circle cx="24" cy="24" r="20" fill="none" stroke="#1a1d22" stroke-width="1.5"/>
+            <!-- El offset 62.8 = mitad de 125.6 → representa ~1s restante (demo) -->
+            <circle cx="24" cy="24" r="20" fill="none"
+                    stroke="#c4a86a" stroke-width="1.5"
+                    stroke-dasharray="125.6"
+                    stroke-dashoffset="62.8"
+                    stroke-linecap="round"/>
+          </svg>
+          <div class="countdown-num">2</div>
+        </div>
+        <div class="countdown-label">SAVING TO INBOX</div>
+      </div>
+
+      <!-- Acciones — EDIT interrumpe el countdown, SAVE NOW guarda ya -->
+      <div class="confirm-actions">
+        <button>EDIT</button>
+        <button class="btn-primary">SAVE NOW</button>
+      </div>
+
+    </div>
+  </div>
+  <div class="demo-label">3 · Confirmación</div>
+</div>
+
+</body>
+</html>

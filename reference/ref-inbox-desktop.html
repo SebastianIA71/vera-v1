@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<!--
+  VERA — Referencia visual: Inbox Desktop
+  =========================================
+  Implementar en:
+    src/app/(app)/inbox/desktop/page.tsx (o reutilizar /inbox con layout condicional)
+    src/components/inbox/InboxListDesktop.tsx
+    src/components/inbox/InboxDetailPanel.tsx
+    src/components/inbox/ChipEditor.tsx
+
+  LAYOUT: Nav colapsada (52px) + Lista inbox (340px) + Panel detalle (flex-1)
+
+  DIFERENCIA CON MÓVIL:
+    Móvil: procesado carta a carta (swipe)
+    Desktop: lista completa + selección + edición en panel derecho
+    En desktop no hay swipe — las acciones son botones explícitos en el panel
+
+  LISTA DE CAPTURAS:
+    Ordenada por createdAt desc (más reciente primero)
+    Cada item muestra: origen · contenido truncado · timestamp · estado chips
+    Items sin procesar tienen fondo ligeramente más claro
+    Item seleccionado: barra gold lateral
+
+  ORÍGENES Y COLORES:
+    INSTAGRAM · TIKTOK  → azul (#5ba8e8)
+    VOZ                 → gold (#c4a86a)
+    NOTA                → texto2 (#7d7c87)
+    WHATSAPP            → verde (#4ecb8d)
+    EMAIL               → púrpura (#9b7fe8)
+    URL / SAFARI        → azul (#5ba8e8)
+
+  PANEL DETALLE:
+    Contenido completo de la captura
+    Clasificación sugerida por Vera con chips editables (ChipEditor)
+    ChipEditor: al tocar un chip → popover inline con opciones del grupo
+    Dos acciones: GUARDAR COMO TAREA (verde) · DESCARTAR (rojo sutil)
+    Una vez procesada: el item desaparece de la lista (o se mueve a "procesadas")
+
+  CHIP EDITOR (inline en el panel):
+    Al hacer click en un chip → aparece un dropdown pequeño encima/debajo
+    Opciones según el tipo: propiedad / prio / tipo de tarea
+    Al seleccionar → chip se actualiza inmediatamente
+    Al guardar → se usa la clasificación modificada
+
+  FILTROS DE LA LISTA:
+    Tabs simples arriba: TODO · SIN PROCESAR · PROCESADAS
+    Sin filtros complejos — el inbox es temporal por naturaleza
+
+  NOTAS DE IMPLEMENTACIÓN:
+    - GET /api/inbox?processed=false — capturas pendientes
+    - GET /api/inbox?processed=true — capturas procesadas (histórico)
+    - Al guardar: POST /api/tasks con datos de la clasificación
+                  + PUT /api/inbox/:id { processed: true, taskId }
+    - Al descartar: PUT /api/inbox/:id { processed: true, discarded: true }
+    - ChipEditor: componente Popover con opciones hardcodeadas desde FILTER_GROUPS
+    - El panel derecho reutiliza los mismos chips que TaskDetailPanel
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>VERA — Inbox Desktop [referencia]</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080a;--bg2:#0d0f12;--bg3:#131619;--bg4:#1a1d22;--text:#eceae2;--text2:#7d7c87;--text3:#3e3d48;--text4:#5f5e5a;--gold:#e8d5a3;--gold2:#c4a86a;--green:#4ecb8d;--red:#e05c5c;--amber:#e8a020;--blue:#5ba8e8;--purple:#9b7fe8;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;overflow:hidden;}
+.topbar{height:44px;background:var(--bg);border-bottom:.5px solid var(--bg4);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;}
+.tb-left{display:flex;align-items:center;gap:16px;}
+.vera-logo{display:flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;letter-spacing:.3em;color:var(--gold2);}
+.vera-logo svg{width:10px;height:10px;}
+.tb-clock{font-family:'DM Mono',monospace;font-size:12px;color:var(--text2);letter-spacing:.12em;}
+.tb-center{display:flex;align-items:center;gap:8px;}
+.counter{display:flex;align-items:center;gap:6px;padding:4px 10px;border:.5px solid var(--bg4);border-radius:999px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;color:var(--text2);}
+.counter .dot{width:6px;height:6px;border-radius:50%;}
+.tb-right{display:flex;align-items:center;gap:10px;}
+.oye-btn{display:flex;align-items:center;gap:7px;padding:6px 14px;border:.5px solid var(--gold2);border-radius:999px;background:transparent;color:var(--gold);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;cursor:pointer;}
+.oye-btn svg{width:13px;height:13px;color:var(--gold2);}
+.layout{display:flex;height:calc(100vh - 44px);overflow:hidden;}
+.nav{width:52px;background:var(--bg);border-right:.5px solid var(--bg4);display:flex;flex-direction:column;padding:12px 0;flex-shrink:0;}
+.ni{width:52px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;}
+.ni svg{width:16px;height:16px;color:var(--text3);}
+.ni.active svg{color:var(--gold2);}
+.ni.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:2px;height:16px;background:var(--gold2);border-radius:1px;}
+.ni .badge{position:absolute;top:6px;right:8px;background:var(--red);color:#fff;font-family:'DM Mono',monospace;font-size:7px;padding:1px 4px;border-radius:999px;}
+.ndiv{height:.5px;background:var(--bg4);margin:6px 10px;}
+.nbottom{margin-top:auto;}
+
+/* LISTA */
+.inbox-list{width:340px;display:flex;flex-direction:column;border-right:.5px solid var(--bg4);flex-shrink:0;}
+.list-hdr{padding:14px 18px 0;flex-shrink:0;}
+.page-title{font-family:'Syne',sans-serif;font-weight:500;font-size:18px;color:var(--text);letter-spacing:-.01em;}
+.page-title em{font-style:italic;color:var(--gold);}
+/* Tabs simples: TODO / SIN PROCESAR / PROCESADAS */
+.inbox-tabs{display:flex;border-bottom:.5px solid var(--bg4);margin-top:12px;}
+.itab{flex:1;padding:8px 4px;text-align:center;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.18em;color:var(--text4);cursor:pointer;border-bottom:1.5px solid transparent;}
+.itab.active{color:var(--gold2);border-bottom-color:var(--gold2);}
+.itab .ibadge{display:inline-block;background:var(--red);color:#fff;font-size:7px;padding:1px 4px;border-radius:999px;margin-left:5px;}
+.inbox-scroll{flex:1;overflow-y:auto;}
+.inbox-scroll::-webkit-scrollbar{width:2px;}
+.inbox-scroll::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:1px;}
+
+/* Item de inbox */
+.ii{padding:12px 18px;border-bottom:.5px solid var(--bg2);cursor:pointer;position:relative;transition:background .1s;}
+.ii:hover{background:var(--bg2);}
+.ii.sel{background:var(--bg2);}
+.ii.sel::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--gold2);}
+.ii-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+/* Origen con color según fuente */
+.ii-src{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.16em;display:flex;align-items:center;gap:5px;}
+.ii-src .src-dot{width:5px;height:5px;border-radius:50%;}
+.ii-time{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.1em;color:var(--text4);}
+.ii-text{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* Mini chips de clasificación ya sugerida */
+.ii-chips{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;}
+.iic{font-family:'DM Mono',monospace;font-size:7px;letter-spacing:.1em;padding:2px 6px;border-radius:999px;border:.5px solid var(--bg4);color:var(--text4);}
+
+/* PANEL DETALLE */
+.detail{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.d-hdr{padding:14px 20px 12px;border-bottom:.5px solid var(--bg4);flex-shrink:0;}
+.d-hdr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.d-back{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.18em;color:var(--text3);cursor:pointer;}
+.d-back:hover{color:var(--text2);}
+.d-src-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.d-src{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.2em;display:flex;align-items:center;gap:6px;}
+.d-src .sdot{width:8px;height:8px;border-radius:50%;}
+.d-time{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--text4);margin-left:auto;}
+.d-scroll{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:16px;}
+.d-scroll::-webkit-scrollbar{display:none;}
+
+/* Contenido completo */
+.d-content-box{background:var(--bg2);border:.5px solid var(--bg4);border-radius:12px;padding:16px;}
+.d-content-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.24em;color:var(--text4);margin-bottom:8px;}
+.d-content-text{font-family:'Syne',sans-serif;font-weight:400;font-size:16px;line-height:1.5;color:var(--text);}
+
+/* Clasificación Vera */
+.d-classify{background:transparent;border:.5px solid #2d2640;border-radius:12px;padding:14px 16px;position:relative;overflow:hidden;}
+.d-classify::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(155,127,232,.05),transparent 60%);pointer-events:none;}
+.d-classify-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.24em;color:var(--purple);margin-bottom:10px;}
+.d-chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;}
+/* Chips editables — al hacer click abre ChipEditor popover */
+.dc{display:inline-flex;align-items:center;gap:5px;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;padding:5px 10px;border-radius:999px;border:.5px solid var(--bg4);color:var(--gold2);cursor:pointer;transition:border-color .1s;}
+.dc:hover{border-color:var(--gold2);}
+.dc .dot{width:6px;height:6px;border-radius:50%;}
+.dc.prop .dot{background:var(--purple);}
+.dc.prio .dot{background:var(--amber);}
+.dc.type .dot{background:var(--blue);}
+/* Chip "editar" dashed */
+.dc.edit{color:var(--text2);border-style:dashed;}
+/* Nota de clasificación IA */
+.d-classify-note{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.14em;color:var(--text4);}
+
+/* Título propuesto por Vera */
+.d-title-box{background:var(--bg2);border:.5px solid var(--bg4);border-radius:10px;padding:12px 14px;}
+.d-title-lbl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:.24em;color:var(--text4);margin-bottom:6px;}
+.d-title-input{width:100%;background:transparent;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;}
+.d-title-input::placeholder{color:var(--text3);}
+
+/* Acciones */
+.d-actions{display:flex;gap:8px;padding:14px 20px;border-top:.5px solid var(--bg4);flex-shrink:0;}
+.btn-discard{padding:11px 20px;border-radius:12px;background:transparent;border:.5px solid #2a1414;color:var(--red);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;cursor:pointer;}
+.btn-save{flex:1;padding:11px;border-radius:12px;background:transparent;border:.5px solid var(--green);color:var(--green);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.18em;cursor:pointer;text-align:center;}
+</style>
+</head>
+<body>
+<div style="display:flex;flex-direction:column;height:100vh;">
+<div class="topbar">
+  <div class="tb-left">
+    <div class="vera-logo"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>VERA</div>
+    <div class="tb-clock">MIÉ · 27 MAY · 07:42</div>
+  </div>
+  <div class="tb-center">
+    <div class="counter"><span class="dot" style="background:#e05c5c"></span>2 URGENTES</div>
+    <div class="counter"><span class="dot" style="background:#e8a020"></span>1 STALE</div>
+    <div class="counter"><span class="dot" style="background:#4ecb8d"></span>4 INBOX</div>
+  </div>
+  <div class="tb-right">
+    <button class="oye-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>OYE VERA</button>
+  </div>
+</div>
+<div class="layout">
+<nav class="nav">
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg></div>
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+  <div class="ni active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span class="badge">4</span></div>
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+  <div class="ndiv"></div>
+  <div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+  <div class="nbottom"><div class="ndiv"></div><div class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div></div>
+</nav>
+
+<!-- LISTA INBOX -->
+<div class="inbox-list">
+  <div class="list-hdr">
+    <div class="page-title">Inbox <em>sin procesar</em></div>
+    <div class="inbox-tabs">
+      <div class="itab">TODO</div>
+      <div class="itab active">SIN PROCESAR <span class="ibadge">4</span></div>
+      <div class="itab">PROCESADAS</div>
+    </div>
+  </div>
+  <div class="inbox-scroll">
+    <div class="ii sel">
+      <div class="ii-top">
+        <div class="ii-src" style="color:#5ba8e8"><span class="src-dot" style="background:#5ba8e8"></span>INSTAGRAM</div>
+        <div class="ii-time">HACE 2H</div>
+      </div>
+      <div class="ii-text">Gresite piscina Willy's — TotalTech CEYS se pega sin vaciar, resiste cloro</div>
+      <div class="ii-chips"><span class="iic" style="color:#9b7fe8">WILLY'S</span><span class="iic">PRIO 1</span><span class="iic">INSPIRACIÓN</span></div>
+    </div>
+    <div class="ii">
+      <div class="ii-top">
+        <div class="ii-src" style="color:#c4a86a"><span class="src-dot" style="background:#c4a86a"></span>VOZ</div>
+        <div class="ii-time">HACE 4H</div>
+      </div>
+      <div class="ii-text">Buscar precios plastonda en Leroy Merlin para la barra de Sarapita</div>
+      <div class="ii-chips"><span class="iic" style="color:#9b7fe8">SARAPITA</span><span class="iic">PRIO 5</span><span class="iic">COMPRA</span></div>
+    </div>
+    <div class="ii">
+      <div class="ii-top">
+        <div class="ii-src" style="color:#5ba8e8"><span class="src-dot" style="background:#5ba8e8"></span>INSTAGRAM</div>
+        <div class="ii-time">AYER</div>
+      </div>
+      <div class="ii-text">Luces solares para el jardín, muy buena pinta, revisar en Amazon</div>
+      <div class="ii-chips"><span class="iic">GENERAL</span><span class="iic">PRIO 2</span><span class="iic">COMPRA</span></div>
+    </div>
+    <div class="ii">
+      <div class="ii-top">
+        <div class="ii-src" style="color:#7d7c87"><span class="src-dot" style="background:#7d7c87"></span>NOTA</div>
+        <div class="ii-time">AYER</div>
+      </div>
+      <div class="ii-text">Llamar al seguro Porsche antes de julio — revisar cobertura viajes</div>
+      <div class="ii-chips"><span class="iic">GENERAL</span><span class="iic">PRIO 3</span><span class="iic">GESTIÓN</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- DETALLE -->
+<div class="detail">
+  <div class="d-hdr">
+    <div class="d-hdr-top">
+      <span class="d-back">← INBOX</span>
+    </div>
+    <div class="d-src-row">
+      <div class="d-src" style="color:#5ba8e8"><span class="sdot" style="background:#5ba8e8"></span>INSTAGRAM</div>
+      <div class="d-time">HOY · 14:32</div>
+    </div>
+  </div>
+  <div class="d-scroll">
+    <!-- Contenido completo de la captura -->
+    <div class="d-content-box">
+      <div class="d-content-lbl">CAPTURA ORIGINAL</div>
+      <div class="d-content-text">Gresite piscina Willy's — TotalTech CEYS se pega sin vaciar, resiste cloro y sal, cambios de temperatura. ~8€ Amazon. Aprovechar tarde libre agosto.</div>
+    </div>
+
+    <!-- Clasificación Vera con chips editables -->
+    <div class="d-classify">
+      <div class="d-classify-lbl">✦ VERA CLASIFICA</div>
+      <div class="d-chips">
+        <!-- Cada chip es editable — click abre ChipEditor popover inline -->
+        <span class="dc prop"><span class="dot"></span>WILLY'S</span>
+        <span class="dc prio"><span class="dot"></span>PRIO 1</span>
+        <span class="dc type"><span class="dot"></span>INSPIRACIÓN</span>
+        <span class="dc edit">+ AJUSTAR</span>
+      </div>
+      <div class="d-classify-note">CONFIANZA ALTA · BASADO EN "WILLY'S" Y "PISCINA"</div>
+    </div>
+
+    <!-- Título editable propuesto por Vera -->
+    <div class="d-title-box">
+      <div class="d-title-lbl">TÍTULO DE TAREA</div>
+      <input class="d-title-input" value="Gresite piscina — revisar TotalTech CEYS" placeholder="Título de la tarea…"/>
+    </div>
+  </div>
+
+  <!-- Acciones: siempre visibles al pie del panel -->
+  <div class="d-actions">
+    <button class="btn-discard">DESCARTAR</button>
+    <button class="btn-save">GUARDAR COMO TAREA →</button>
+  </div>
+</div>
+
+</div>
+</div>
+</body>
+</html>

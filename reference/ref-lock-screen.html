@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<!--
+  VERA — Referencia visual: Lock Screen
+  ======================================
+  Este fichero es la referencia aprobada para implementar
+  src/app/lock/page.tsx y src/components/auth/PinPad.tsx
+
+  DOS ESTADOS:
+    Estado 1 (.state-faceid): Face ID activo — pantalla por defecto en iPhone
+    Estado 2 (.state-pin):    PIN fallback — al tocar "USE PIN INSTEAD"
+
+  NOTAS DE IMPLEMENTACIÓN:
+    - Face ID: Web Authentication API (navigator.credentials)
+    - PIN pad: componente propio, sin librería
+    - Frases: src/lib/quotes.ts → getRandomQuote() + parseQuote()
+    - La <em> de la frase: color #e8d5a3, font-style italic (class "anchor")
+    - Cookie de sesión: 30 días tras auth correcta
+    - 3 fallos PIN → lockout con backoff exponencial
+    - Sin botón X — cierre no aplica (es la puerta de entrada)
+-->
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VERA — Lock Screen [referencia]</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* === TOKENS === */
+  :root {
+    --bg:       #07080a;
+    --bg2:      #0d0f12;
+    --bg3:      #131619;
+    --bg4:      #1a1d22;
+    --text:     #eceae2;
+    --text2:    #7d7c87;
+    --text3:    #3e3d48;
+    --text4:    #5f5e5a;
+    --gold:     #e8d5a3;
+    --gold2:    #c4a86a;
+    --green:    #4ecb8d;
+    --red:      #e05c5c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px;
+    min-height: 100vh;
+  }
+
+  /* === PHONE FRAME === */
+  .phone {
+    width: 375px;
+    min-height: 812px;
+    background: var(--bg);
+    border-radius: 44px;
+    border: 1px solid var(--bg4);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Notch simulado */
+  .notch {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 126px;
+    height: 34px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 10;
+  }
+
+  /* Handle de deslizamiento — indica "swipe down para cerrar" */
+  /* En lock screen no aplica (es la puerta), pero se mantiene
+     el patrón visual consistente */
+
+  /* Status bar */
+  .status-bar {
+    height: 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 28px 8px;
+    flex-shrink: 0;
+  }
+  .status-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: 0.05em;
+  }
+  .status-icons {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    letter-spacing: 0.08em;
+  }
+
+  /* === SCREEN CONTENT === */
+  .screen {
+    flex: 1;
+    padding: 16px 28px 32px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Header row: hora + VERA wordmark */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
+  }
+  .clock {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text2);
+    letter-spacing: 0.1em;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--gold2);
+  }
+  .brand svg { width: 9px; height: 9px; }
+
+  /* === ESTADO 1: FACE ID === */
+  .state-faceid .ring-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 52px;
+    margin-bottom: 32px;
+  }
+  /* Anillo gold con símbolo ✦ dentro */
+  .ring {
+    width: 56px;
+    height: 56px;
+    border: 0.5px solid var(--gold2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  /* Segundo anillo exterior sutil */
+  .ring::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    border: 0.5px solid rgba(196, 168, 106, 0.18);
+  }
+  .ring svg { width: 16px; height: 16px; }
+
+  /* Frase motivacional */
+  .quote-block { margin-bottom: 0; }
+  .quote-accent {
+    width: 22px;
+    height: 1px;
+    background: var(--gold2);
+    margin: 0 auto 14px;
+  }
+  .quote-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1.3;
+    color: var(--text);
+    letter-spacing: -0.005em;
+    text-align: center;
+  }
+  /* La palabra ancla: siempre en <em class="anchor"> */
+  .quote-text .anchor {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--gold); /* #e8d5a3 */
+  }
+
+  /* Face ID prompt */
+  .face-prompt {
+    text-align: center;
+    margin-top: auto;
+    margin-bottom: 24px;
+  }
+  .face-icon-wrap {
+    width: 72px;
+    height: 72px;
+    border: 0.5px solid var(--gold2);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 14px;
+    color: var(--gold);
+  }
+  .face-icon-wrap svg { width: 34px; height: 34px; }
+  .face-hint {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--text2);
+  }
+
+  /* Botón fallback a PIN */
+  .pin-fallback {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .btn-ghost {
+    background: transparent;
+    border: 0.5px solid var(--bg4);
+    border-radius: 999px;
+    padding: 10px 24px;
+    color: var(--text2);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    cursor: pointer;
+  }
+
+  /* === ESTADO 2: PIN === */
+  .state-pin .ring-wrap {
+    display: flex;
+    justify-content: center;
+    margin-top: 28px;
+    margin-bottom: 20px;
+  }
+
+  /* Dots de progreso PIN — 6 puntos */
+  .pin-dots {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin: 16px 0 20px;
+  }
+  .pin-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 0.5px solid var(--text3);
+    background: transparent;
+  }
+  /* Dígito introducido */
+  .pin-dot.filled {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+
+  /* Teclado PIN 3×4 */
+  .pin-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .key {
+    aspect-ratio: 1.6 / 1;
+    border-radius: 12px;
+    background: var(--bg2);
+    border: 0.5px solid var(--bg3);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-weight: 500;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .key:active { background: var(--bg3); }
+  .key.empty { background: transparent; border: none; pointer-events: none; }
+  /* Teclas de acción (FACE, CLR) */
+  .key.action {
+    background: transparent;
+    border: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--text2);
+  }
+
+  /* === PIE — guiño Claude === */
+  /* Presente en ambos estados */
+  .foot {
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.3em;
+    color: var(--text3);
+    margin-top: auto;
+    padding-top: 8px;
+  }
+
+  /* === LABEL DE ESTADO (para la demo) === */
+  .state-label {
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--text3);
+    margin-top: 12px;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     ESTADO 1 — FACE ID (pantalla por defecto)
+     ═══════════════════════════════════════════ -->
+<div>
+  <div class="phone state-faceid">
+    <div class="notch"></div>
+    <div class="status-bar">
+      <span class="status-time">7:14</span>
+      <span class="status-icons">●●● ◐ ⬡</span>
+    </div>
+    <div class="screen">
+
+      <div class="header">
+        <span class="clock">07:14</span>
+        <span class="brand">
+          <!-- Símbolo ✦ de Vera -->
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/>
+          </svg>
+          VERA
+        </span>
+      </div>
+
+      <!-- Anillo gold con ✦ interior -->
+      <div class="ring-wrap">
+        <div class="ring">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#e8d5a3"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Frase motivacional
+           Nota: en producción, generada por parseQuote(getRandomQuote())
+           La <em class="anchor"> es la palabra ancla en gold cursiva -->
+      <div class="quote-block">
+        <div class="quote-accent"></div>
+        <p class="quote-text">
+          The morning <em class="anchor">is yours</em>. Begin.
+        </p>
+      </div>
+
+      <!-- Face ID prompt -->
+      <div class="face-prompt">
+        <div class="face-icon-wrap" role="img" aria-label="Face ID">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 8V6a2 2 0 0 1 2-2h2"/>
+            <path d="M16 4h2a2 2 0 0 1 2 2v2"/>
+            <path d="M20 16v2a2 2 0 0 1-2 2h-2"/>
+            <path d="M8 20H6a2 2 0 0 1-2-2v-2"/>
+            <path d="M9 10v.5"/>
+            <path d="M15 10v.5"/>
+            <path d="M12 9v4l-1 1"/>
+            <path d="M8.5 15c.5 1 1.8 1.5 3.5 1.5s3-.5 3.5-1.5"/>
+          </svg>
+        </div>
+        <div class="face-hint">LOOK TO UNLOCK</div>
+      </div>
+
+      <!-- Fallback a PIN -->
+      <div class="pin-fallback">
+        <button class="btn-ghost">USE PIN INSTEAD</button>
+      </div>
+
+      <!-- Pie con guiño Claude -->
+      <div class="foot">VERA · MEMORY POWERED BY CLAUDE</div>
+
+    </div>
+  </div>
+  <div class="state-label">Estado 1 · Face ID</div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════
+     ESTADO 2 — PIN FALLBACK
+     ═══════════════════════════════════════════ -->
+<div>
+  <div class="phone state-pin">
+    <div class="notch"></div>
+    <div class="status-bar">
+      <span class="status-time">7:14</span>
+      <span class="status-icons">●●● ◐ ⬡</span>
+    </div>
+    <div class="screen">
+
+      <div class="header">
+        <span class="clock">07:14</span>
+        <span class="brand">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/>
+          </svg>
+          VERA
+        </span>
+        <!-- SWIPE ↓ en vez de X — comunica el gesto de cierre
+             Nota: en lock screen este gesto no aplica realmente,
+             pero se mantiene la coherencia visual del sistema -->
+        <span style="font-family:'DM Mono',monospace;font-size:8px;
+                     letter-spacing:.2em;color:#3e3d48">SWIPE ↓</span>
+      </div>
+
+      <!-- Anillo con ✦ -->
+      <div class="ring-wrap">
+        <div class="ring">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#e8d5a3"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Frase (misma que estado 1, misma sesión) -->
+      <div class="quote-block">
+        <div class="quote-accent"></div>
+        <p class="quote-text">
+          The morning <em class="anchor">is yours</em>. Begin.
+        </p>
+      </div>
+
+      <!-- Dots de progreso: 3 de 6 introducidos (ejemplo) -->
+      <div class="pin-dots" role="status" aria-label="3 de 6 dígitos introducidos">
+        <span class="pin-dot filled"></span>
+        <span class="pin-dot filled"></span>
+        <span class="pin-dot filled"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+        <span class="pin-dot"></span>
+      </div>
+
+      <!-- Teclado PIN 3×4
+           Fila inferior: [FACE] [0] [CLR]
+           FACE → vuelve al estado 1 (Face ID)
+           CLR  → borra último dígito -->
+      <div class="pin-pad" role="group" aria-label="teclado PIN">
+        <button class="key">1</button>
+        <button class="key">2</button>
+        <button class="key">3</button>
+        <button class="key">4</button>
+        <button class="key">5</button>
+        <button class="key">6</button>
+        <button class="key">7</button>
+        <button class="key">8</button>
+        <button class="key">9</button>
+        <button class="key action" aria-label="usar Face ID">FACE</button>
+        <button class="key">0</button>
+        <button class="key action" aria-label="borrar último dígito">CLR</button>
+      </div>
+
+      <div class="foot">VERA · MEMORY POWERED BY CLAUDE</div>
+
+    </div>
+  </div>
+  <div class="state-label">Estado 2 · PIN fallback</div>
+</div>
+
+</body>
+</html>
