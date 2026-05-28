@@ -44,6 +44,13 @@ export async function POST(req: NextRequest) {
     maxAge: SESSION_DURATION,
     path: '/',
   });
+  res.cookies.set('vera_setup', '1', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 365 * 10, // 10 años — persiste para siempre
+    path: '/',
+  });
 
   return res;
 }

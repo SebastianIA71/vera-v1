@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 type Step = 1 | 2 | 3;
@@ -37,6 +37,12 @@ async function deriveAndStoreKey(pin: string): Promise<void> {
 export default function SetupPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>(1);
+
+  useEffect(() => {
+    fetch('/api/auth/salt').then(res => {
+      if (res.ok) router.replace('/lock'); // PIN already configured
+    }).catch(() => {});
+  }, [router]);
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [shaking, setShaking] = useState(false);
