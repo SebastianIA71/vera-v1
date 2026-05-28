@@ -64,3 +64,4 @@
  PUT /api/tasks/18 200 in 1647ms (next.js: 1287ms, proxy.ts: 9ms, application-code: 351ms)
  GET /api/agents/status 200 in 103ms (next.js: 3ms, proxy.ts: 7ms, application-code: 93ms)
  GET /api/agents/status 200 in 287ms (next.js: 7ms, proxy.ts: 7ms, application-code: 273ms)
+ GET /api/agents/status 200 in 292ms (next.js: 5ms, proxy.ts: 10ms, application-code: 277ms)
