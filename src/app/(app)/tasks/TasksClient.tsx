@@ -2,6 +2,18 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+
+function MobilePageHeader({ title }: { title: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 22px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
+        <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+        VERA
+      </span>
+      <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 13, color: 'var(--text)', letterSpacing: '-.01em' }}>{title}</span>
+    </div>
+  );
+}
 import DesktopShell from '@/components/layout/DesktopShell';
 import TaskDetailPanel, { TaskDetail } from '@/components/tasks/TaskDetailPanel';
 
@@ -143,6 +155,7 @@ export default function TasksClient({
     >
       {/* Centro: lista */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '.5px solid var(--bg4)' }}>
+        {isMobile && <MobilePageHeader title="Tareas" />}
         <div style={{ padding: '14px 20px 0', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em' }}>
@@ -208,7 +221,7 @@ export default function TasksClient({
               <div style={{ padding: '10px 20px 4px', display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.26em', color: 'var(--text3)' }}>
                 <span>NOW · {nowTasks.length} TAREAS</span>
               </div>
-              {nowTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={setSelected} />)}
+              {nowTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={setSelected} onPrioChange={(id, v) => setTasks(prev => prev.map(x => x.id === id ? { ...x, prioFinal: v } : x))} />)}
             </>
           )}
           {restTasks.length > 0 && (
@@ -216,7 +229,7 @@ export default function TasksClient({
               <div style={{ padding: '10px 20px 4px', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.26em', color: 'var(--text3)' }}>
                 RESTO · {restTasks.length} TAREAS
               </div>
-              {restTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={setSelected} />)}
+              {restTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={setSelected} onPrioChange={(id, v) => setTasks(prev => prev.map(x => x.id === id ? { ...x, prioFinal: v } : x))} />)}
             </>
           )}
           {doneTasks.length > 0 && filters.status === 'done' && (
@@ -224,7 +237,7 @@ export default function TasksClient({
               <div style={{ padding: '10px 20px 4px', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.26em', color: 'var(--text3)' }}>
                 HECHAS · {doneTasks.length}
               </div>
-              {doneTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={setSelected} />)}
+              {doneTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={setSelected} onPrioChange={(id, v) => setTasks(prev => prev.map(x => x.id === id ? { ...x, prioFinal: v } : x))} />)}
             </>
           )}
           {filtered.filter(t => t.status !== 'done').length === 0 && (
@@ -239,9 +252,16 @@ export default function TasksClient({
   );
 }
 
-function TaskRow({ task, selected, onSelect }: { task: Task; selected: boolean; onSelect: (t: Task) => void }) {
+function TaskRow({ task, selected, onSelect, onPrioChange }: { task: Task; selected: boolean; onSelect: (t: Task) => void; onPrioChange: (id: number, v: number) => void }) {
   const bc = selected ? 'var(--gold2)' : taskBorderColor(task);
   const stale = task.lastActionAt ? Math.floor((Date.now() - new Date(task.lastActionAt).getTime()) / 86400000) : 0;
+
+  const changePrio = async (e: React.MouseEvent, delta: number) => {
+    e.stopPropagation();
+    const next = Math.min(10, Math.max(0, (task.prioFinal ?? 0) + delta));
+    await fetch(`/api/tasks/${task.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prioManual: next, prioFinal: next }) });
+    onPrioChange(task.id, next);
+  };
 
   return (
     <div
@@ -256,8 +276,10 @@ function TaskRow({ task, selected, onSelect }: { task: Task; selected: boolean; 
       onMouseLeave={e => { if (!selected) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
     >
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: bc, borderRadius: 0 }} />
-      <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 13, color: 'var(--gold)', minWidth: 20, textAlign: 'right', flexShrink: 0 }}>
-        {task.prioFinal ?? 0}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+        <button onClick={e => changePrio(e, +1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 0, fontSize: 8, lineHeight: 1 }}>▲</button>
+        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', lineHeight: 1 }}>{task.prioFinal ?? 0}</span>
+        <button onClick={e => changePrio(e, -1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 0, fontSize: 8, lineHeight: 1 }}>▼</button>
       </div>
       <div style={{ width: 16, height: 16, borderRadius: '50%', border: '.5px solid var(--text3)', flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>

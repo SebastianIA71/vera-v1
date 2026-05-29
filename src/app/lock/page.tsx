@@ -34,10 +34,19 @@ async function deriveAndStoreKey(pin: string): Promise<void> {
 
 export default function LockPage() {
   const router = useRouter();
-  const [lockState, setLockState] = useState<LockState>('pin'); // default pin; FaceID in future
+  const [lockState, setLockState] = useState<LockState>('pin');
   const [pin, setPin] = useState('');
   const [shaking, setShaking] = useState(false);
   const [error, setError] = useState('');
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.PublicKeyCredential) {
+      PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+        .then(ok => setBiometricAvailable(ok))
+        .catch(() => {});
+    }
+  }, []);
   const [time, setTime] = useState('');
   const [quote, setQuote] = useState<Array<{ text: string; anchor: boolean }>>([]);
 
@@ -357,6 +366,23 @@ export default function LockPage() {
               ))}
             </div>
           </>
+        )}
+
+        {/* Face ID */}
+        {biometricAvailable && (
+          <button
+            onClick={() => alert('Face ID próximamente')}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', border: '.5px solid var(--bg4)', borderRadius: 999, padding: '10px 24px', color: 'var(--text2)', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.18em', cursor: 'pointer', marginTop: 12 }}
+          >
+            <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+              <path d="M12 2C9.5 2 7.5 3.5 7.5 5.5C7.5 7.5 9 8.5 9 10M12 2C14.5 2 16.5 3.5 16.5 5.5C16.5 7.5 15 8.5 15 10"/>
+              <path d="M9 10C9 12 10 14 12 14C14 14 15 12 15 10"/>
+              <path d="M6 8C5 9.5 4.5 11 4.5 12.5"/>
+              <path d="M18 8C19 9.5 19.5 11 19.5 12.5"/>
+              <path d="M7 16C8.5 18 10 19 12 19C14 19 15.5 18 17 16"/>
+            </svg>
+            FACE ID
+          </button>
         )}
 
         {/* Footer */}

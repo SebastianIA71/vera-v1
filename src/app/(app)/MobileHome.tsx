@@ -38,18 +38,24 @@ function weightTrendPath(logs: WeightLog[]): string {
   return `M${points.join(' L')}`;
 }
 
+type PropTask = { prop: { id: string; name: string; color: string | null; icon: string | null }; task: { id: number; title: string; prioFinal: number | null } };
+
 export default function MobileHome({
   urgentTasks,
   nextTrip,
+  nextEvent,
   weightLogs,
   inboxCount,
   inboxItems = [],
+  topTaskByProperty = [],
 }: {
   urgentTasks: Task[];
   nextTrip: { title: string; daysTo: number; startDate: string } | null;
+  nextEvent: { title: string; daysTo: number; startDate: string; who: string } | null;
   weightLogs: WeightLog[];
   inboxCount: number;
   inboxItems?: InboxItem[];
+  topTaskByProperty?: PropTask[];
 }) {
   const router = useRouter();
   const [showCapture, setShowCapture] = useState(false);
@@ -104,7 +110,7 @@ export default function MobileHome({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" /></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.17</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.18</span>
           </span>
           <button onClick={() => router.push('/dashboard')} style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' }}>
             <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -230,6 +236,73 @@ export default function MobileHome({
             </div>
           </div>
         )}
+
+        {/* Upcoming event (social) */}
+        {nextEvent && (
+          <div style={{ marginBottom: 28 }}>
+            <SectionLabel label="próximo evento" />
+            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 14, color: 'var(--text)', lineHeight: 1.2 }}>{nextEvent.title}</div>
+                {nextEvent.who && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>{nextEvent.who.toUpperCase()}</div>}
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, color: 'var(--purple)', lineHeight: 1 }}>{nextEvent.daysTo}</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em' }}>DÍAS</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Properties — top task por propiedad */}
+        {topTaskByProperty.length > 0 && (
+          <div style={{ marginBottom: 28 }}>
+            <SectionLabel label="propiedades" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {topTaskByProperty.map(({ prop, task }) => (
+                <div key={prop.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${prop.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 14, flexShrink: 0 }}>{prop.icon ?? '🏠'}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: prop.color ?? 'var(--text3)', letterSpacing: '.12em', marginBottom: 2 }}>{prop.name.toUpperCase()}</div>
+                    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: 'var(--text3)', flexShrink: 0 }}>{task.prioFinal ?? 0}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Finance — estático */}
+        <div style={{ marginBottom: 28 }}>
+          <SectionLabel label="finanzas" />
+          <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, color: 'var(--text)', lineHeight: 1 }}>2,7M</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>PATRIMONIO</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, color: 'var(--text)', lineHeight: 1 }}>145,1K</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>ANUAL</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, color: 'var(--green)', lineHeight: 1 }}>10,2K</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>MENSUAL</div>
+              </div>
+            </div>
+            <svg width="100%" height="32" viewBox="0 0 300 32" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="finGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="var(--green)" stopOpacity="0.3"/>
+                  <stop offset="100%" stopColor="var(--green)" stopOpacity="1"/>
+                </linearGradient>
+              </defs>
+              <polyline points="0,28 40,24 80,26 120,20 160,18 200,14 240,10 300,4" fill="none" stroke="url(#finGrad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        </div>
+
       </div>
 
       {showCapture && <CaptureSheet onClose={() => setShowCapture(false)} />}

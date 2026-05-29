@@ -1,8 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DesktopShell from '@/components/layout/DesktopShell';
+
+function MobilePageHeader({ title }: { title: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 22px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
+        <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+        VERA
+      </span>
+      <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 13, color: 'var(--text)', letterSpacing: '-.01em' }}>{title}</span>
+    </div>
+  );
+}
 
 type InboxItem = {
   id: number;
@@ -49,6 +61,13 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
   const [items, setItems] = useState<InboxItem[]>(initialItems);
   const [selected, setSelected] = useState<InboxItem | null>(null);
   const [tab, setTab] = useState<Tab>('pending');
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 769);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   // Edit state for selected item
   const [editTitle, setEditTitle] = useState('');
@@ -113,12 +132,13 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
     <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={pendingCount}>
       {/* Lista */}
       <div style={{ width: 340, display: 'flex', flexDirection: 'column', borderRight: '.5px solid var(--bg4)', flexShrink: 0 }}>
+        {isMobile && <MobilePageHeader title="Inbox" />}
         <div style={{ padding: '14px 18px 0', flexShrink: 0 }}>
           <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em' }}>
             Inbox <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>capturas</em>
           </div>
           <div style={{ display: 'flex', borderBottom: '.5px solid var(--bg4)', marginTop: 12 }}>
-            {([['pending','SIN PROCESAR',pendingCount],['all','TODAS',items.length],['done','PROCESADAS',null]] as const).map(([id, label, count]) => (
+            {([['pending','SIN PROCESAR',pendingCount],['all','TODAS',null],['done','PROCESADAS',null]] as const).map(([id, label, count]) => (
               <button key={id} onClick={() => setTab(id)} style={{
                 flex: 1, padding: '8px 4px', textAlign: 'center',
                 fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em',
