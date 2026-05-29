@@ -64,17 +64,29 @@ em.anchor {
 
 /* ── MOBILE NAV ── */
 
-/* En móvil: mostrar bottom nav, ocultar desktop shells */
 @media (max-width: 768px) {
-  .desktop-sidebar {
+  /* Ocultar sidebar de iconos y topbar desktop */
+  .desktop-sidebar-nav,
+  .desktop-topbar {
     display: none !important;
   }
-  .mobile-nav {
-    display: flex !important;
+
+  /* Desbloquear el shell para que el contenido sea visible y scrollable */
+  .desktop-shell-root {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .desktop-shell-layout {
+    overflow: visible !important;
+    height: auto !important;
+  }
+  .desktop-shell-content {
+    overflow-y: auto !important;
+    height: 100dvh;
+    padding-bottom: 64px;
   }
 }
 
-/* En desktop: ocultar bottom nav, mostrar desktop shells */
 @media (min-width: 769px) {
   .mobile-nav {
     display: none !important;

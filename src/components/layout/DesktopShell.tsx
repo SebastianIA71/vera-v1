@@ -79,9 +79,9 @@ export default function DesktopShell({
   const bottomEntries = (NAV as readonly NavEntry[]).filter(n => n.bottom);
 
   return (
-    <div className="desktop-sidebar" style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)', overflow: 'hidden' }}>
-      {/* TOP BAR */}
-      <div style={{ height: 54, background: 'var(--bg)', borderBottom: '.5px solid var(--bg4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
+    <div className="desktop-shell-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)', overflow: 'hidden' }}>
+      {/* TOP BAR — oculto en móvil */}
+      <div className="desktop-topbar" style={{ height: 54, background: 'var(--bg)', borderBottom: '.5px solid var(--bg4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 15, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={12} height={12} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
@@ -110,9 +110,9 @@ export default function DesktopShell({
       </div>
 
       {/* LAYOUT */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* NAV COLAPSADA */}
-        <nav style={{ width: 62, background: 'var(--bg)', borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', padding: '12px 0', flexShrink: 0 }}>
+      <div className="desktop-shell-layout" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* NAV COLAPSADA — oculta en móvil */}
+        <nav className="desktop-sidebar-nav" style={{ width: 62, background: 'var(--bg)', borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', padding: '12px 0', flexShrink: 0 }}>
           {(NAV as readonly NavEntry[]).filter(n => !n.bottom).map(n => {
             if (n.id === 'div' || n.id === 'div2') {
               return <div key={n.id} style={{ height: .5, background: 'var(--bg4)', margin: '6px 10px' }} />;
@@ -153,7 +153,9 @@ export default function DesktopShell({
         </nav>
 
         {/* CONTENIDO */}
-        {children}
+        <div className="desktop-shell-content" style={{ flex: 1, display: 'flex', overflow: 'hidden', minWidth: 0 }}>
+          {children}
+        </div>
 
         {/* SLOT DERECHO OPCIONAL */}
         {rightSlot}
