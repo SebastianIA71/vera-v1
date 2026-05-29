@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DesktopShell from '@/components/layout/DesktopShell';
 import TaskDetailPanel, { TaskDetail } from '@/components/tasks/TaskDetailPanel';
 
@@ -36,6 +36,7 @@ export default function PropertiesClient({
 }) {
   const [selected, setSelected] = useState<Task | null>(null);
   const [tasks, setTasks] = useState<Task[]>(allTasks);
+  const [activeProp, setActiveProp] = useState('flat');
 
   const markDone = (id: number) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t));
@@ -60,8 +61,20 @@ export default function PropertiesClient({
           </div>
         </div>
 
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', overflow: 'hidden' }}>
-          {PROPS.map((prop, i) => {
+        {/* Tab selector */}
+        <div style={{ display: 'flex', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
+          {PROPS.map(prop => (
+            <button key={prop.id} onClick={() => setActiveProp(prop.id)} style={{ flex: 1, padding: '10px 8px', background: 'none', border: 'none', borderBottom: activeProp === prop.id ? `2px solid ${prop.color}` : '2px solid transparent', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em', color: activeProp === prop.id ? prop.color : 'var(--text3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, transition: 'all .15s' }}>
+              <span style={{ fontSize: 16 }}>{prop.icon}</span>
+              <span>{prop.label.toUpperCase()}</span>
+              <span style={{ fontSize: 8, color: 'var(--text3)' }}>{tasks.filter(t => t.propertyId === prop.id && t.status !== 'done').length} tareas</span>
+            </button>
+          ))}
+        </div>
+
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          {PROPS.map((prop) => {
+            if (prop.id !== activeProp) return null;
             const propTasks = tasks.filter(t => t.propertyId === prop.id && t.status !== 'done');
             const staleTasks = propTasks.filter(t => t.lastActionAt && Math.floor((Date.now() - new Date(t.lastActionAt).getTime()) / 86400000) >= 14);
             const propEvents = upcomingEvents.filter(e => e.propertyId === prop.id);
@@ -69,7 +82,7 @@ export default function PropertiesClient({
             const eventDays = daysUntil(nextEvent?.startDate);
 
             return (
-              <div key={prop.id} style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: i < 2 ? '.5px solid var(--bg4)' : 'none' }}>
+              <div key={prop.id} style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
                 {/* Col header */}
                 <div style={{ padding: '14px 16px 12px', flexShrink: 0, borderBottom: '.5px solid var(--bg4)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -146,5 +159,6 @@ export default function PropertiesClient({
         </div>
       </div>
     </DesktopShell>
+
   );
 }

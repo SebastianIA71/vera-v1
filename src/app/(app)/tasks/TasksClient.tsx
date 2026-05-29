@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DesktopShell from '@/components/layout/DesktopShell';
 import TaskDetailPanel, { TaskDetail } from '@/components/tasks/TaskDetailPanel';
@@ -77,6 +77,15 @@ export default function TasksClient({
   const [selected, setSelected] = useState<Task | null>(null);
   const [filters, setFilters] = useState<Filters>({ propertyId: null, prioRange: null, status: null, context: null });
   const [showNewTask, setShowNewTask] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 769);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const hasFilters = Object.values(filters).some(Boolean);
 
@@ -106,6 +115,20 @@ export default function TasksClient({
     </button>
   );
 
+  if (isMobile && selected) {
+    return (
+      <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingBottom: 80 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '.5px solid var(--bg4)' }}>
+          <button onClick={() => setSelected(null)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', padding: 0 }}>
+            <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            TAREAS
+          </button>
+        </div>
+        <TaskDetailPanel task={selected} onClose={() => setSelected(null)} onMarkDone={markDone} onUpdate={handleUpdate} />
+      </div>
+    );
+  }
+
   return (
     <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount} pageActions={pageActions}
       rightSlot={selected && (
@@ -130,7 +153,12 @@ export default function TasksClient({
           </div>
 
           {/* Filtros */}
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingBottom: 12, borderBottom: '.5px solid var(--bg4)', alignItems: 'center' }}>
+          <div style={{ paddingBottom: 12, borderBottom: '.5px solid var(--bg4)' }}>
+          <div className="mobile-filter-toggle" onClick={() => setShowFilters(p => !p)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', marginBottom: showFilters ? 10 : 0 }}>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em', color: hasFilters ? 'var(--gold2)' : 'var(--text3)' }}>{hasFilters ? 'FILTROS ACTIVOS' : 'FILTRAR'}</span>
+            <span style={{ color: 'var(--text3)', fontSize: 12 }}>{showFilters ? '↑' : '↓'}</span>
+          </div>
+          <div className={showFilters ? 'filters-visible' : 'filters-mobile-hidden'} style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', flexShrink: 0 }}>DÓNDE</span>
             {PROPERTIES.map(p => (
               <FilterChip key={p.id} label={p.label} color={p.color}
@@ -168,6 +196,7 @@ export default function TasksClient({
                 LIMPIAR ×
               </button>
             )}
+          </div>
           </div>
         </div>
 

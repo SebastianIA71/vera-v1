@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DesktopShell from '@/components/layout/DesktopShell';
 
 type Trip = { id: number; title: string; startDate?: Date | null; endDate?: Date | null; who?: string | null; status?: string | null; notes?: string | null; transport?: string | null; accommodation?: string | null };
@@ -31,9 +31,71 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
   inboxCount: number;
 }) {
   const [selected, setSelected] = useState<Trip | null>(trips[0] ?? null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 769);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const now = new Date();
   const nextTrip = trips.find(t => t.startDate && new Date(t.startDate) > now);
+
+  if (isMobile && selected) {
+    return (
+      <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingBottom: 80 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '.5px solid var(--bg4)' }}>
+          <button onClick={() => setSelected(null)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', padding: 0 }}>
+            <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            VIAJES
+          </button>
+        </div>
+        <TripDetail trip={selected} />
+      </div>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingBottom: 80 }}>
+        <div style={{ padding: '14px 18px 12px', borderBottom: '.5px solid var(--bg4)' }}>
+          <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em' }}>
+            Viajes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>2026</em>
+          </div>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text4)', marginTop: 4 }}>{trips.length} VIAJES PLANIFICADOS</div>
+        </div>
+        <div>
+          {trips.map(trip => {
+            const days = daysUntil(trip.startDate);
+            const isNext = trip.id === nextTrip?.id;
+            const st = STATUS_LABELS[trip.status ?? 'planning'] ?? STATUS_LABELS.planning;
+            return (
+              <div key={trip.id} onClick={() => setSelected(trip)} style={{ padding: '14px 18px', borderBottom: '.5px solid var(--bg2)', cursor: 'pointer', position: 'relative' }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: isNext ? 'var(--blue)' : 'transparent' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 5 }}>
+                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 14, color: 'var(--text)', lineHeight: 1.2 }}>{trip.title}</div>
+                  {days !== null && (
+                    <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 10 }}>
+                      <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 20, color: days > 0 ? 'var(--blue)' : 'var(--green)', lineHeight: 1 }}>{Math.abs(days)}</div>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, letterSpacing: '.14em', color: 'var(--text2)' }}>{days > 0 ? 'DÍAS' : 'EN CURSO'}</div>
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: 8, fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text4)', flexWrap: 'wrap', marginBottom: 6 }}>
+                  {trip.who && <span style={{ color: 'var(--text2)' }}>{trip.who.toUpperCase()}</span>}
+                  <span>·</span>
+                  <span>{fmtDate(trip.startDate)}–{fmtDate(trip.endDate)}</span>
+                </div>
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', padding: '2px 6px', borderRadius: 999, border: `.5px solid ${st.border}`, color: st.color }}>{st.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}>

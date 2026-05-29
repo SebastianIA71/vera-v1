@@ -1,3 +1,5 @@
+import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { tasks, events, weightLog, inbox } from '@/lib/db/schema';
 import { ne, desc, eq } from 'drizzle-orm';
@@ -6,6 +8,11 @@ import MobileHome from './MobileHome';
 export const dynamic = 'force-dynamic';
 
 export default async function AppRootPage() {
+  const headersList = await headers();
+  const ua = headersList.get('user-agent') ?? '';
+  const isMobile = /iPhone|Android|Mobile|iPad/i.test(ua);
+  if (!isMobile) redirect('/dashboard');
+
   const now = new Date();
 
   const [allTasks, allEvents, weights, inboxItems] = await Promise.all([

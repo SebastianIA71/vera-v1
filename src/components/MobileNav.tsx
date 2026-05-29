@@ -43,10 +43,18 @@ function AgentsIcon({ size, color }: { size: number; color: string }) {
   )
 }
 
-function VitaIcon({ size, color }: { size: number; color: string }) {
+function MorningIcon({ size, color }: { size: number; color: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+      <circle cx="12" cy="12" r="4"/>
+      <line x1="12" y1="2" x2="12" y2="4"/>
+      <line x1="12" y1="20" x2="12" y2="22"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="2" y1="12" x2="4" y2="12"/>
+      <line x1="20" y1="12" x2="22" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
     </svg>
   )
 }
@@ -56,7 +64,7 @@ const NAV_ITEMS = [
   { href: '/tasks',   label: 'tareas',  icon: TasksIcon   },
   { href: '/inbox',   label: 'inbox',   icon: InboxIcon,  badge: true },
   { href: '/agents',  label: 'agentes', icon: AgentsIcon  },
-  { href: '/vita',    label: 'vita',    icon: VitaIcon    },
+  { href: '/morning', label: 'morning', icon: MorningIcon },
 ]
 
 export function MobileNav({ inboxCount = 0 }: { inboxCount?: number }) {
