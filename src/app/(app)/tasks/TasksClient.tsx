@@ -124,7 +124,7 @@ export default function TasksClient({
             TAREAS
           </button>
         </div>
-        <TaskDetailPanel task={selected} onClose={() => setSelected(null)} onMarkDone={markDone} onUpdate={handleUpdate} />
+        <TaskDetailPanel key={selected.id} task={selected} onClose={() => setSelected(null)} onMarkDone={markDone} onUpdate={handleUpdate} />
       </div>
     );
   }
@@ -133,6 +133,7 @@ export default function TasksClient({
     <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount} pageActions={pageActions}
       rightSlot={selected && (
         <TaskDetailPanel
+          key={selected.id}
           task={selected}
           onClose={() => setSelected(null)}
           onMarkDone={markDone}

@@ -95,6 +95,9 @@ em.anchor {
   .mobile-nav {
     display: none !important;
   }
+  .mobile-home-root {
+    display: none;
+  }
 }
 
 /* Filtros móvil */

@@ -1,5 +1,3 @@
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { tasks, events, inbox } from '@/lib/db/schema';
 import { ne, desc, lte } from 'drizzle-orm';
@@ -8,10 +6,6 @@ import DashboardClient from './DashboardClient';
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
-  const headersList = await headers();
-  const ua = headersList.get('user-agent') ?? '';
-  const isMobile = /iPhone|Android|Mobile|iPad/i.test(ua);
-  if (isMobile) redirect('/');
   const now = new Date();
 
   const [allTasks, allEvents, inboxItems] = await Promise.all([

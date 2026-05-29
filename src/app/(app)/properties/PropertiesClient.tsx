@@ -46,7 +46,7 @@ export default function PropertiesClient({
   return (
     <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}
       rightSlot={selected && (
-        <TaskDetailPanel task={selected} onClose={() => setSelected(null)} onMarkDone={markDone}
+        <TaskDetailPanel key={selected.id} task={selected} onClose={() => setSelected(null)} onMarkDone={markDone}
           onUpdate={(id, data) => setTasks(prev => prev.map(t => t.id === id ? { ...t, ...data } : t))}
         />
       )}

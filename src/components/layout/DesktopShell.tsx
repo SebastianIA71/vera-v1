@@ -29,7 +29,7 @@ function NavIcon({ icon }: { icon: string }) {
     case 'command':  return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>;
     case 'tasks':    return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>;
     case 'inbox':    return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
-    case 'trips':    return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
+    case 'trips':    return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19 4s-2 1-3.5 2.5L9 8.2 1.8 6.4C1 6 .5 7 1 7.5L5.5 12l-2 3.5c-.5 1 .5 2 1.5 1.5L8 15l4.5 4.5c.5.5 1.5 0 1.5-1l-1.8-7.2z"/></svg>;
     case 'props':    return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
     case 'finance':  return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
     case 'agents':   return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z"/></svg>;
@@ -86,7 +86,7 @@ export default function DesktopShell({
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 15, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={12} height={12} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.14</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.15</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 14, color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
@@ -111,19 +111,25 @@ export default function DesktopShell({
 
       {/* LAYOUT */}
       <div className="desktop-shell-layout" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* NAV COLAPSADA — oculta en móvil */}
-        <nav className="desktop-sidebar-nav" style={{ width: 62, background: 'var(--bg)', borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', padding: '12px 0', flexShrink: 0 }}>
+        {/* NAV CON LABELS — oculta en móvil */}
+        <nav className="desktop-sidebar-nav" style={{ width: 200, background: 'var(--bg)', borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', padding: '12px 0', flexShrink: 0 }}>
+          {/* Logo */}
+          <div style={{ padding: '4px 16px 16px', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 13, letterSpacing: '.3em', color: 'var(--gold2)' }}>
+            <svg width={10} height={10} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
+            VERA
+          </div>
           {(NAV as readonly NavEntry[]).filter(n => !n.bottom).map(n => {
             if (n.id === 'div' || n.id === 'div2') {
-              return <div key={n.id} style={{ height: .5, background: 'var(--bg4)', margin: '6px 10px' }} />;
+              return <div key={n.id} style={{ height: .5, background: 'var(--bg4)', margin: '6px 14px' }} />;
             }
             return (
               <button
                 key={n.id}
                 onPointerDown={e => { e.preventDefault(); n.path && navigate(n.path); }}
                 style={{
-                  width: 62, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', position: 'relative', background: 'none', border: 'none',
+                  width: '100%', height: 44, display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '0 16px', cursor: 'pointer', position: 'relative',
+                  background: 'none', border: 'none',
                   color: pathname === n.path ? 'var(--gold2)' : 'var(--text3)',
                   touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent',
                 }}
@@ -133,20 +139,24 @@ export default function DesktopShell({
                 )}
                 {n.icon && <NavIcon icon={n.icon} />}
                 {n.badge && inboxCount > 0 && (
-                  <span style={{ position: 'absolute', top: 6, right: 8, background: 'var(--red)', color: '#fff', fontFamily: 'var(--font-dm-mono)', fontSize: 7, padding: '1px 4px', borderRadius: 999 }}>{inboxCount}</span>
+                  <span style={{ background: 'var(--red)', color: '#fff', fontFamily: 'var(--font-dm-mono)', fontSize: 7, padding: '1px 4px', borderRadius: 999 }}>{inboxCount}</span>
                 )}
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'inherit', whiteSpace: 'nowrap' }}>
+                  {n.id === 'div' || n.id === 'div2' ? '' : n.id.toUpperCase()}
+                </span>
               </button>
             );
           })}
           <div style={{ marginTop: 'auto' }}>
-            <div style={{ height: .5, background: 'var(--bg4)', margin: '6px 10px' }} />
+            <div style={{ height: .5, background: 'var(--bg4)', margin: '6px 14px' }} />
             {bottomEntries.map(n => (
               <button
                 key={n.id}
                 onPointerDown={e => { e.preventDefault(); n.path && navigate(n.path); }}
-                style={{ width: 62, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'none', border: 'none', color: 'var(--text3)', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                style={{ width: '100%', height: 44, display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', cursor: 'pointer', background: 'none', border: 'none', color: 'var(--text3)', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
               >
                 {n.icon && <NavIcon icon={n.icon} />}
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', whiteSpace: 'nowrap' }}>{n.id.toUpperCase()}</span>
               </button>
             ))}
           </div>
