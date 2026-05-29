@@ -21,7 +21,8 @@ function MobileNavIcon({ name }: { name: string }) {
     case 'tasks': return <svg viewBox="0 0 24 24" width={20} height={20} {...s}><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>;
     case 'inbox': return <svg viewBox="0 0 24 24" width={20} height={20} {...s}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
     case 'trips': return <svg viewBox="0 0 24 24" width={20} height={20} {...s}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
-    case 'props': return <svg viewBox="0 0 24 24" width={20} height={20} {...s}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+    case 'props':  return <svg viewBox="0 0 24 24" width={20} height={20} {...s}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
+    case 'agents': return <svg viewBox="0 0 24 24" width={20} height={20} {...s}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>;
     default: return null;
   }
 }
@@ -251,11 +252,11 @@ export default function MobileHome({
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       }}>
         {[
-          { label: 'NOW', path: '/dashboard', icon: 'cmd' },
+          { label: 'HOME', path: '/', icon: 'cmd' },
           { label: 'TAREAS', path: '/tasks', icon: 'tasks' },
           { label: 'INBOX', path: null, icon: 'inbox', badge: inboxCount },
+          { label: 'AGENTES', path: '/agents', icon: 'agents' },
           { label: 'VIAJES', path: '/trips', icon: 'trips' },
-          { label: 'PROPS', path: '/properties', icon: 'props' },
         ].map(item => (
           <button
             key={item.label}
