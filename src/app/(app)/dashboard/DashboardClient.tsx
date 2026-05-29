@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AgentPanel from '@/components/command/AgentPanel';
 import DesktopNav from '@/components/layout/DesktopNav';
+import { QUOTES } from '@/lib/quotes';
 import dynamic from 'next/dynamic';
 const CaptureSheet = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 
@@ -378,7 +379,11 @@ export default function DashboardClient({
 }) {
   const router = useRouter();
   const [time, setTime] = useState('');
-  const navCollapsed = false; // siempre expandida en desktop
+  const navCollapsed = false;
+  const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+  const renderQuote = (raw: string) => raw.split(/\*([^*]+)\*/).map((part, i) =>
+    i % 2 === 1 ? <em key={i} style={{ fontStyle: 'italic', color: 'var(--gold)' }}>{part}</em> : part
+  );
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [agentStatus, setAgentStatus] = useState<Record<AgentId, AgentStatus>>(
     Object.fromEntries(['voice','prio','alert','search','executor','solution'].map(id => [id, { status: 'idle' }])) as Record<AgentId, AgentStatus>
@@ -456,7 +461,7 @@ export default function DashboardClient({
               <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" />
             </svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.18</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.19</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
@@ -499,6 +504,11 @@ export default function DashboardClient({
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.2em', color: 'var(--text4)' }}>
               6 AGENTES · TURSO SYNC
             </div>
+          </div>
+
+          {/* Quote */}
+          <div style={{ padding: '6px 24px 0', fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 13, color: 'var(--text3)', letterSpacing: '.01em', lineHeight: 1.5, flexShrink: 0 }}>
+            {renderQuote(quote)}
           </div>
 
           {/* Orbital map */}

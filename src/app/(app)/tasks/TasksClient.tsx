@@ -2,18 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-
-function MobilePageHeader({ title }: { title: string }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 22px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
-      <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
-        <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
-        VERA
-      </span>
-      <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 13, color: 'var(--text)', letterSpacing: '-.01em' }}>{title}</span>
-    </div>
-  );
-}
+import MobilePageHeader from '@/components/layout/MobilePageHeader';
 import DesktopShell from '@/components/layout/DesktopShell';
 import TaskDetailPanel, { TaskDetail } from '@/components/tasks/TaskDetailPanel';
 
@@ -276,10 +265,10 @@ function TaskRow({ task, selected, onSelect, onPrioChange }: { task: Task; selec
       onMouseLeave={e => { if (!selected) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
     >
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: bc, borderRadius: 0 }} />
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-        <button onClick={e => changePrio(e, +1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 0, fontSize: 8, lineHeight: 1 }}>▲</button>
-        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', lineHeight: 1 }}>{task.prioFinal ?? 0}</span>
-        <button onClick={e => changePrio(e, -1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 0, fontSize: 8, lineHeight: 1 }}>▼</button>
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 0, flexShrink: 0, background: 'var(--bg3)', borderRadius: 6, overflow: 'hidden' }}>
+        <button onClick={e => changePrio(e, -1)} style={{ width: 24, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 13, lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}>−</button>
+        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text2)', lineHeight: 1, minWidth: 16, textAlign: 'center' }}>{task.prioFinal ?? 0}</span>
+        <button onClick={e => changePrio(e, +1)} style={{ width: 24, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 13, lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}>+</button>
       </div>
       <div style={{ width: 16, height: 16, borderRadius: '50%', border: '.5px solid var(--text3)', flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>

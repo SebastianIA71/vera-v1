@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { events } from '@/lib/db/schema';
-import { eq, asc, lte, gte } from 'drizzle-orm';
+import { asc } from 'drizzle-orm';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -20,4 +20,18 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json(filtered);
+}
+
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const [row] = await db.insert(events).values({
+    title:     body.title,
+    startDate: body.startDate ? new Date(body.startDate) : null,
+    endDate:   body.endDate   ? new Date(body.endDate)   : null,
+    type:      body.type      ?? 'social',
+    who:       body.who       ?? null,
+    status:    body.status    ?? 'planning',
+    notes:     body.notes     ?? null,
+  }).returning();
+  return NextResponse.json(row);
 }

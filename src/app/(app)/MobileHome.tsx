@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { QUOTES } from '@/lib/quotes';
 
 const CaptureSheet = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const InboxMobile = dynamic(() => import('@/components/inbox/InboxMobile'), { ssr: false });
@@ -62,6 +63,11 @@ export default function MobileHome({
   const [showInbox, setShowInbox] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [statusLine, setStatusLine] = useState('');
+  const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+
+  const renderQuote = (raw: string) => raw.split(/\*([^*]+)\*/).map((part, i) =>
+    i % 2 === 1 ? <em key={i} style={{ fontStyle: 'italic', color: 'var(--gold)' }}>{part}</em> : part
+  );
 
   useEffect(() => {
     const h = new Date().getHours();
@@ -110,7 +116,7 @@ export default function MobileHome({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" /></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.18</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.19</span>
           </span>
           <button onClick={() => router.push('/dashboard')} style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' }}>
             <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -129,6 +135,11 @@ export default function MobileHome({
               {statusLine}
             </div>
           )}
+        </div>
+
+        {/* Quote */}
+        <div style={{ marginBottom: 24, fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 13, lineHeight: 1.5, color: 'var(--text3)', letterSpacing: '.01em', paddingLeft: 2 }}>
+          {renderQuote(quote)}
         </div>
 
         {/* Now section */}
@@ -219,7 +230,7 @@ export default function MobileHome({
         {/* Upcoming trip */}
         {nextTrip && (
           <div style={{ marginBottom: 28 }}>
-            <SectionLabel label="Upcoming" link="VER TODO →" />
+            <SectionLabel label="Upcoming trips" link="VER TODO →" />
             <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>

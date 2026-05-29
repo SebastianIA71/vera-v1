@@ -2,18 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import DesktopShell from '@/components/layout/DesktopShell';
-
-function MobilePageHeader({ title }: { title: string }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 22px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
-      <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
-        <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
-        VERA
-      </span>
-      <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 13, color: 'var(--text)', letterSpacing: '-.01em' }}>{title}</span>
-    </div>
-  );
-}
+import MobilePageHeader from '@/components/layout/MobilePageHeader';
 
 type AgentId = 'prio' | 'alert' | 'search' | 'executor' | 'solution';
 
@@ -79,7 +68,7 @@ export default function AgentsClient({
           <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 22, color: 'var(--text)', lineHeight: 1.1 }}>
             Agentes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Vera</em>
           </div>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 4 }}>v.18</div>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 4 }}>v.19</div>
         </div>
       </div>
 
