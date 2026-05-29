@@ -118,7 +118,7 @@ export default function MobileHome({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" /></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.22</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.23</span>
           </span>
           <button onClick={() => router.push('/dashboard')} style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' }}>
             <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -185,7 +185,7 @@ export default function MobileHome({
         {/* Weight section */}
         {latestWeight && (
           <div style={{ marginBottom: 28 }}>
-            <SectionLabel label="Peso" meta="14 DÍAS" />
+            <SectionLabel label="Weight" meta="14 DÍAS" />
             <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '16px 16px 12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
                 <div>
@@ -229,31 +229,10 @@ export default function MobileHome({
           </div>
         )}
 
-        {/* Upcoming trip */}
-        {nextTrip && (
-          <div style={{ marginBottom: 28 }}>
-            <SectionLabel label="Upcoming trips" link="VER TODO →" />
-            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 16, color: 'var(--text)', letterSpacing: '-.01em' }}>{nextTrip.title}</div>
-                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text2)', letterSpacing: '.12em', marginTop: 5 }}>
-                    {new Date(nextTrip.startDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase()}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 26, color: 'var(--blue)', lineHeight: 1, textAlign: 'right' }}>{nextTrip.daysTo}</div>
-                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.18em', color: 'var(--text2)', marginTop: 2, textAlign: 'right' }}>DÍAS</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Upcoming event (social) */}
+        {/* Upcoming events (social) */}
         <div style={{ marginBottom: 28 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-            <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 15, letterSpacing: '.22em', color: 'var(--gold2)', textTransform: 'uppercase' }}>próximo evento</span>
+            <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 15, letterSpacing: '.22em', color: 'var(--gold2)', textTransform: 'uppercase' }}>Upcoming Events</span>
             <button onClick={() => setShowNewEvent(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 20, lineHeight: 1, padding: '0 2px' }}>+</button>
           </div>
         {nextEvent ? (
@@ -274,10 +253,31 @@ export default function MobileHome({
         )}
         </div>
 
-        {/* Properties — top task por propiedad */}
+        {/* Upcoming trips */}
+        {nextTrip && (
+          <div style={{ marginBottom: 28 }}>
+            <SectionLabel label="Upcoming trips" link="VER TODO →" />
+            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 16, color: 'var(--text)', letterSpacing: '-.01em' }}>{nextTrip.title}</div>
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text2)', letterSpacing: '.12em', marginTop: 5 }}>
+                    {new Date(nextTrip.startDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase()}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 26, color: 'var(--blue)', lineHeight: 1, textAlign: 'right' }}>{nextTrip.daysTo}</div>
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.18em', color: 'var(--text2)', marginTop: 2, textAlign: 'right' }}>DÍAS</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Real estate — top task por propiedad */}
         {topTaskByProperty.length > 0 && (
           <div style={{ marginBottom: 28 }}>
-            <SectionLabel label="propiedades" />
+            <SectionLabel label="Real Estate" />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {topTaskByProperty.map(({ prop, task }) => (
                 <div key={prop.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${prop.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -295,7 +295,7 @@ export default function MobileHome({
 
         {/* Finance — estático */}
         <div style={{ marginBottom: 28 }}>
-          <SectionLabel label="finanzas" />
+          <SectionLabel label="Finance" />
           <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
               <div>

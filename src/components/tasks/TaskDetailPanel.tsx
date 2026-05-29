@@ -98,7 +98,7 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
               const next = Math.max(0, (task.prioFinal ?? task.prio ?? 0) - 1);
               await fetch(`/api/tasks/${task.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prioManual: next, prioFinal: next }) });
               onUpdate?.(task.id, { prioManual: next, prioFinal: next });
-            }} style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--bg3)', border: 'none', cursor: 'pointer', color: 'var(--text2)', fontSize: 14, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+            }} style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--bg2)', border: '.5px solid var(--bg4)', cursor: 'pointer', color: 'var(--text)', fontSize: 16, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
             <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 24, color: 'var(--gold)', lineHeight: 1, minWidth: 28, textAlign: 'center' }}>
               {task.prioFinal ?? task.prio ?? 0}
             </div>
@@ -106,7 +106,7 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
               const next = Math.min(10, (task.prioFinal ?? task.prio ?? 0) + 1);
               await fetch(`/api/tasks/${task.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prioManual: next, prioFinal: next }) });
               onUpdate?.(task.id, { prioManual: next, prioFinal: next });
-            }} style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--bg3)', border: 'none', cursor: 'pointer', color: 'var(--text2)', fontSize: 14, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+            }} style={{ width: 28, height: 28, borderRadius: 6, background: 'var(--bg2)', border: '.5px solid var(--bg4)', cursor: 'pointer', color: 'var(--text)', fontSize: 16, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
           </div>
           <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 15, lineHeight: 1.3, color: 'var(--text)', letterSpacing: '-.005em' }}>
             {task.title}

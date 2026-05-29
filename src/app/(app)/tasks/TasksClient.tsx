@@ -265,10 +265,10 @@ function TaskRow({ task, selected, onSelect, onPrioChange }: { task: Task; selec
       onMouseLeave={e => { if (!selected) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
     >
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: bc, borderRadius: 0 }} />
-      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 0, flexShrink: 0, background: 'var(--bg3)', borderRadius: 6, overflow: 'hidden' }}>
-        <button onClick={e => changePrio(e, -1)} style={{ width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 11, lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}>−</button>
-        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: 'var(--text2)', lineHeight: 1, minWidth: 16, textAlign: 'center' }}>{task.prioFinal ?? 0}</span>
-        <button onClick={e => changePrio(e, +1)} style={{ width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 11, lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}>+</button>
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 0, flexShrink: 0, background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 6, overflow: 'hidden' }}>
+        <button onClick={e => changePrio(e, -1)} style={{ width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: 14, lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}>−</button>
+        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: 'var(--gold2)', lineHeight: 1, minWidth: 18, textAlign: 'center' }}>{task.prioFinal ?? 0}</span>
+        <button onClick={e => changePrio(e, +1)} style={{ width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: 14, lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}>+</button>
       </div>
       <div style={{ width: 16, height: 16, borderRadius: '50%', border: '.5px solid var(--text3)', flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>

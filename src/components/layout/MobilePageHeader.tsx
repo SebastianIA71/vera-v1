@@ -1,6 +1,6 @@
 'use client';
 
-const APP_VERSION = 'v.22';
+const APP_VERSION = 'v.23';
 
 export default function MobilePageHeader({ title }: { title: string }) {
   return (
