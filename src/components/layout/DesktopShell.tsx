@@ -113,11 +113,12 @@ export default function DesktopShell({
           {(NAV as readonly NavEntry[]).filter(n => n.id !== 'div' && n.id !== 'div2' && !n.bottom).map(n => (
             <button
               key={n.id}
-              onClick={() => n.path && navigate(n.path)}
+              onPointerDown={e => { e.preventDefault(); n.path && navigate(n.path); }}
               style={{
-                width: 62, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 62, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 cursor: 'pointer', position: 'relative', background: 'none', border: 'none',
                 color: pathname === n.path ? 'var(--gold2)' : 'var(--text3)',
+                touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent',
               }}
             >
               {pathname === n.path && (
@@ -131,8 +132,8 @@ export default function DesktopShell({
           ))}
           <div style={{ height: .5, background: 'var(--bg4)', margin: '6px 10px' }} />
           <button
-            onClick={() => navigate('/finance')}
-            style={{ width: 62, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'none', border: 'none', color: 'var(--text3)' }}
+            onPointerDown={e => { e.preventDefault(); navigate('/finance'); }}
+            style={{ width: 62, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'none', border: 'none', color: 'var(--text3)', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
           >
             <NavIcon icon="finance" />
           </button>
@@ -141,8 +142,8 @@ export default function DesktopShell({
             {bottomEntries.map(n => (
               <button
                 key={n.id}
-                onClick={() => n.path && navigate(n.path)}
-                style={{ width: 62, height: 42, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'none', border: 'none', color: 'var(--text3)' }}
+                onPointerDown={e => { e.preventDefault(); n.path && navigate(n.path); }}
+                style={{ width: 62, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'none', border: 'none', color: 'var(--text3)', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
               >
                 {n.icon && <NavIcon icon={n.icon} />}
               </button>
