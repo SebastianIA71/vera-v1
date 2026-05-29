@@ -117,6 +117,7 @@ export default function MobileHome({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" /></svg>
             VERA
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.06</span>
           </span>
           <button onClick={() => router.push('/dashboard')} style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' }}>
             <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -286,27 +287,6 @@ export default function MobileHome({
           </button>
         ))}
       </div>
-
-      {/* FAB */}
-      <button
-        onClick={() => setShowCapture(true)}
-        aria-label="captura rápida"
-        style={{
-          position: 'fixed', right: 22, bottom: 72, width: 62, height: 62,
-          borderRadius: '50%', background: 'var(--bg)', border: '.5px solid var(--gold2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 50, cursor: 'pointer', color: 'var(--gold)',
-          boxShadow: '0 4px 24px rgba(0,0,0,.5)',
-        }}
-      >
-        <div style={{ position: 'absolute', inset: -7, borderRadius: '50%', border: '.5px solid rgba(196,168,106,.15)' }} />
-        <svg viewBox="0 0 24 24" width={23} height={23} fill="none" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round">
-          <rect x="9" y="3" width="6" height="13" rx="3" />
-          <path d="M5 11a7 7 0 0 0 14 0" />
-          <line x1="12" y1="18" x2="12" y2="22" />
-          <line x1="8" y1="22" x2="16" y2="22" />
-        </svg>
-      </button>
 
       {showCapture && <CaptureSheet onClose={() => setShowCapture(false)} />}
       {showInbox && <InboxMobile items={inboxItems} onClose={() => { setShowInbox(false); router.refresh(); }} />}

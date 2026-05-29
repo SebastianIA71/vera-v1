@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AgentPanel from '@/components/command/AgentPanel';
+import dynamic from 'next/dynamic';
+const CaptureSheet = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 
 /* ─── Types ─────────────────────────────────────────── */
 type AgentId = 'voice' | 'prio' | 'alert' | 'search' | 'executor' | 'solution';
@@ -14,7 +16,7 @@ type Task = {
   tags?: string | null; dueDate?: Date | null;
 };
 type TabId = 'punchlist' | 'inbox' | 'alerts';
-type RightPanelProps = { tasks: Task[]; inboxCount: number; nextTrip: { title: string; daysTo: number } | null; tab: TabId; setTab: (t: TabId) => void; onMarkDone: (id: number) => void };
+type RightPanelProps = { tasks: Task[]; inboxCount: number; nextTrip: { title: string; daysTo: number } | null; tab: TabId; setTab: (t: TabId) => void; onMarkDone: (id: number) => void; onInboxCountChange?: (n: number) => void };
 type CompletingTask = Task & { completingAt: number };
 
 /* ─── Constants ─────────────────────────────────────── */
@@ -23,12 +25,12 @@ const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV
 const pad = (n: number) => String(n).padStart(2, '0');
 
 const AGENTS: { id: AgentId; label: string; icon: string; top: number; left: number; labelPos: 'above' | 'below' }[] = [
-  { id: 'voice',    label: 'VOICE',    icon: 'mic',   top: 51,  left: 280, labelPos: 'above' },
-  { id: 'prio',     label: 'PRIO',     icon: 'prio',  top: 92,  left: 473, labelPos: 'above' },
-  { id: 'alert',    label: 'ALERT',    icon: 'bell',  top: 428, left: 484, labelPos: 'below' },
-  { id: 'solution', label: 'SOLUTION', icon: 'help',  top: 499, left: 280, labelPos: 'below' },
-  { id: 'executor', label: 'EXECUTOR', icon: 'send',  top: 417, left: 74,  labelPos: 'below' },
-  { id: 'search',   label: 'SEARCH',   icon: 'search',top: 122, left: 87,  labelPos: 'above' },
+  { id: 'voice',    label: 'VOICE',    icon: 'mic',   top: 56,  left: 308, labelPos: 'above' },
+  { id: 'prio',     label: 'PRIO',     icon: 'prio',  top: 101, left: 520, labelPos: 'above' },
+  { id: 'alert',    label: 'ALERT',    icon: 'bell',  top: 471, left: 532, labelPos: 'below' },
+  { id: 'solution', label: 'SOLUTION', icon: 'help',  top: 549, left: 308, labelPos: 'below' },
+  { id: 'executor', label: 'EXECUTOR', icon: 'send',  top: 459, left: 81,  labelPos: 'below' },
+  { id: 'search',   label: 'SEARCH',   icon: 'search',top: 134, left: 96,  labelPos: 'above' },
 ];
 
 /* ─── SVG icons ─────────────────────────────────────── */
@@ -59,16 +61,20 @@ function taskBorderColor(task: Task, now: Date): string {
 /* ─── Inbox Panel ───────────────────────────────────── */
 type InboxItem = { id: number; content: string; source?: string | null; type?: string | null; suggestedPropertyId?: string | null; createdAt?: Date | null };
 
-function InboxPanel({ inboxCount }: { inboxCount: number }) {
+function InboxPanel({ inboxCount, onCountChange }: { inboxCount: number; onCountChange?: (n: number) => void }) {
   const [items, setItems] = useState<InboxItem[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     fetch('/api/inbox')
       .then(r => r.json())
-      .then(d => { setItems(d); setLoaded(true); })
+      .then(d => {
+        setItems(d);
+        setLoaded(true);
+        onCountChange?.(d.length);
+      })
       .catch(() => setLoaded(true));
-  }, []);
+  }, [onCountChange]);
 
   if (!loaded) {
     return (
@@ -121,7 +127,7 @@ function InboxPanel({ inboxCount }: { inboxCount: number }) {
 }
 
 /* ─── Right Panel ───────────────────────────────────── */
-function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone }: RightPanelProps) {
+function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone, onInboxCountChange }: RightPanelProps) {
   const now = new Date();
   const [completing, setCompleting] = useState<Map<number, CompletingTask>>(new Map());
 
@@ -254,7 +260,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone }: Ri
         )}
 
         {tab === 'inbox' && (
-          <InboxPanel inboxCount={inboxCount} />
+          <InboxPanel inboxCount={inboxCount} onCountChange={onInboxCountChange} />
         )}
 
         {tab === 'alerts' && (
@@ -379,6 +385,16 @@ export default function DashboardClient({
   const [rightTab, setRightTab] = useState<TabId>('punchlist');
   const [showNewTask, setShowNewTask] = useState(false);
   const [activeAgent, setActiveAgent] = useState<AgentId | null>(null);
+  const [showCapture, setShowCapture] = useState(false);
+  const [inboxCount, setInboxCount] = useState(initialInboxCount);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 900);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   // Clock
   useEffect(() => {
@@ -439,6 +455,7 @@ export default function DashboardClient({
               <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" />
             </svg>
             VERA
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.06</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
@@ -455,6 +472,7 @@ export default function DashboardClient({
             SISTEMA ACTIVO
           </div>
           <button
+            onClick={() => setShowCapture(true)}
             style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 16px', border: '.5px solid var(--gold2)', borderRadius: '999px', background: 'transparent', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', letterSpacing: '.18em', cursor: 'pointer' }}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold2)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
@@ -499,7 +517,6 @@ export default function DashboardClient({
           <div style={{ padding: '16px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexShrink: 0 }}>
             <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: '22px', color: 'var(--text)', letterSpacing: '-.01em' }}>
               Command <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Centre</em>
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.16em', color: 'var(--text3)', marginLeft: 10 }}>v.05</span>
             </div>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.2em', color: 'var(--text4)' }}>
               6 AGENTES · TURSO SYNC
@@ -508,9 +525,9 @@ export default function DashboardClient({
 
           {/* Orbital map */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            <div style={{ position: 'relative', width: '560px', height: '560px', flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: '616px', height: '616px', flexShrink: 0 }}>
               {/* Rings */}
-              {[178, 330, 480, 560].map((size, i) => (
+              {[196, 363, 528, 616].map((size, i) => (
                 <div key={size} style={{
                   position: 'absolute', borderRadius: '50%', top: '50%', left: '50%',
                   width: `${size}px`, height: `${size}px`,
@@ -523,11 +540,11 @@ export default function DashboardClient({
               {AGENTS.map(agent => {
                 const status = agentStatus[agent.id]?.status ?? 'idle';
                 const isActive = status === 'running' || status === 'active';
-                const angle = Math.atan2(agent.top - 280, agent.left - 280);
-                const dist = Math.sqrt(Math.pow(agent.left - 280, 2) + Math.pow(agent.top - 280, 2));
+                const angle = Math.atan2(agent.top - 308, agent.left - 308);
+                const dist = Math.sqrt(Math.pow(agent.left - 308, 2) + Math.pow(agent.top - 308, 2));
                 return (
                   <div key={`conn-${agent.id}`} style={{
-                    position: 'absolute', top: '280px', left: '280px',
+                    position: 'absolute', top: '308px', left: '308px',
                     width: `${dist}px`, height: '.5px',
                     background: isActive ? 'rgba(196,168,106,.35)' : 'rgba(196,168,106,.12)',
                     transformOrigin: '0 0',
@@ -540,12 +557,12 @@ export default function DashboardClient({
               {/* Core */}
               <div style={{
                 position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-                width: '100px', height: '100px', borderRadius: '50%', background: 'var(--bg)',
+                width: '110px', height: '110px', borderRadius: '50%', background: 'var(--bg)',
                 border: '.5px solid var(--gold2)', display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center', zIndex: 5,
               }}>
-                <div style={{ position: 'absolute', inset: '-10px', borderRadius: '50%', border: '.5px solid rgba(196,168,106,.18)' }} />
-                <div style={{ position: 'absolute', inset: '-22px', borderRadius: '50%', border: '.5px solid rgba(196,168,106,.07)' }} />
+                <div style={{ position: 'absolute', inset: '-11px', borderRadius: '50%', border: '.5px solid rgba(196,168,106,.18)' }} />
+                <div style={{ position: 'absolute', inset: '-24px', borderRadius: '50%', border: '.5px solid rgba(196,168,106,.07)' }} />
                 <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: '14px', letterSpacing: '.3em', color: 'var(--gold2)' }}>VERA</div>
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.2em', color: 'var(--green)', marginTop: '3px' }}>● ACTIVA</div>
               </div>
@@ -556,7 +573,7 @@ export default function DashboardClient({
                 return (
                   <div key={agent.id} onClick={() => setActiveAgent(agent.id)} style={{ position: 'absolute', top: `${agent.top}px`, left: `${agent.left}px`, transform: 'translate(-50%,-50%)', zIndex: 4, cursor: 'pointer' }}>
                     <div style={{
-                      width: '66px', height: '66px', borderRadius: '50%', background: 'var(--bg2)',
+                      width: '73px', height: '73px', borderRadius: '50%', background: 'var(--bg2)',
                       border: `.5px solid ${nodeBorderColor(status)}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
                       color: nodeIconColor(status),
@@ -599,8 +616,8 @@ export default function DashboardClient({
           </div>
         </div>
 
-        {/* RIGHT PANEL */}
-        {activeAgent ? (
+        {/* RIGHT PANEL — oculto en móvil */}
+        {!isMobile && (activeAgent ? (
           <AgentPanel
             agentId={activeAgent}
             agentStatus={agentStatus[activeAgent] ?? { status: 'idle' }}
@@ -609,34 +626,37 @@ export default function DashboardClient({
         ) : (
           <RightPanel
             tasks={tasks.filter(t => t.status !== 'done' && t.status !== 'archived')}
-            inboxCount={initialInboxCount}
+            inboxCount={inboxCount}
             nextTrip={nextTrip}
             tab={rightTab}
             setTab={setRightTab}
             onMarkDone={markDone}
+            onInboxCountChange={setInboxCount}
           />
-        )}
+        ))}
       </div>
 
-      {/* BOTTOM BAR */}
-      <div style={{ height: '40px', background: 'var(--bg)', borderTop: '.5px solid var(--bg4)', display: 'flex', alignItems: 'center', padding: '0 24px', gap: '20px', flexShrink: 0 }}>
-        {AGENTS.map(agent => {
-          const status = agentStatus[agent.id]?.status ?? 'idle';
-          const isOn = status !== 'idle';
-          return (
-            <div key={agent.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.12em', color: isOn ? 'var(--text2)' : 'var(--text4)' }}>
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColor(status), display: 'inline-block' }} />
-              {agent.label} — {status.toUpperCase()}
-            </div>
-          );
-        })}
-        <div style={{ marginLeft: 'auto', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--text3)' }}>
-          VERA v0.2 · TURSO · VERCEL · <span style={{ color: 'var(--gold2)' }}>v.05</span>
+      {/* BOTTOM BAR — solo desktop */}
+      {!isMobile && (
+        <div style={{ height: '36px', background: 'var(--bg)', borderTop: '.5px solid var(--bg4)', display: 'flex', alignItems: 'center', padding: '0 24px', gap: '16px', flexShrink: 0 }}>
+          {AGENTS.filter(a => agentStatus[a.id]?.status !== 'idle').map(agent => {
+            const status = agentStatus[agent.id]?.status ?? 'idle';
+            return (
+              <div key={agent.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.12em', color: 'var(--text2)' }}>
+                <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: statusColor(status), display: 'inline-block' }} />
+                {agent.label}
+              </div>
+            );
+          })}
+          <div style={{ marginLeft: 'auto', fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.14em', color: 'var(--text3)' }}>
+            VERA · TURSO · VERCEL
+          </div>
         </div>
-      </div>
+      )}
 
       {/* NEW TASK MODAL */}
       {showNewTask && <NewTaskModal onClose={() => setShowNewTask(false)} onCreated={handleTaskCreated} />}
+      {showCapture && <CaptureSheet onClose={() => { setShowCapture(false); }} />}
 
       <style>{`
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }

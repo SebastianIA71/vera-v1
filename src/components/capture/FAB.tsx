@@ -21,7 +21,7 @@ export default function FAB() {
         onClick={() => setOpen(true)}
         aria-label="captura rápida"
         style={{
-          position: 'fixed', right: 24, bottom: 28, width: 58, height: 58,
+          position: 'fixed', right: 24, bottom: 80, width: 58, height: 58,
           borderRadius: '50%', background: 'var(--bg)', border: '.5px solid var(--gold2)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 50, cursor: 'pointer', color: 'var(--gold)',

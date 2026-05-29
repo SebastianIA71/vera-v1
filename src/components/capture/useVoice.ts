@@ -25,12 +25,17 @@ export function useVoice(onTranscript: (text: string) => void) {
       return;
     }
 
+    // Abortar cualquier instancia previa antes de crear una nueva
+    recRef.current?.abort();
+    recRef.current = null;
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rec: any = new SR();
     rec.lang = 'es-ES';
     rec.continuous = true;
     rec.interimResults = true;
     finalRef.current = '';
+    interimRef.current = '';
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rec.onresult = (e: any) => {
@@ -51,10 +56,18 @@ export function useVoice(onTranscript: (text: string) => void) {
 
     rec.onend = () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      setState('processing');
-      // Usar refs, no state — evita el stale closure
       const text = (finalRef.current || interimRef.current).trim();
-      if (text) onTranscript(text);
+      if (text) {
+        setState('processing');
+        onTranscript(text);
+      } else {
+        // Sin texto — volver a idle para que el usuario pueda reintentar
+        setState('idle');
+        setInterim('');
+        setElapsed(0);
+        finalRef.current = '';
+        interimRef.current = '';
+      }
     };
 
     rec.onerror = () => {
