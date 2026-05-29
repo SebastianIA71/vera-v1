@@ -28,12 +28,12 @@ const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV
 const pad = (n: number) => String(n).padStart(2, '0');
 
 const AGENTS: { id: AgentId; label: string; icon: string; top: number; left: number; labelPos: 'above' | 'below' }[] = [
-  { id: 'voice',    label: 'VOICE',    icon: 'mic',   top: 56,  left: 308, labelPos: 'above' },
-  { id: 'prio',     label: 'PRIO',     icon: 'prio',  top: 101, left: 520, labelPos: 'above' },
-  { id: 'alert',    label: 'ALERT',    icon: 'bell',  top: 471, left: 532, labelPos: 'below' },
-  { id: 'solution', label: 'SOLUTION', icon: 'help',  top: 549, left: 308, labelPos: 'below' },
-  { id: 'executor', label: 'EXECUTOR', icon: 'send',  top: 459, left: 81,  labelPos: 'below' },
-  { id: 'search',   label: 'SEARCH',   icon: 'search',top: 134, left: 96,  labelPos: 'above' },
+  { id: 'voice',    label: 'VOICE',    icon: 'mic',   top: 98,  left: 350, labelPos: 'above' },
+  { id: 'prio',     label: 'PRIO',     icon: 'prio',  top: 143, left: 562, labelPos: 'above' },
+  { id: 'alert',    label: 'ALERT',    icon: 'bell',  top: 513, left: 574, labelPos: 'below' },
+  { id: 'solution', label: 'SOLUTION', icon: 'help',  top: 591, left: 350, labelPos: 'below' },
+  { id: 'executor', label: 'EXECUTOR', icon: 'send',  top: 501, left: 123, labelPos: 'below' },
+  { id: 'search',   label: 'SEARCH',   icon: 'search',top: 176, left: 138, labelPos: 'above' },
 ];
 
 /* ─── SVG icons ─────────────────────────────────────── */
@@ -278,89 +278,93 @@ function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone, onIn
 
 /* ─── New Task Modal ─────────────────────────────────── */
 function NewTaskModal({ onClose, onCreated }: { onClose: () => void; onCreated: (t: Task) => void }) {
-  const [title, setTitle] = useState('');
-  const [prio, setPrio] = useState(5);
+  const [title, setTitle]           = useState('');
+  const [prio, setPrio]             = useState(5);
   const [propertyId, setPropertyId] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]         = useState(false);
+
+  const canSave = title.trim().length > 0;
+
+  const INPUT: React.CSSProperties = {
+    width: '100%', background: 'var(--bg3)', border: '.5px solid var(--bg4)',
+    borderRadius: 8, padding: '10px 12px', color: 'var(--text)',
+    fontFamily: 'var(--font-dm-sans)', fontSize: 15, outline: 'none', boxSizing: 'border-box',
+  };
+  const LABEL: React.CSSProperties = {
+    fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em',
+    color: 'var(--text3)', marginBottom: 6, display: 'block',
+  };
 
   const save = async () => {
-    if (!title.trim()) return;
+    if (!canSave || saving) return;
     setSaving(true);
     const res = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, prio, propertyId: propertyId || null }),
     });
-    if (res.ok) {
-      const task = await res.json();
-      onCreated(task);
-    }
+    if (res.ok) { const task = await res.json(); onCreated(task); }
     setSaving(false);
     onClose();
   };
 
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: '16px', padding: '28px', width: '380px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ fontFamily: 'var(--font-syne)', fontSize: '16px', color: 'var(--text)' }}>
-          Nueva <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>tarea.</em>
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, backdropFilter: 'blur(2px)' }} />
+      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--bg2)', borderTop: '.5px solid var(--bg4)', borderRadius: '16px 16px 0 0', padding: '20px 22px 40px', zIndex: 201, maxHeight: '90dvh', overflowY: 'auto' }}>
+        <div style={{ width: 36, height: 3, borderRadius: 2, background: 'var(--bg4)', margin: '0 auto 20px' }} />
+        <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em', marginBottom: 24 }}>
+          Nueva <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>tarea</em>
         </div>
 
-        <input
-          autoFocus
-          value={title}
-          onChange={e => setTitle(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && save()}
-          placeholder="Título de la tarea"
-          style={{ background: 'transparent', border: '.5px solid var(--bg4)', borderRadius: '10px', padding: '10px 12px', color: 'var(--text)', fontFamily: 'var(--font-dm-sans)', fontSize: '14px', outline: 'none' }}
-        />
-
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', letterSpacing: '.2em', color: 'var(--text2)', marginBottom: '6px' }}>PRIORIDAD</div>
-            <select
-              value={prio}
-              onChange={e => setPrio(Number(e.target.value))}
-              style={{ width: '100%', background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: '8px', padding: '8px', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: '12px' }}
-            >
-              {[9,8,7,6,5,4,3,2,1].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div>
+            <label style={LABEL}>TÍTULO</label>
+            <input autoFocus value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} placeholder="Qué hay que hacer..." style={INPUT} />
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', letterSpacing: '.2em', color: 'var(--text2)', marginBottom: '6px' }}>PROPIEDAD</div>
-            <select
-              value={propertyId}
-              onChange={e => setPropertyId(e.target.value)}
-              style={{ width: '100%', background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: '8px', padding: '8px', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: '12px' }}
-            >
-              <option value="">— ninguna</option>
-              <option value="flat">Flat · Palma</option>
-              <option value="sarapita">Sarapita · Campos</option>
-              <option value="willys">Willy&apos;s · Marratxí</option>
-            </select>
-          </div>
-        </div>
 
-        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
-          <button
-            onClick={onClose}
-            style={{ background: 'transparent', border: '.5px solid var(--bg4)', borderRadius: '8px', padding: '10px 20px', color: 'var(--text2)', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.15em', cursor: 'pointer' }}
-          >
-            CANCELAR
-          </button>
-          <button
-            onClick={save}
-            disabled={saving || !title.trim()}
-            style={{ background: 'transparent', border: `.5px solid ${title.trim() ? 'var(--gold2)' : 'var(--bg4)'}`, borderRadius: '8px', padding: '10px 20px', color: title.trim() ? 'var(--gold)' : 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.15em', cursor: title.trim() ? 'pointer' : 'default' }}
-          >
-            {saving ? '···' : 'GUARDAR'}
+          <div>
+            <label style={LABEL}>PRIORIDAD</label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {[9,8,7,6,5,4,3,2,1].map(n => (
+                <button key={n} onClick={() => setPrio(n)} style={{
+                  width: 36, height: 36, borderRadius: 8, cursor: 'pointer',
+                  border: `.5px solid ${prio === n ? (n >= 8 ? 'var(--red)' : n >= 6 ? 'var(--amber)' : 'var(--gold2)') : 'var(--bg4)'}`,
+                  background: prio === n ? 'rgba(196,168,106,0.1)' : 'transparent',
+                  color: prio === n ? 'var(--text)' : 'var(--text3)',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: 13,
+                }}>{n}</button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label style={LABEL}>PROPIEDAD (opcional)</label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {[{id:'',label:'Ninguna'},{id:'flat',label:'Flat'},{id:'sarapita',label:'Sarapita'},{id:'willys',label:"Willy's"}].map(p => (
+                <button key={p.id} onClick={() => setPropertyId(p.id)} style={{
+                  padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
+                  border: `.5px solid ${propertyId === p.id ? 'var(--gold2)' : 'var(--bg4)'}`,
+                  background: propertyId === p.id ? 'rgba(196,168,106,0.12)' : 'transparent',
+                  color: propertyId === p.id ? 'var(--gold2)' : 'var(--text3)',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em',
+                }}>{p.label.toUpperCase()}</button>
+              ))}
+            </div>
+          </div>
+
+          <button onClick={save} disabled={!canSave || saving} style={{
+            width: '100%', padding: '14px', borderRadius: 10,
+            background: canSave ? 'var(--gold2)' : 'var(--bg3)', border: 'none',
+            color: canSave ? 'var(--bg)' : 'var(--text3)',
+            fontFamily: 'var(--font-dm-mono)', fontSize: 12, letterSpacing: '.2em',
+            cursor: canSave ? 'pointer' : 'default', transition: 'all .15s', marginTop: 4,
+          }}>
+            {saving ? 'GUARDANDO...' : 'CREAR TAREA'}
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -375,18 +379,20 @@ type Kpis = {
   currentWeight: number | null;
 };
 
+const KPI_RADIUS = 340;
+
 const getKpiNodes = (kpis: Kpis) => [
-  { id: 'tasks',  label: 'TAREAS',  value: kpis.tasksActive,                        color: 'var(--gold2)',  angle: 300 },
-  { id: 'inbox',  label: 'INBOX',   value: kpis.inboxPending,                       color: 'var(--red)',    angle: 0   },
-  { id: 'trips',  label: 'VIAJES',  value: kpis.tripsCount,                         color: 'var(--blue)',   angle: 60  },
-  { id: 'events', label: 'EVENTOS', value: kpis.eventsCount,                        color: 'var(--purple)', angle: 120 },
-  { id: 'props',  label: 'PROPS',   value: kpis.propsCount,                         color: 'var(--green)',  angle: 180 },
-  { id: 'weight', label: 'PESO KG', value: kpis.currentWeight !== null ? kpis.currentWeight : '-', color: 'var(--amber)',  angle: 240 },
+  { id: 'tasks',  label: 'TAREAS',  value: kpis.tasksActive,                                color: 'var(--gold2)',  angle: 300 },
+  { id: 'inbox',  label: 'INBOX',   value: kpis.inboxPending,                               color: 'var(--red)',    angle: 0   },
+  { id: 'trips',  label: 'VIAJES',  value: kpis.tripsCount,                                 color: 'var(--blue)',   angle: 60  },
+  { id: 'events', label: 'EVENTOS', value: kpis.eventsCount,                                color: 'var(--purple)', angle: 120 },
+  { id: 'props',  label: 'PROPS',   value: kpis.propsCount,                                 color: 'var(--green)',  angle: 180 },
+  { id: 'weight', label: 'KG',      value: kpis.currentWeight !== null ? kpis.currentWeight : '—', color: 'var(--amber)', angle: 240 },
 ];
 
-const kpiPos = (angle: number, radius: number) => ({
-  top:  308 + radius * Math.sin((angle - 90) * Math.PI / 180),
-  left: 308 + radius * Math.cos((angle - 90) * Math.PI / 180),
+const kpiPos = (angle: number) => ({
+  top:  350 + KPI_RADIUS * Math.sin((angle - 90) * Math.PI / 180),
+  left: 350 + KPI_RADIUS * Math.cos((angle - 90) * Math.PI / 180),
 });
 
 export default function DashboardClient({
@@ -489,7 +495,7 @@ export default function DashboardClient({
               <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" />
             </svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.23</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.24</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
@@ -541,7 +547,7 @@ export default function DashboardClient({
 
           {/* Orbital map */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            <div style={{ position: 'relative', width: '616px', height: '616px', flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: '700px', height: '700px', flexShrink: 0 }}>
               {/* Rings */}
               {[196, 363, 528, 616].map((size, i) => (
                 <div key={size} style={{
@@ -556,11 +562,11 @@ export default function DashboardClient({
               {AGENTS.map(agent => {
                 const status = agentStatus[agent.id]?.status ?? 'idle';
                 const isActive = status === 'running' || status === 'active';
-                const angle = Math.atan2(agent.top - 308, agent.left - 308);
-                const dist = Math.sqrt(Math.pow(agent.left - 308, 2) + Math.pow(agent.top - 308, 2));
+                const angle = Math.atan2(agent.top - 350, agent.left - 350);
+                const dist = Math.sqrt(Math.pow(agent.left - 350, 2) + Math.pow(agent.top - 350, 2));
                 return (
                   <div key={`conn-${agent.id}`} style={{
-                    position: 'absolute', top: '308px', left: '308px',
+                    position: 'absolute', top: '350px', left: '350px',
                     width: `${dist}px`, height: '.5px',
                     background: isActive ? 'rgba(196,168,106,.35)' : 'rgba(196,168,106,.12)',
                     transformOrigin: '0 0',
@@ -570,58 +576,26 @@ export default function DashboardClient({
                 );
               })}
 
-              {/* KPI connection lines — más tenues */}
+              {/* KPI badges — perimetrales, fuera del radar */}
               {getKpiNodes(kpis).map(kpi => {
-                const pos = kpiPos(kpi.angle, 264);
-                const angle = Math.atan2(pos.top - 308, pos.left - 308);
-                const dist  = Math.sqrt(Math.pow(pos.left - 308, 2) + Math.pow(pos.top - 308, 2));
-                return (
-                  <div key={`kpi-conn-${kpi.id}`} style={{
-                    position: 'absolute', top: '308px', left: '308px',
-                    width: `${dist}px`, height: '.5px',
-                    background: `${kpi.color.replace('var(', '').replace(')', '')}18`,
-                    opacity: 0.4,
-                    transformOrigin: '0 0',
-                    transform: `rotate(${angle}rad)`,
-                  }} />
-                );
-              })}
-
-              {/* KPI nodes — 3er anillo */}
-              {getKpiNodes(kpis).map(kpi => {
-                const pos = kpiPos(kpi.angle, 264);
+                const pos = kpiPos(kpi.angle);
                 const isLarge = typeof kpi.value === 'number' && kpi.value >= 100;
                 return (
                   <div key={kpi.id} style={{
                     position: 'absolute',
                     top: `${pos.top}px`, left: `${pos.left}px`,
                     transform: 'translate(-50%, -50%)',
-                    zIndex: 3,
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-                    pointerEvents: 'none',
+                    zIndex: 6, pointerEvents: 'none',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                    background: 'var(--bg)',
+                    border: `.5px solid ${kpi.color}55`,
+                    borderRadius: 8, padding: '5px 8px', minWidth: 44,
+                    boxShadow: `0 0 12px ${kpi.color}18`,
                   }}>
-                    <div style={{
-                      width: 52, height: 52, borderRadius: '50%',
-                      background: 'var(--bg)',
-                      border: `.5px solid ${kpi.color}44`,
-                      display: 'flex', flexDirection: 'column',
-                      alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <div style={{
-                        fontFamily: 'var(--font-dm-mono)',
-                        fontSize: isLarge ? 13 : 16,
-                        fontWeight: 400,
-                        color: kpi.color,
-                        lineHeight: 1,
-                      }}>
-                        {kpi.value}
-                      </div>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: isLarge ? 13 : 15, fontWeight: 500, color: kpi.color, lineHeight: 1, textAlign: 'center' }}>
+                      {kpi.value}
                     </div>
-                    <div style={{
-                      fontFamily: 'var(--font-dm-mono)',
-                      fontSize: 8, letterSpacing: '.12em',
-                      color: 'var(--text3)', whiteSpace: 'nowrap',
-                    }}>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, letterSpacing: '.1em', color: 'var(--text3)', whiteSpace: 'nowrap', textAlign: 'center' }}>
                       {kpi.label}
                     </div>
                   </div>
