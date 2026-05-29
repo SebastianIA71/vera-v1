@@ -74,7 +74,8 @@ export function MobileNav({ inboxCount = 0 }: { inboxCount?: number }) {
       display: 'flex',
       alignItems: 'stretch',
       zIndex: 100,
-    }}>
+      width: '100%',
+    }} as React.CSSProperties>
       {NAV_ITEMS.map((item) => {
         // Activo: coincidencia exacta para '/', startsWith para el resto
         const isActive = item.href === '/'
