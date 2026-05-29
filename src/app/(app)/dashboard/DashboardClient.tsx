@@ -365,18 +365,44 @@ function NewTaskModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
 }
 
 /* ─── Main Client Component ─────────────────────────── */
+type Kpis = {
+  tasksActive: number;
+  tasksDone: number;
+  inboxPending: number;
+  tripsCount: number;
+  eventsCount: number;
+  propsCount: number;
+  currentWeight: number | null;
+};
+
+const getKpiNodes = (kpis: Kpis) => [
+  { id: 'tasks',  label: 'TAREAS',  value: kpis.tasksActive,                        color: 'var(--gold2)',  angle: 300 },
+  { id: 'inbox',  label: 'INBOX',   value: kpis.inboxPending,                       color: 'var(--red)',    angle: 0   },
+  { id: 'trips',  label: 'VIAJES',  value: kpis.tripsCount,                         color: 'var(--blue)',   angle: 60  },
+  { id: 'events', label: 'EVENTOS', value: kpis.eventsCount,                        color: 'var(--purple)', angle: 120 },
+  { id: 'props',  label: 'PROPS',   value: kpis.propsCount,                         color: 'var(--green)',  angle: 180 },
+  { id: 'weight', label: 'PESO KG', value: kpis.currentWeight !== null ? kpis.currentWeight : '-', color: 'var(--amber)',  angle: 240 },
+];
+
+const kpiPos = (angle: number, radius: number) => ({
+  top:  308 + radius * Math.sin((angle - 90) * Math.PI / 180),
+  left: 308 + radius * Math.cos((angle - 90) * Math.PI / 180),
+});
+
 export default function DashboardClient({
   initialTasks,
   urgentCount,
   staleCount,
   inboxCount: initialInboxCount,
   nextTrip,
+  kpis,
 }: {
   initialTasks: Task[];
   urgentCount: number;
   staleCount: number;
   inboxCount: number;
   nextTrip: { title: string; daysTo: number } | null;
+  kpis: Kpis;
 }) {
   const router = useRouter();
   const [time, setTime] = useState('');
@@ -464,7 +490,7 @@ export default function DashboardClient({
               <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" />
             </svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.21</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.22</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
@@ -510,7 +536,7 @@ export default function DashboardClient({
           </div>
 
           {/* Quote */}
-          <div style={{ padding: '6px 24px 0', fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 13, color: 'var(--text3)', letterSpacing: '.01em', lineHeight: 1.5, flexShrink: 0 }}>
+          <div style={{ padding: '6px 0 16px 10', fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 13, color: 'var(--text2)', letterSpacing: '.01em', lineHeight: 1.6, flexShrink: 0, borderLeft: '1.5px solid rgba(196,168,106,0.25)', marginLeft: 24 }}>
             {renderQuote(quote)}
           </div>
 
@@ -527,7 +553,7 @@ export default function DashboardClient({
                 }} />
               ))}
 
-              {/* Connection lines */}
+              {/* Connection lines — agentes */}
               {AGENTS.map(agent => {
                 const status = agentStatus[agent.id]?.status ?? 'idle';
                 const isActive = status === 'running' || status === 'active';
@@ -542,6 +568,64 @@ export default function DashboardClient({
                     transform: `rotate(${angle}rad)`,
                     animation: isActive ? 'pulse-conn 2s ease-in-out infinite' : 'none',
                   }} />
+                );
+              })}
+
+              {/* KPI connection lines — más tenues */}
+              {getKpiNodes(kpis).map(kpi => {
+                const pos = kpiPos(kpi.angle, 264);
+                const angle = Math.atan2(pos.top - 308, pos.left - 308);
+                const dist  = Math.sqrt(Math.pow(pos.left - 308, 2) + Math.pow(pos.top - 308, 2));
+                return (
+                  <div key={`kpi-conn-${kpi.id}`} style={{
+                    position: 'absolute', top: '308px', left: '308px',
+                    width: `${dist}px`, height: '.5px',
+                    background: `${kpi.color.replace('var(', '').replace(')', '')}18`,
+                    opacity: 0.4,
+                    transformOrigin: '0 0',
+                    transform: `rotate(${angle}rad)`,
+                  }} />
+                );
+              })}
+
+              {/* KPI nodes — 3er anillo */}
+              {getKpiNodes(kpis).map(kpi => {
+                const pos = kpiPos(kpi.angle, 264);
+                const isLarge = typeof kpi.value === 'number' && kpi.value >= 100;
+                return (
+                  <div key={kpi.id} style={{
+                    position: 'absolute',
+                    top: `${pos.top}px`, left: `${pos.left}px`,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 3,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                    pointerEvents: 'none',
+                  }}>
+                    <div style={{
+                      width: 52, height: 52, borderRadius: '50%',
+                      background: 'var(--bg)',
+                      border: `.5px solid ${kpi.color}44`,
+                      display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <div style={{
+                        fontFamily: 'var(--font-dm-mono)',
+                        fontSize: isLarge ? 13 : 16,
+                        fontWeight: 400,
+                        color: kpi.color,
+                        lineHeight: 1,
+                      }}>
+                        {kpi.value}
+                      </div>
+                    </div>
+                    <div style={{
+                      fontFamily: 'var(--font-dm-mono)',
+                      fontSize: 8, letterSpacing: '.12em',
+                      color: 'var(--text3)', whiteSpace: 'nowrap',
+                    }}>
+                      {kpi.label}
+                    </div>
+                  </div>
                 );
               })}
 

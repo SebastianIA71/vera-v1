@@ -118,7 +118,7 @@ export default function MobileHome({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" /></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.21</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.22</span>
           </span>
           <button onClick={() => router.push('/dashboard')} style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' }}>
             <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -140,7 +140,7 @@ export default function MobileHome({
         </div>
 
         {/* Quote */}
-        <div style={{ marginBottom: 24, fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 14, lineHeight: 1.5, color: 'var(--text3)', letterSpacing: '.01em', paddingLeft: 2 }}>
+        <div style={{ marginBottom: 24, fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 14, lineHeight: 1.6, color: 'var(--text2)', letterSpacing: '.01em', paddingLeft: 10, borderLeft: '1.5px solid rgba(196,168,106,0.25)' }}>
           {renderQuote(quote)}
         </div>
 
