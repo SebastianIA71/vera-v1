@@ -486,6 +486,7 @@ export default function DashboardClient({
           <NavItem icon="props" label="PROPIEDADES" collapsed={navCollapsed} />
           <div style={{ height: '.5px', background: 'var(--bg4)', margin: '6px 14px' }} />
           <NavItem icon="finance" label="FINANZAS" collapsed={navCollapsed} />
+          <NavItem icon="agents" label="AGENTES" collapsed={navCollapsed} onClick={() => router.push('/agents')} />
           <div style={{ marginTop: 'auto' }}>
             <div style={{ height: '.5px', background: 'var(--bg4)', margin: '6px 14px' }} />
             <NavItem icon="settings" label="AJUSTES" collapsed={navCollapsed} />
@@ -498,7 +499,7 @@ export default function DashboardClient({
           <div style={{ padding: '16px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexShrink: 0 }}>
             <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: '22px', color: 'var(--text)', letterSpacing: '-.01em' }}>
               Command <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Centre</em>
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.16em', color: 'var(--text3)', marginLeft: 10 }}>v.03</span>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.16em', color: 'var(--text3)', marginLeft: 10 }}>v.04</span>
             </div>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.2em', color: 'var(--text4)' }}>
               6 AGENTES · TURSO SYNC
@@ -630,7 +631,7 @@ export default function DashboardClient({
           );
         })}
         <div style={{ marginLeft: 'auto', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--text3)' }}>
-          VERA v0.2 · TURSO · VERCEL · <span style={{ color: 'var(--gold2)' }}>v.03</span>
+          VERA v0.2 · TURSO · VERCEL · <span style={{ color: 'var(--gold2)' }}>v.04</span>
         </div>
       </div>
 
@@ -668,6 +669,7 @@ function NavItem({ icon, label, active, badge, collapsed, onClick }: { icon: str
     finance: <svg viewBox="0 0 24 24" width={18} height={18} {...s}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
     settings:<svg viewBox="0 0 24 24" width={18} height={18} {...s}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9z"/></svg>,
     logout:  <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+    agents:  <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z"/></svg>,
   };
 
   return (
