@@ -52,7 +52,7 @@ export default function AgentsPage() {
           <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 22, color: 'var(--text)', lineHeight: 1.1 }}>
             Agentes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Vera</em>
           </div>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 4 }}>v.03</div>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 4 }}>v.05</div>
         </div>
         <button onClick={() => router.push('/')} style={{ ...BTN, width: 'auto', padding: '8px 14px', border: '.5px solid var(--bg4)', color: 'var(--text2)' }}>
           ← HOME
@@ -103,50 +103,100 @@ export default function AgentsPage() {
 
 /* ── Alert ── */
 function AlertPanel() {
-  const [perm, setPerm] = useState<string>('?');
+  const [perm, setPerm] = useState<string>('cargando…');
+  const [requesting, setRequesting] = useState(false);
   const [testMsg, setTestMsg] = useState('');
+  const [supported, setSupported] = useState(true);
 
   useEffect(() => {
-    if ('Notification' in window) setPerm(Notification.permission);
+    if (!('Notification' in window)) {
+      setSupported(false);
+      setPerm('no soportado');
+    } else {
+      setPerm(Notification.permission);
+    }
   }, []);
 
   const requestPerm = async () => {
-    const p = await Notification.requestPermission();
-    setPerm(p);
-    if (p !== 'granted') return;
-    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!vapidKey || !('serviceWorker' in navigator)) return;
+    if (!supported || requesting) return;
+    setRequesting(true);
+    setPerm('solicitando…');
     try {
-      const reg = await navigator.serviceWorker.ready;
-      let sub = await reg.pushManager.getSubscription();
-      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(vapidKey) });
-      await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
-    } catch {}
+      const p = await Notification.requestPermission();
+      setPerm(p);
+      if (p !== 'granted') { setRequesting(false); return; }
+
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (vapidKey && 'serviceWorker' in navigator) {
+        try {
+          const reg = await navigator.serviceWorker.ready;
+          let sub = await reg.pushManager.getSubscription();
+          if (!sub) {
+            sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlB64ToUint8Array(vapidKey),
+            });
+          }
+          await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sub.toJSON()),
+          });
+          setTestMsg('✓ Suscrito a push');
+        } catch (e) {
+          setTestMsg('Error al suscribir: ' + String(e));
+        }
+      } else {
+        setTestMsg(vapidKey ? 'Service Worker no disponible' : 'NEXT_PUBLIC_VAPID_PUBLIC_KEY no configurada');
+      }
+    } catch (e) {
+      setPerm('error');
+      setTestMsg('Error: ' + String(e));
+    }
+    setRequesting(false);
   };
 
   const testPush = async () => {
     setTestMsg('Enviando…');
     const res = await fetch('/api/push/test', { method: 'POST' });
     const d = await res.json();
-    setTestMsg(d.ok ? '✓ Push enviado — revisa notificaciones' : d.notice ?? 'Error. Configura VAPID en Vercel.');
+    setTestMsg(d.ok ? '✓ Push enviado — revisa notificaciones' : (d.notice ?? 'Error. ¿Hay suscripciones registradas?'));
   };
 
+  const permColor = perm === 'granted' ? 'var(--green)' : perm === 'denied' ? 'var(--red)' : 'var(--text2)';
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: perm === 'granted' ? 'var(--green)' : 'var(--text2)', marginBottom: 4 }}>
-        Permiso: <strong>{perm}</strong>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ background: 'var(--bg3)', borderRadius: 10, padding: '12px 14px' }}>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', color: 'var(--text3)', marginBottom: 4 }}>ESTADO</div>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: permColor }}>{perm}</div>
+        {testMsg && <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>{testMsg}</div>}
       </div>
-      {perm !== 'granted' && (
-        <button onClick={requestPerm} style={{ ...BTN, border: '.5px solid var(--gold2)', color: 'var(--gold)' }}>
-          ACTIVAR NOTIFICACIONES →
+
+      {perm !== 'granted' && supported && (
+        <button
+          onPointerDown={e => { e.preventDefault(); requestPerm(); }}
+          disabled={requesting}
+          style={{ ...BTN, border: '.5px solid var(--gold2)', color: requesting ? 'var(--text3)' : 'var(--gold)' }}
+        >
+          {requesting ? 'SOLICITANDO…' : 'ACTIVAR NOTIFICACIONES →'}
         </button>
       )}
+
       {perm === 'granted' && (
-        <button onClick={testPush} style={{ ...BTN, border: '.5px solid var(--red)', color: 'var(--red)' }}>
+        <button
+          onPointerDown={e => { e.preventDefault(); testPush(); }}
+          style={{ ...BTN, border: '.5px solid var(--red)', color: 'var(--red)' }}
+        >
           ENVIAR TEST PUSH
         </button>
       )}
-      {testMsg && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text2)', lineHeight: 1.5 }}>{testMsg}</div>}
+
+      {perm === 'denied' && (
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', lineHeight: 1.5 }}>
+          Permiso denegado. Ve a Ajustes del navegador → Notificaciones y actívalo manualmente.
+        </div>
+      )}
     </div>
   );
 }
