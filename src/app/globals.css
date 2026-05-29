@@ -65,25 +65,29 @@ em.anchor {
 /* ── MOBILE NAV ── */
 
 @media (max-width: 768px) {
-  /* Ocultar sidebar de iconos y topbar desktop */
   .desktop-sidebar-nav,
   .desktop-topbar {
     display: none !important;
   }
 
-  /* Desbloquear el shell para que el contenido sea visible y scrollable */
+  /* Liberar el shell para móvil */
   .desktop-shell-root {
     height: auto !important;
+    min-height: 100dvh;
     overflow: visible !important;
   }
   .desktop-shell-layout {
     overflow: visible !important;
     height: auto !important;
+    flex-direction: column;
   }
   .desktop-shell-content {
     overflow-y: auto !important;
-    height: 100dvh;
+    height: auto !important;
+    min-height: calc(100dvh - 64px);
     padding-bottom: 64px;
+    display: block !important;
+    flex: none !important;
   }
 }
 
@@ -91,4 +95,13 @@ em.anchor {
   .mobile-nav {
     display: none !important;
   }
+}
+
+/* Filtros móvil */
+@media (min-width: 769px) {
+  .mobile-filter-toggle { display: none !important; }
+  .filters-mobile-hidden { display: flex !important; }
+}
+@media (max-width: 768px) {
+  .filters-mobile-hidden { display: none !important; }
 }

@@ -1,4 +1,4 @@
-const CACHE = 'vera-v09';
+const CACHE = 'vera-v10';
 const STATIC = ['/', '/lock', '/dashboard'];
 
 self.addEventListener('install', e => {
