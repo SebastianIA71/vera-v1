@@ -329,7 +329,7 @@ export default function LockPage() {
               {KEYS.map((key, i) => (
                 <button
                   key={i}
-                  onClick={() => handleKey(key)}
+                  onPointerDown={(e) => { e.preventDefault(); handleKey(key); }}
                   aria-label={
                     key === 'CLR' ? 'borrar último dígito' : key === 'FACE' ? 'usar Face ID' : key
                   }
@@ -347,6 +347,8 @@ export default function LockPage() {
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
+                    touchAction: 'manipulation',
+                    WebkitTapHighlightColor: 'transparent',
                     transition: 'background .1s',
                   }}
                 >

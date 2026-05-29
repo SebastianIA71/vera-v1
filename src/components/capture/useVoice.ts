@@ -9,9 +9,11 @@ export function useVoice(onTranscript: (text: string) => void) {
   const [interim, setInterim] = useState('');
   const [elapsed, setElapsed] = useState(0);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recRef = useRef<any>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const finalRef = useRef('');
+  const interimRef = useRef(''); // ref para evitar stale closure en onend
 
   const start = useCallback(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,13 +44,16 @@ export function useVoice(onTranscript: (text: string) => void) {
         }
       }
       if (final) finalRef.current += final;
-      setInterim(finalRef.current + interimText);
+      const combined = finalRef.current + interimText;
+      interimRef.current = combined;
+      setInterim(combined);
     };
 
     rec.onend = () => {
       if (timerRef.current) clearInterval(timerRef.current);
       setState('processing');
-      const text = finalRef.current.trim() || interim.trim();
+      // Usar refs, no state — evita el stale closure
+      const text = (finalRef.current || interimRef.current).trim();
       if (text) onTranscript(text);
     };
 
@@ -63,7 +68,7 @@ export function useVoice(onTranscript: (text: string) => void) {
     setElapsed(0);
     setInterim('');
     timerRef.current = setInterval(() => setElapsed(s => s + 1), 1000);
-  }, [onTranscript, interim]);
+  }, [onTranscript]); // sin interim en deps — usamos interimRef
 
   const stop = useCallback(() => {
     recRef.current?.stop();
@@ -77,6 +82,7 @@ export function useVoice(onTranscript: (text: string) => void) {
     setInterim('');
     setElapsed(0);
     finalRef.current = '';
+    interimRef.current = '';
   }, []);
 
   const elapsedStr = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`;
