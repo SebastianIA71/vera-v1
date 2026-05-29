@@ -23,6 +23,18 @@ const NAV = [
 
 type NavEntry = { id: string; path?: string; icon?: string; badge?: boolean; bottom?: boolean };
 
+const NAV_LABELS: Record<string, string> = {
+  dashboard:  'COMMAND',
+  tasks:      'TAREAS',
+  inbox:      'INBOX',
+  trips:      'VIAJES',
+  properties: 'PROPIEDADES',
+  finance:    'FINANZAS',
+  agents:     'AGENTES',
+  settings:   'AJUSTES',
+  logout:     'SALIR',
+};
+
 function NavIcon({ icon }: { icon: string }) {
   const s = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   switch (icon) {
@@ -86,7 +98,7 @@ export default function DesktopShell({
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 15, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={12} height={12} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.15</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.16</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 14, color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
@@ -113,11 +125,6 @@ export default function DesktopShell({
       <div className="desktop-shell-layout" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {/* NAV CON LABELS — oculta en móvil */}
         <nav className="desktop-sidebar-nav" style={{ width: 200, background: 'var(--bg)', borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', padding: '12px 0', flexShrink: 0 }}>
-          {/* Logo */}
-          <div style={{ padding: '4px 16px 16px', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 13, letterSpacing: '.3em', color: 'var(--gold2)' }}>
-            <svg width={10} height={10} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
-            VERA
-          </div>
           {(NAV as readonly NavEntry[]).filter(n => !n.bottom).map(n => {
             if (n.id === 'div' || n.id === 'div2') {
               return <div key={n.id} style={{ height: .5, background: 'var(--bg4)', margin: '6px 14px' }} />;
@@ -141,8 +148,8 @@ export default function DesktopShell({
                 {n.badge && inboxCount > 0 && (
                   <span style={{ background: 'var(--red)', color: '#fff', fontFamily: 'var(--font-dm-mono)', fontSize: 7, padding: '1px 4px', borderRadius: 999 }}>{inboxCount}</span>
                 )}
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'inherit', whiteSpace: 'nowrap' }}>
-                  {n.id === 'div' || n.id === 'div2' ? '' : n.id.toUpperCase()}
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, fontWeight: 400, letterSpacing: '.14em', color: 'inherit', whiteSpace: 'nowrap' }}>
+                  {NAV_LABELS[n.id] ?? n.id.toUpperCase()}
                 </span>
               </button>
             );
@@ -156,7 +163,7 @@ export default function DesktopShell({
                 style={{ width: '100%', height: 44, display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', cursor: 'pointer', background: 'none', border: 'none', color: 'var(--text3)', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
               >
                 {n.icon && <NavIcon icon={n.icon} />}
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', whiteSpace: 'nowrap' }}>{n.id.toUpperCase()}</span>
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, fontWeight: 400, letterSpacing: '.14em', whiteSpace: 'nowrap' }}>{NAV_LABELS[n.id] ?? n.id.toUpperCase()}</span>
               </button>
             ))}
           </div>
