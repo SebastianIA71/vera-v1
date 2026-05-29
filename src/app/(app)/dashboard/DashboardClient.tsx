@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import AgentPanel from '@/components/command/AgentPanel';
 
 /* ─── Types ─────────────────────────────────────────── */
 type AgentId = 'voice' | 'prio' | 'alert' | 'search' | 'executor' | 'solution';
@@ -377,6 +378,7 @@ export default function DashboardClient({
   );
   const [rightTab, setRightTab] = useState<TabId>('punchlist');
   const [showNewTask, setShowNewTask] = useState(false);
+  const [activeAgent, setActiveAgent] = useState<AgentId | null>(null);
 
   // Clock
   useEffect(() => {
@@ -550,7 +552,7 @@ export default function DashboardClient({
               {AGENTS.map(agent => {
                 const status = agentStatus[agent.id]?.status ?? 'idle';
                 return (
-                  <div key={agent.id} style={{ position: 'absolute', top: `${agent.top}px`, left: `${agent.left}px`, transform: 'translate(-50%,-50%)', zIndex: 4, cursor: 'pointer' }}>
+                  <div key={agent.id} onClick={() => setActiveAgent(agent.id)} style={{ position: 'absolute', top: `${agent.top}px`, left: `${agent.left}px`, transform: 'translate(-50%,-50%)', zIndex: 4, cursor: 'pointer' }}>
                     <div style={{
                       width: '66px', height: '66px', borderRadius: '50%', background: 'var(--bg2)',
                       border: `.5px solid ${nodeBorderColor(status)}`,
@@ -596,14 +598,22 @@ export default function DashboardClient({
         </div>
 
         {/* RIGHT PANEL */}
-        <RightPanel
-          tasks={tasks.filter(t => t.status !== 'done' && t.status !== 'archived')}
-          inboxCount={initialInboxCount}
-          nextTrip={nextTrip}
-          tab={rightTab}
-          setTab={setRightTab}
-          onMarkDone={markDone}
-        />
+        {activeAgent ? (
+          <AgentPanel
+            agentId={activeAgent}
+            agentStatus={agentStatus[activeAgent] ?? { status: 'idle' }}
+            onClose={() => setActiveAgent(null)}
+          />
+        ) : (
+          <RightPanel
+            tasks={tasks.filter(t => t.status !== 'done' && t.status !== 'archived')}
+            inboxCount={initialInboxCount}
+            nextTrip={nextTrip}
+            tab={rightTab}
+            setTab={setRightTab}
+            onMarkDone={markDone}
+          />
+        )}
       </div>
 
       {/* BOTTOM BAR */}
