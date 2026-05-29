@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { tasks, events, weightLog, inbox } from '@/lib/db/schema';
-import { ne, desc } from 'drizzle-orm';
+import { ne, desc, eq } from 'drizzle-orm';
 import MobileHome from './MobileHome';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,7 @@ export default async function AppRootPage() {
     db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)).limit(30),
     db.select().from(events).orderBy(desc(events.startDate)).limit(10),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(14),
-    db.select({ id: inbox.id }).from(inbox).limit(100),
+    db.select().from(inbox).where(eq(inbox.processed, false)).orderBy(desc(inbox.createdAt)).limit(50),
   ]);
 
   const urgentTasks = allTasks.filter(t => (t.prioFinal ?? 0) >= 7 && t.status !== 'done').slice(0, 3);
@@ -32,6 +32,7 @@ export default async function AppRootPage() {
       nextTrip={nextTrip && daysToNextTrip ? { title: nextTrip.title, daysTo: daysToNextTrip, startDate: nextTrip.startDate?.toISOString() ?? '' } : null}
       weightLogs={weights}
       inboxCount={inboxItems.length}
+      inboxItems={inboxItems}
     />
   );
 }

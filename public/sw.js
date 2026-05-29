@@ -27,3 +27,30 @@ self.addEventListener('fetch', e => {
     caches.match(e.request).then(r => r || fetch(e.request))
   );
 });
+
+// Push notifications
+self.addEventListener('push', e => {
+  let data = { title: 'Vera', body: '', icon: '/icons/icon-192.png' };
+  try { data = { ...data, ...e.data.json() }; } catch {}
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon,
+      badge: '/icons/icon-192.png',
+      vibrate: [200, 100, 200],
+      data: { url: '/' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const url = e.notification.data?.url ?? '/';
+  e.waitUntil(
+    clients.matchAll({ type: 'window' }).then(cls => {
+      const existing = cls.find(c => c.url.includes(url) && 'focus' in c);
+      if (existing) return existing.focus();
+      return clients.openWindow(url);
+    })
+  );
+});

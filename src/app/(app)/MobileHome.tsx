@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 const CaptureSheet = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
+const InboxMobile = dynamic(() => import('@/components/inbox/InboxMobile'), { ssr: false });
 
 type Task = { id: number; title: string; detail?: string | null; propertyId?: string | null; prioFinal?: number | null; lastActionAt?: Date | null; tags?: string | null };
 type WeightLog = { id: number; date: string; value: number; snmAgua?: boolean | null; snmCaminar?: boolean | null; snmEntreno?: boolean | null; snmEscucha?: boolean | null; snmDisfruta?: boolean | null };
+type InboxItem = { id: number; content: string; source?: string | null; suggestedPropertyId?: string | null; createdAt?: Date | null };
 
 const SNM_ICONS = ['💧', '🚶', '💪', '🧘', '🍴'];
 const SNM_KEYS = ['snmAgua', 'snmCaminar', 'snmEntreno', 'snmEscucha', 'snmDisfruta'] as const;
@@ -41,14 +43,17 @@ export default function MobileHome({
   nextTrip,
   weightLogs,
   inboxCount,
+  inboxItems = [],
 }: {
   urgentTasks: Task[];
   nextTrip: { title: string; daysTo: number; startDate: string } | null;
   weightLogs: WeightLog[];
   inboxCount: number;
+  inboxItems?: InboxItem[];
 }) {
   const router = useRouter();
   const [showCapture, setShowCapture] = useState(false);
+  const [showInbox, setShowInbox] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [statusLine, setStatusLine] = useState('');
 
@@ -147,7 +152,7 @@ export default function MobileHome({
         <div style={{ marginBottom: 28 }}>
           <SectionLabel label="Inbox" link="ABRIR →" />
           <div style={{ border: '.5px dashed #2c2c2a', borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}
-            onClick={() => router.push('/dashboard')}>
+            onClick={() => inboxCount > 0 ? setShowInbox(true) : router.push('/inbox')}>
             <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 28, color: 'var(--gold)', lineHeight: 1, minWidth: 32 }}>{inboxCount}</div>
             <div>
               <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)' }}>capturas sin procesar</div>
@@ -248,6 +253,7 @@ export default function MobileHome({
       </button>
 
       {showCapture && <CaptureSheet onClose={() => setShowCapture(false)} />}
+      {showInbox && <InboxMobile items={inboxItems} onClose={() => { setShowInbox(false); router.refresh(); }} />}
     </div>
   );
 }

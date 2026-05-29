@@ -138,3 +138,11 @@ export const contacts = sqliteTable('contacts', {
   notes: text('notes'),
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow(),
 });
+
+export const pushSubscriptions = sqliteTable('push_subscriptions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  endpoint: text('endpoint').notNull().unique(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow(),
+});
