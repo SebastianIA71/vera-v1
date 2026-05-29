@@ -498,6 +498,7 @@ export default function DashboardClient({
           <div style={{ padding: '16px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexShrink: 0 }}>
             <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: '22px', color: 'var(--text)', letterSpacing: '-.01em' }}>
               Command <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Centre</em>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.16em', color: 'var(--text3)', marginLeft: 10 }}>v.03</span>
             </div>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.2em', color: 'var(--text4)' }}>
               6 AGENTES · TURSO SYNC
@@ -629,7 +630,7 @@ export default function DashboardClient({
           );
         })}
         <div style={{ marginLeft: 'auto', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--text3)' }}>
-          VERA v0.2 · TURSO · VERCEL
+          VERA v0.2 · TURSO · VERCEL · <span style={{ color: 'var(--gold2)' }}>v.03</span>
         </div>
       </div>
 

@@ -3,17 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-type AgentId = 'voice' | 'prio' | 'alert' | 'search' | 'executor' | 'solution';
-type AgentStatus = { status: 'running' | 'active' | 'idle' | 'error'; lastRun?: string };
-
-const AGENTS: { id: AgentId; label: string; desc: string; color: string }[] = [
-  { id: 'voice',    label: 'Voice',    desc: 'Captura por voz → inbox',           color: 'var(--gold2)' },
-  { id: 'prio',     label: 'Prio',     desc: 'Recalcula prioridades',             color: 'var(--amber)' },
-  { id: 'alert',    label: 'Alert',    desc: 'Alertas y push notifications',      color: 'var(--red)'   },
-  { id: 'search',   label: 'Search',   desc: 'Brave Search + resumen Claude',     color: 'var(--blue)'  },
-  { id: 'executor', label: 'Executor', desc: 'Redacta y envía emails',            color: 'var(--green)' },
-  { id: 'solution', label: 'Solution', desc: 'DIY · mixta · profesional',         color: 'var(--purple)'},
-];
+type AgentId = 'prio' | 'alert' | 'search' | 'executor' | 'solution';
 
 function urlB64ToUint8Array(b64: string): ArrayBuffer {
   const padding = '='.repeat((4 - (b64.length % 4)) % 4);
@@ -24,8 +14,164 @@ function urlB64ToUint8Array(b64: string): ArrayBuffer {
   return arr.buffer;
 }
 
-/* ── Search form ── */
-function SearchForm({ onClose }: { onClose: () => void }) {
+const BTN: React.CSSProperties = {
+  width: '100%', padding: '14px 16px', borderRadius: 12,
+  background: 'transparent', cursor: 'pointer',
+  fontFamily: 'var(--font-dm-mono)', fontSize: 12, letterSpacing: '.16em',
+  touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' as unknown as string,
+  textAlign: 'center',
+};
+
+const INPUT: React.CSSProperties = {
+  width: '100%', background: 'var(--bg3)', border: '.5px solid var(--bg4)',
+  borderRadius: 10, padding: '13px 14px', color: 'var(--text)',
+  fontFamily: 'var(--font-dm-sans)', fontSize: 14, outline: 'none',
+  marginBottom: 10,
+};
+
+export default function AgentsPage() {
+  const router = useRouter();
+  const [active, setActive] = useState<AgentId | null>(null);
+
+  const toggle = (id: AgentId) => setActive(prev => prev === id ? null : id);
+
+  const sections: { id: AgentId; label: string; color: string; desc: string }[] = [
+    { id: 'alert',    label: 'Alert',    color: 'var(--red)',    desc: 'Push notifications · tareas stale' },
+    { id: 'prio',     label: 'Prio',     color: 'var(--amber)',  desc: 'Recalcular prioridades' },
+    { id: 'search',   label: 'Search',   color: 'var(--blue)',   desc: 'Brave Search + Claude' },
+    { id: 'solution', label: 'Solution', color: 'var(--purple)', desc: 'DIY · mixta · profesional' },
+    { id: 'executor', label: 'Executor', color: 'var(--green)',  desc: 'Borrador de email + envío' },
+  ];
+
+  return (
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', color: 'var(--text)', paddingBottom: 100 }}>
+
+      {/* Header */}
+      <div style={{ padding: '20px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '.5px solid var(--bg4)' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 22, color: 'var(--text)', lineHeight: 1.1 }}>
+            Agentes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Vera</em>
+          </div>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 4 }}>v.03</div>
+        </div>
+        <button onClick={() => router.push('/')} style={{ ...BTN, width: 'auto', padding: '8px 14px', border: '.5px solid var(--bg4)', color: 'var(--text2)' }}>
+          ← HOME
+        </button>
+      </div>
+
+      {/* Agent list */}
+      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {sections.map(sec => (
+          <div key={sec.id}>
+            {/* Toggle button — grande para tacto fácil */}
+            <button
+              onClick={() => toggle(sec.id)}
+              style={{
+                ...BTN,
+                border: `.5px solid ${active === sec.id ? sec.color : 'var(--bg4)'}`,
+                color: active === sec.id ? sec.color : 'var(--text)',
+                display: 'flex', alignItems: 'center', gap: 12,
+                background: active === sec.id ? `rgba(0,0,0,.15)` : 'var(--bg2)',
+                borderRadius: active === sec.id ? '12px 12px 0 0' : 12,
+                padding: '16px 18px',
+              }}
+            >
+              <span style={{ width: 10, height: 10, borderRadius: '50%', background: sec.color, display: 'inline-block', flexShrink: 0 }} />
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 16 }}>{sec.label}</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--text3)', marginTop: 3 }}>{sec.desc}</div>
+              </div>
+              <span style={{ color: 'var(--text3)', fontSize: 16 }}>{active === sec.id ? '▲' : '▼'}</span>
+            </button>
+
+            {/* Panel expandible */}
+            {active === sec.id && (
+              <div style={{ background: 'var(--bg2)', border: `.5px solid ${sec.color}`, borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '16px' }}>
+                {sec.id === 'alert'    && <AlertPanel />}
+                {sec.id === 'prio'     && <PrioPanel />}
+                {sec.id === 'search'   && <SearchPanel />}
+                {sec.id === 'solution' && <SolutionPanel />}
+                {sec.id === 'executor' && <ExecutorPanel />}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Alert ── */
+function AlertPanel() {
+  const [perm, setPerm] = useState<string>('?');
+  const [testMsg, setTestMsg] = useState('');
+
+  useEffect(() => {
+    if ('Notification' in window) setPerm(Notification.permission);
+  }, []);
+
+  const requestPerm = async () => {
+    const p = await Notification.requestPermission();
+    setPerm(p);
+    if (p !== 'granted') return;
+    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!vapidKey || !('serviceWorker' in navigator)) return;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(vapidKey) });
+      await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
+    } catch {}
+  };
+
+  const testPush = async () => {
+    setTestMsg('Enviando…');
+    const res = await fetch('/api/push/test', { method: 'POST' });
+    const d = await res.json();
+    setTestMsg(d.ok ? '✓ Push enviado — revisa notificaciones' : d.notice ?? 'Error. Configura VAPID en Vercel.');
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: perm === 'granted' ? 'var(--green)' : 'var(--text2)', marginBottom: 4 }}>
+        Permiso: <strong>{perm}</strong>
+      </div>
+      {perm !== 'granted' && (
+        <button onClick={requestPerm} style={{ ...BTN, border: '.5px solid var(--gold2)', color: 'var(--gold)' }}>
+          ACTIVAR NOTIFICACIONES →
+        </button>
+      )}
+      {perm === 'granted' && (
+        <button onClick={testPush} style={{ ...BTN, border: '.5px solid var(--red)', color: 'var(--red)' }}>
+          ENVIAR TEST PUSH
+        </button>
+      )}
+      {testMsg && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text2)', lineHeight: 1.5 }}>{testMsg}</div>}
+    </div>
+  );
+}
+
+/* ── Prio ── */
+function PrioPanel() {
+  const [state, setState] = useState<'idle' | 'running' | 'done'>('idle');
+  const [n, setN] = useState(0);
+
+  const run = async () => {
+    setState('running');
+    const res = await fetch('/api/agents/prio/run', { method: 'POST' });
+    const d = await res.json();
+    setN(d.updated ?? 0); setState('done');
+  };
+
+  return (
+    <button onClick={() => state === 'idle' && run()} style={{ ...BTN, border: '.5px solid var(--amber)', color: 'var(--amber)' }}>
+      {state === 'idle' ? 'RECALCULAR PRIORIDADES →' : state === 'running' ? '···' : `✓ ${n} tareas actualizadas`}
+    </button>
+  );
+}
+
+/* ── Search ── */
+function SearchPanel() {
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<{ title: string; url: string; summary?: string }[]>([]);
@@ -33,37 +179,34 @@ function SearchForm({ onClose }: { onClose: () => void }) {
 
   const search = async () => {
     if (!q.trim()) return;
-    setLoading(true); setNotice('');
+    setLoading(true); setNotice(''); setResults([]);
     const res = await fetch('/api/agents/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q }) });
-    const data = await res.json();
-    if (data.mode === 'no_search') setNotice(data.notice);
-    else setResults(data.results ?? []);
+    const d = await res.json();
+    if (d.mode === 'no_search' || d.mode === 'no_ai') setNotice(d.notice ?? 'Sin resultados');
+    else setResults(d.results ?? []);
     setLoading(false);
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '16px 0' }}>
-      <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && search()}
-        placeholder="¿Qué buscamos?"
-        style={{ background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '12px 14px', color: 'var(--text)', fontFamily: 'var(--font-dm-sans)', fontSize: 14, outline: 'none' }}
-      />
-      <button onClick={search} disabled={loading} style={{ padding: 12, borderRadius: 10, border: '.5px solid var(--blue)', background: 'transparent', color: 'var(--blue)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', cursor: 'pointer' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && search()} placeholder="¿Qué buscamos?" style={INPUT} />
+      <button onClick={search} disabled={loading || !q.trim()} style={{ ...BTN, border: '.5px solid var(--blue)', color: 'var(--blue)' }}>
         {loading ? '···' : 'BUSCAR →'}
       </button>
-      {notice && <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)' }}>{notice}</p>}
+      {notice && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)' }}>{notice}</div>}
       {results.map((r, i) => (
-        <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 12, padding: '12px 14px', textDecoration: 'none' }}>
+        <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '12px 14px', textDecoration: 'none' }}>
           <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)', marginBottom: 4 }}>{r.title}</div>
           {r.summary && <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: '#c8c6be', lineHeight: 1.4, marginBottom: 4 }}>{r.summary}</div>}
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--blue)', letterSpacing: '.08em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.url}</div>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.url}</div>
         </a>
       ))}
     </div>
   );
 }
 
-/* ── Solution form ── */
-function SolutionForm() {
+/* ── Solution ── */
+function SolutionPanel() {
   const [problem, setProblem] = useState('');
   const [loading, setLoading] = useState(false);
   const [options, setOptions] = useState<{ type: string; label: string; steps: string[]; cost: string; time: string; difficulty: string; materials?: string }[]>([]);
@@ -71,54 +214,52 @@ function SolutionForm() {
 
   const solve = async () => {
     if (!problem.trim()) return;
-    setLoading(true); setNotice('');
+    setLoading(true); setNotice(''); setOptions([]);
     const res = await fetch('/api/agents/solution', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ problem }) });
-    const data = await res.json();
-    if (data.mode === 'no_ai') setNotice(data.notice);
-    else setOptions(data.options ?? []);
+    const d = await res.json();
+    if (d.mode === 'no_ai') setNotice(d.notice);
+    else setOptions(d.options ?? []);
     setLoading(false);
   };
 
-  const typeColor = (t: string) => t === 'diy' ? 'var(--green)' : t === 'mixed' ? 'var(--amber)' : 'var(--purple)';
+  const tc = (t: string) => t === 'diy' ? 'var(--green)' : t === 'mixed' ? 'var(--amber)' : 'var(--purple)';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '16px 0' }}>
-      <textarea value={problem} onChange={e => setProblem(e.target.value)} placeholder="Describe el problema…"
-        style={{ background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '12px 14px', color: 'var(--text)', fontFamily: 'var(--font-dm-sans)', fontSize: 14, resize: 'none', minHeight: 80, outline: 'none' }}
-      />
-      <button onClick={solve} disabled={loading || !problem.trim()} style={{ padding: 12, borderRadius: 10, border: '.5px solid var(--purple)', background: 'transparent', color: 'var(--purple)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', cursor: 'pointer' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <textarea value={problem} onChange={e => setProblem(e.target.value)} placeholder="Describe el problema…" style={{ ...INPUT, resize: 'none', minHeight: 80, marginBottom: 0 }} />
+      <button onClick={solve} disabled={loading || !problem.trim()} style={{ ...BTN, border: '.5px solid var(--purple)', color: 'var(--purple)' }}>
         {loading ? '···' : 'PROPONER SOLUCIONES →'}
       </button>
-      {notice && <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)' }}>{notice}</p>}
+      {notice && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)' }}>{notice}</div>}
       {options.map((opt, i) => (
-        <div key={i} style={{ background: 'var(--bg2)', border: `.5px solid var(--bg4)`, borderLeft: `2px solid ${typeColor(opt.type)}`, borderRadius: 12, padding: '12px 14px' }}>
-          <div style={{ fontFamily: 'var(--font-syne)', fontSize: 14, color: typeColor(opt.type), marginBottom: 6 }}>{opt.label}</div>
+        <div key={i} style={{ background: 'var(--bg3)', borderLeft: `3px solid ${tc(opt.type)}`, borderRadius: 10, padding: '12px 14px' }}>
+          <div style={{ fontFamily: 'var(--font-syne)', fontSize: 14, color: tc(opt.type), marginBottom: 4 }}>{opt.label}</div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text4)', marginBottom: 8 }}>{opt.cost} · {opt.time} · {opt.difficulty}</div>
-          {opt.steps.map((s, j) => <div key={j} style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: '#c8c6be', lineHeight: 1.5, paddingLeft: 12, borderLeft: `.5px solid var(--bg4)`, marginBottom: 4 }}>{s}</div>)}
-          {opt.materials && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text2)', marginTop: 8 }}>{opt.materials}</div>}
+          {opt.steps.map((s, j) => <div key={j} style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: '#c8c6be', lineHeight: 1.5, marginBottom: 3 }}>• {s}</div>)}
+          {opt.materials && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text2)', marginTop: 6 }}>{opt.materials}</div>}
         </div>
       ))}
     </div>
   );
 }
 
-/* ── Executor form ── */
-function ExecutorForm() {
+/* ── Executor ── */
+function ExecutorPanel() {
   const [to, setTo] = useState('');
   const [subject, setSubject] = useState('');
   const [context, setContext] = useState('');
   const [loading, setLoading] = useState(false);
   const [draft, setDraft] = useState<{ body: string; to: string; subject: string; tone: string } | null>(null);
   const [notice, setNotice] = useState('');
-  const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
 
   const generate = async () => {
     setLoading(true); setNotice('');
     const res = await fetch('/api/agents/executor', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to, subject, context, tone: 'natural' }) });
-    const data = await res.json();
-    if (data.draft) setDraft(data.draft);
-    if (data.notice) setNotice(data.notice);
+    const d = await res.json();
+    if (d.draft) setDraft(d.draft);
+    if (d.notice) setNotice(d.notice);
     setLoading(false);
   };
 
@@ -126,223 +267,36 @@ function ExecutorForm() {
     if (!draft) return;
     setSending(true);
     const res = await fetch('/api/agents/executor/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) });
-    const data = await res.json();
-    if (data.ok) setSent(true);
+    const d = await res.json();
+    if (d.ok) setSent(true);
     setSending(false);
   };
 
-  if (sent) return <div style={{ padding: '20px 0', textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 14, color: 'var(--green)' }}>✓ EMAIL ENVIADO</div>;
+  if (sent) return <div style={{ textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 14, color: 'var(--green)', padding: 16 }}>✓ EMAIL ENVIADO</div>;
 
   if (draft) return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '16px 0' }}>
-      <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 12, padding: '14px' }}>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', marginBottom: 8 }}>BORRADOR → {draft.to}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ background: 'var(--bg3)', borderRadius: 10, padding: '14px' }}>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', marginBottom: 6 }}>PARA: {draft.to}</div>
         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text2)', marginBottom: 10 }}>ASUNTO: {draft.subject}</div>
         <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: '#c8c6be', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{draft.body}</div>
       </div>
       {notice && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--amber)' }}>{notice}</div>}
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={() => setDraft(null)} style={{ flex: 1, padding: 12, borderRadius: 10, border: '.5px solid var(--bg4)', background: 'transparent', color: 'var(--text2)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', cursor: 'pointer' }}>EDITAR</button>
-        {!notice && <button onClick={send} disabled={sending} style={{ flex: 2, padding: 12, borderRadius: 10, border: '.5px solid var(--green)', background: 'transparent', color: 'var(--green)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', cursor: 'pointer' }}>{sending ? '···' : 'CONFIRMAR ENVÍO →'}</button>}
+        <button onClick={() => setDraft(null)} style={{ ...BTN, flex: 1, border: '.5px solid var(--bg4)', color: 'var(--text2)', padding: '12px 8px' }}>EDITAR</button>
+        {!notice && <button onClick={send} disabled={sending} style={{ ...BTN, flex: 2, border: '.5px solid var(--green)', color: 'var(--green)', padding: '12px 8px' }}>{sending ? '···' : 'CONFIRMAR →'}</button>}
       </div>
     </div>
   );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '16px 0' }}>
-      {[['Para (email)', to, setTo], ['Asunto', subject, setSubject]].map(([ph, val, set]) => (
-        <input key={ph as string} value={val as string} onChange={e => (set as (v: string) => void)(e.target.value)} placeholder={ph as string}
-          style={{ background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '12px 14px', color: 'var(--text)', fontFamily: 'var(--font-dm-sans)', fontSize: 14, outline: 'none' }}
-        />
-      ))}
-      <textarea value={context} onChange={e => setContext(e.target.value)} placeholder="¿Qué quieres decir?"
-        style={{ background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '12px 14px', color: 'var(--text)', fontFamily: 'var(--font-dm-sans)', fontSize: 14, resize: 'none', minHeight: 80, outline: 'none' }}
-      />
-      <button onClick={generate} disabled={loading || !to || !subject || !context} style={{ padding: 12, borderRadius: 10, border: '.5px solid var(--green)', background: 'transparent', color: 'var(--green)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', cursor: 'pointer' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <input value={to} onChange={e => setTo(e.target.value)} placeholder="Para (email)" style={INPUT} />
+      <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Asunto" style={INPUT} />
+      <textarea value={context} onChange={e => setContext(e.target.value)} placeholder="¿Qué quieres decir?" style={{ ...INPUT, resize: 'none', minHeight: 80 }} />
+      <button onClick={generate} disabled={loading || !to || !subject || !context} style={{ ...BTN, border: '.5px solid var(--green)', color: 'var(--green)' }}>
         {loading ? '···' : 'GENERAR BORRADOR →'}
       </button>
     </div>
-  );
-}
-
-/* ── Alert / Push section ── */
-function AlertSection() {
-  const [permStatus, setPermStatus] = useState<NotificationPermission | 'unsupported'>('default');
-  const [subStatus, setSubStatus] = useState<'none' | 'subscribed' | 'subscribing'>('none');
-  const [testStatus, setTestStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
-  const [running, setRunning] = useState(false);
-
-  useEffect(() => {
-    if (!('Notification' in window)) { setPermStatus('unsupported'); return; }
-    setPermStatus(Notification.permission);
-    if ('serviceWorker' in navigator && Notification.permission === 'granted') {
-      navigator.serviceWorker.ready.then(reg => reg.pushManager.getSubscription()).then(sub => {
-        if (sub) setSubStatus('subscribed');
-      });
-    }
-  }, []);
-
-  const requestPermission = async () => {
-    const perm = await Notification.requestPermission();
-    setPermStatus(perm);
-    if (perm !== 'granted') return;
-
-    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!vapidKey) { setSubStatus('subscribed'); return; } // sin VAPID, solo guardamos permiso
-
-    setSubStatus('subscribing');
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      let sub = await reg.pushManager.getSubscription();
-      if (!sub) {
-        sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(vapidKey) });
-      }
-      await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
-      setSubStatus('subscribed');
-    } catch {
-      setSubStatus('none');
-    }
-  };
-
-  const runAlerts = async () => {
-    setRunning(true);
-    await fetch('/api/agents/prio/run', { method: 'POST' });
-    setRunning(false);
-  };
-
-  const testPush = async () => {
-    setTestStatus('sending');
-    const res = await fetch('/api/push/test', { method: 'POST' });
-    const data = await res.json();
-    setTestStatus(data.ok ? 'sent' : 'error');
-    setTimeout(() => setTestStatus('idle'), 3000);
-  };
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '16px 0' }}>
-      {/* Permiso */}
-      <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 12, padding: '14px' }}>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.2em', color: 'var(--text3)', marginBottom: 8 }}>NOTIFICACIONES PUSH</div>
-        {permStatus === 'unsupported' && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)' }}>No soportado en este dispositivo</div>}
-        {permStatus === 'denied' && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--red)' }}>Permiso denegado — actívalo en ajustes del navegador</div>}
-        {permStatus === 'granted' && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--green)' }}>✓ Permiso concedido{subStatus === 'subscribed' ? ' · suscrito' : ''}</div>}
-        {permStatus === 'default' && (
-          <button onPointerDown={e => { e.preventDefault(); requestPermission(); }} style={{ width: '100%', padding: '11px', borderRadius: 10, border: '.5px solid var(--gold2)', background: 'transparent', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', cursor: 'pointer', touchAction: 'manipulation' }}>
-            ACTIVAR NOTIFICACIONES →
-          </button>
-        )}
-      </div>
-
-      {/* Test push */}
-      {permStatus === 'granted' && (
-        <button onPointerDown={e => { e.preventDefault(); testPush(); }} disabled={testStatus === 'sending'} style={{ padding: 12, borderRadius: 10, border: `.5px solid ${testStatus === 'sent' ? 'var(--green)' : testStatus === 'error' ? 'var(--red)' : 'var(--red)'}`, background: 'transparent', color: testStatus === 'sent' ? 'var(--green)' : testStatus === 'error' ? 'var(--red)' : 'var(--red)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', cursor: 'pointer', touchAction: 'manipulation' }}>
-          {testStatus === 'sending' ? '···' : testStatus === 'sent' ? '✓ ENVIADO' : testStatus === 'error' ? 'SIN SUSCRIPCIÓN (configura VAPID)' : 'ENVIAR TEST PUSH'}
-        </button>
-      )}
-
-      {/* PrioAgent manual */}
-      <button onPointerDown={e => { e.preventDefault(); runAlerts(); }} disabled={running} style={{ padding: 12, borderRadius: 10, border: '.5px solid var(--amber)', background: 'transparent', color: 'var(--amber)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', cursor: 'pointer', touchAction: 'manipulation' }}>
-        {running ? '···' : 'RECALCULAR PRIORIDADES'}
-      </button>
-    </div>
-  );
-}
-
-/* ── Main page ── */
-export default function AgentsPage() {
-  const router = useRouter();
-  const [open, setOpen] = useState<AgentId | null>(null);
-  const [statuses, setStatuses] = useState<Record<AgentId, AgentStatus>>({} as Record<AgentId, AgentStatus>);
-
-  useEffect(() => {
-    fetch('/api/agents/status').then(r => r.json()).then(setStatuses).catch(() => {});
-  }, []);
-
-  const statusColor = (s?: string) => s === 'running' ? 'var(--gold2)' : s === 'active' ? 'var(--green)' : s === 'error' ? 'var(--red)' : 'var(--text3)';
-
-  return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg)', color: 'var(--text)', paddingBottom: 80 }}>
-      {/* Header */}
-      <div style={{ padding: '16px 22px 12px', borderBottom: '.5px solid var(--bg4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)', marginBottom: 4 }}>
-            <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" /></svg>
-            VERA
-          </div>
-          <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 20, color: 'var(--text)' }}>
-            Agentes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>activos</em>
-          </div>
-        </div>
-        <button onPointerDown={e => { e.preventDefault(); router.push('/'); }} style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', touchAction: 'manipulation', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.2em' }}>
-          ← HOME
-        </button>
-      </div>
-
-      {/* Agent list */}
-      <div style={{ padding: '12px 22px' }}>
-        {AGENTS.map(agent => {
-          const status = statuses[agent.id]?.status ?? 'idle';
-          const isOpen = open === agent.id;
-          return (
-            <div key={agent.id} style={{ marginBottom: 10 }}>
-              <button
-                onPointerDown={e => { e.preventDefault(); setOpen(isOpen ? null : agent.id); }}
-                style={{
-                  width: '100%', padding: '14px 16px', borderRadius: isOpen ? '12px 12px 0 0' : 12,
-                  background: 'var(--bg2)', border: `.5px solid ${isOpen ? agent.color : 'var(--bg4)'}`,
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  cursor: 'pointer', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent',
-                }}
-              >
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: statusColor(status), display: 'inline-block', flexShrink: 0 }} />
-                <div style={{ flex: 1, textAlign: 'left' }}>
-                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 15, color: isOpen ? agent.color : 'var(--text)' }}>{agent.label}</div>
-                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--text3)', marginTop: 2 }}>{agent.desc}</div>
-                </div>
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)' }}>{isOpen ? '↑' : '↓'}</span>
-              </button>
-
-              {isOpen && (
-                <div style={{ background: 'var(--bg2)', border: `.5px solid ${agent.color}`, borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '0 16px 16px' }}>
-                  {agent.id === 'alert'    && <AlertSection />}
-                  {agent.id === 'search'   && <SearchForm onClose={() => setOpen(null)} />}
-                  {agent.id === 'solution' && <SolutionForm />}
-                  {agent.id === 'executor' && <ExecutorForm />}
-                  {agent.id === 'prio'     && (
-                    <div style={{ padding: '16px 0' }}>
-                      <PrioRunner />
-                    </div>
-                  )}
-                  {agent.id === 'voice'    && (
-                    <p style={{ padding: '16px 0', fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', lineHeight: 1.5 }}>
-                      Activo vía FAB micrófono en todas las pantallas. Transcribe y clasifica capturas de voz al inbox.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function PrioRunner() {
-  const [state, setState] = useState<'idle' | 'running' | 'done'>('idle');
-  const [updated, setUpdated] = useState<number | null>(null);
-
-  const run = async () => {
-    setState('running');
-    const res = await fetch('/api/agents/prio/run', { method: 'POST' });
-    const data = await res.json();
-    setUpdated(data.updated ?? 0);
-    setState('done');
-  };
-
-  return (
-    <button onPointerDown={e => { e.preventDefault(); if (state === 'idle') run(); }} style={{ width: '100%', padding: 12, borderRadius: 10, border: '.5px solid var(--amber)', background: 'transparent', color: 'var(--amber)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', cursor: 'pointer', touchAction: 'manipulation' }}>
-      {state === 'idle' ? 'EJECUTAR PRIO AGENT →' : state === 'running' ? '···' : `✓ ${updated} TAREAS ACTUALIZADAS`}
-    </button>
   );
 }
