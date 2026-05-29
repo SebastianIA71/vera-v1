@@ -377,7 +377,7 @@ export default function DashboardClient({
 }) {
   const router = useRouter();
   const [time, setTime] = useState('');
-  const [navCollapsed, setNavCollapsed] = useState(false);
+  const navCollapsed = false; // siempre expandida en desktop
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [agentStatus, setAgentStatus] = useState<Record<AgentId, AgentStatus>>(
     Object.fromEntries(['voice','prio','alert','search','executor','solution'].map(id => [id, { status: 'idle' }])) as Record<AgentId, AgentStatus>
@@ -455,7 +455,7 @@ export default function DashboardClient({
               <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" />
             </svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.12</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.13</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
@@ -487,15 +487,7 @@ export default function DashboardClient({
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
         {/* LEFT NAV */}
-        <nav style={{ width: navCollapsed ? '62px' : '220px', background: 'var(--bg)', borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', padding: '14px 0', flexShrink: 0, transition: 'width .25s ease', overflow: 'hidden' }}>
-          <button
-            onClick={() => setNavCollapsed(c => !c)}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: navCollapsed ? 'center' : 'flex-end', padding: '0 14px 10px', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" strokeWidth="1.5" strokeLinecap="round" style={{ transform: navCollapsed ? 'rotate(180deg)' : 'none', transition: 'transform .25s' }}>
-              <path d="M15 18l-6-6 6-6"/>
-            </svg>
-          </button>
+        <nav style={{ width: '220px', background: 'var(--bg)', borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', padding: '14px 0', flexShrink: 0, overflow: 'hidden' }}>
 
           <NavItem icon="command" label="COMMAND" active />
           <NavItem icon="tasks"   label="TAREAS"      collapsed={navCollapsed} onClick={() => router.push('/tasks')} />

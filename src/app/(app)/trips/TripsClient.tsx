@@ -100,7 +100,7 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
   return (
     <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}>
       {/* Lista */}
-      <div style={{ width: 320, display: 'flex', flexDirection: 'column', borderRight: '.5px solid var(--bg4)', flexShrink: 0 }}>
+      <div style={{ width: 400, display: 'flex', flexDirection: 'column', borderRight: '.5px solid var(--bg4)', flexShrink: 0 }}>
         <div style={{ padding: '14px 18px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
           <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em' }}>
             Viajes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>2026</em>
@@ -174,7 +174,7 @@ function TripDetail({ trip }: { trip: Trip }) {
   const st = STATUS_LABELS[trip.status ?? 'planning'] ?? STATUS_LABELS.planning;
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ flex: 1, maxWidth: 680, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ padding: '14px 20px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)' }}>DETALLE</span>

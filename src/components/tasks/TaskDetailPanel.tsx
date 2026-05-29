@@ -78,7 +78,7 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
   });
 
   return (
-    <div style={{ width: 300, background: 'var(--bg)', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'relative', borderLeft: '.5px solid var(--bg4)' }}>
+    <div style={{ width: 420, background: 'var(--bg)', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'relative', borderLeft: '.5px solid var(--bg4)' }}>
       {/* Header */}
       <div style={{ padding: '14px 16px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
