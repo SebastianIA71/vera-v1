@@ -25,9 +25,14 @@ export function useVoice(onTranscript: (text: string) => void) {
       return;
     }
 
-    // Abortar cualquier instancia previa antes de crear una nueva
-    recRef.current?.abort();
-    recRef.current = null;
+    // Desactivar handlers antes de abortar — evita que el onend viejo resetee el estado
+    if (recRef.current) {
+      recRef.current.onend = null;
+      recRef.current.onerror = null;
+      recRef.current.onresult = null;
+      recRef.current.abort();
+      recRef.current = null;
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rec: any = new SR();

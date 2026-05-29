@@ -455,7 +455,7 @@ export default function DashboardClient({
               <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" />
             </svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.06</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.07</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
@@ -463,7 +463,7 @@ export default function DashboardClient({
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Pill dot="red" label={`${urgentNow} URGENTES`} />
           <Pill dot="amber" label={`${staleCount} STALE`} />
-          <Pill dot="green" label={`${initialInboxCount} INBOX`} />
+          <Pill dot="green" label={`${inboxCount} INBOX`} />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
