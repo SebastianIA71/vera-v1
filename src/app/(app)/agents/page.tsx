@@ -50,7 +50,7 @@ export default function AgentsPage() {
           <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 22, color: 'var(--text)', lineHeight: 1.1 }}>
             Agentes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Vera</em>
           </div>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 4 }}>v.11</div>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 4 }}>v.12</div>
         </div>
       </div>
 

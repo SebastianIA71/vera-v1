@@ -455,7 +455,7 @@ export default function DashboardClient({
               <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" />
             </svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.11</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.12</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
@@ -498,17 +498,17 @@ export default function DashboardClient({
           </button>
 
           <NavItem icon="command" label="COMMAND" active />
-          <NavItem icon="tasks" label="TAREAS" collapsed={navCollapsed} onClick={() => router.push('/tasks')} />
-          <NavItem icon="inbox" label="INBOX" badge={initialInboxCount} collapsed={navCollapsed} />
-          <NavItem icon="trips" label="VIAJES" collapsed={navCollapsed} />
-          <NavItem icon="props" label="PROPIEDADES" collapsed={navCollapsed} />
+          <NavItem icon="tasks"   label="TAREAS"      collapsed={navCollapsed} onClick={() => router.push('/tasks')} />
+          <NavItem icon="inbox"   label="INBOX"       badge={initialInboxCount} collapsed={navCollapsed} onClick={() => router.push('/inbox')} />
+          <NavItem icon="trips"   label="VIAJES"      collapsed={navCollapsed} onClick={() => router.push('/trips')} />
+          <NavItem icon="props"   label="PROPIEDADES" collapsed={navCollapsed} onClick={() => router.push('/properties')} />
           <div style={{ height: '.5px', background: 'var(--bg4)', margin: '6px 14px' }} />
-          <NavItem icon="finance" label="FINANZAS" collapsed={navCollapsed} />
-          <NavItem icon="agents" label="AGENTES" collapsed={navCollapsed} onClick={() => router.push('/agents')} />
+          <NavItem icon="finance" label="FINANZAS"    collapsed={navCollapsed} onClick={() => router.push('/finance')} />
+          <NavItem icon="agents"  label="AGENTES"     collapsed={navCollapsed} onClick={() => router.push('/agents')} />
           <div style={{ marginTop: 'auto' }}>
             <div style={{ height: '.5px', background: 'var(--bg4)', margin: '6px 14px' }} />
-            <NavItem icon="settings" label="AJUSTES" collapsed={navCollapsed} />
-            <NavItem icon="logout" label="SALIR" collapsed={navCollapsed} onClick={logout} />
+            <NavItem icon="settings" label="AJUSTES" collapsed={navCollapsed} onClick={() => router.push('/settings')} />
+            <NavItem icon="logout"   label="SALIR"   collapsed={navCollapsed} onClick={logout} />
           </div>
         </nav>
 
