@@ -7,6 +7,7 @@ import { QUOTES } from '@/lib/quotes';
 
 const CaptureSheet = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const InboxMobile = dynamic(() => import('@/components/inbox/InboxMobile'), { ssr: false });
+const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
 
 type Task = { id: number; title: string; detail?: string | null; propertyId?: string | null; prioFinal?: number | null; lastActionAt?: Date | null; tags?: string | null };
 type WeightLog = { id: number; date: string; value: number; snmAgua?: boolean | null; snmCaminar?: boolean | null; snmEntreno?: boolean | null; snmEscucha?: boolean | null; snmDisfruta?: boolean | null };
@@ -61,6 +62,7 @@ export default function MobileHome({
   const router = useRouter();
   const [showCapture, setShowCapture] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
+  const [showNewEvent, setShowNewEvent] = useState(false);
   const [greeting, setGreeting] = useState('');
   const [statusLine, setStatusLine] = useState('');
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
@@ -116,7 +118,7 @@ export default function MobileHome({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" /></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.20</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.21</span>
           </span>
           <button onClick={() => router.push('/dashboard')} style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' }}>
             <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -249,21 +251,28 @@ export default function MobileHome({
         )}
 
         {/* Upcoming event (social) */}
-        {nextEvent && (
-          <div style={{ marginBottom: 28 }}>
-            <SectionLabel label="próximo evento" />
-            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 14, color: 'var(--text)', lineHeight: 1.2 }}>{nextEvent.title}</div>
-                {nextEvent.who && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>{nextEvent.who.toUpperCase()}</div>}
-              </div>
-              <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, color: 'var(--purple)', lineHeight: 1 }}>{nextEvent.daysTo}</div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em' }}>DÍAS</div>
-              </div>
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+            <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 15, letterSpacing: '.22em', color: 'var(--gold2)', textTransform: 'uppercase' }}>próximo evento</span>
+            <button onClick={() => setShowNewEvent(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 20, lineHeight: 1, padding: '0 2px' }}>+</button>
+          </div>
+        {nextEvent ? (
+          <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 14, color: 'var(--text)', lineHeight: 1.2 }}>{nextEvent.title}</div>
+              {nextEvent.who && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>{nextEvent.who.toUpperCase()}</div>}
+            </div>
+            <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, color: 'var(--purple)', lineHeight: 1 }}>{nextEvent.daysTo}</div>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em' }}>DÍAS</div>
             </div>
           </div>
+        ) : (
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.1em', padding: '12px 2px' }}>
+            Sin eventos próximos · toca + para añadir
+          </div>
         )}
+        </div>
 
         {/* Properties — top task por propiedad */}
         {topTaskByProperty.length > 0 && (
@@ -318,6 +327,7 @@ export default function MobileHome({
 
       {showCapture && <CaptureSheet onClose={() => setShowCapture(false)} />}
       {showInbox && <InboxMobile items={inboxItems} onClose={() => { setShowInbox(false); router.refresh(); }} />}
+      {showNewEvent && <NewEventSheet onClose={() => setShowNewEvent(false)} onCreated={() => setShowNewEvent(false)} />}
     </div>
   );
 }

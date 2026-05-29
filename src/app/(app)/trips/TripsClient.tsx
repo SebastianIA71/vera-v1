@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import DesktopShell from '@/components/layout/DesktopShell';
+import dynamic from 'next/dynamic';
+const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
 
 type Trip = { id: number; title: string; startDate?: Date | null; endDate?: Date | null; who?: string | null; status?: string | null; notes?: string | null; transport?: string | null; accommodation?: string | null };
 type Task = { id: number; title: string; status?: string | null; prioFinal?: number | null; relatedTaskId?: number | null };
@@ -32,6 +34,7 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
 }) {
   const [selected, setSelected] = useState<Trip | null>(trips[0] ?? null);
   const [isMobile, setIsMobile] = useState(false);
+  const [showNewEvent, setShowNewEvent] = useState(false);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 769);
@@ -102,8 +105,11 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
       {/* Lista */}
       <div style={{ width: 400, display: 'flex', flexDirection: 'column', borderRight: '.5px solid var(--bg4)', flexShrink: 0 }}>
         <div style={{ padding: '14px 18px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
-          <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em' }}>
-            Viajes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>2026</em>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em' }}>
+              Viajes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>2026</em>
+            </div>
+            <button onClick={() => setShowNewEvent(true)} style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--bg3)', border: '.5px solid var(--bg4)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>+</button>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text4)', marginTop: 4 }}>
             {trips.length} VIAJES PLANIFICADOS
@@ -165,6 +171,7 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text3)' }}>SELECCIONA UN VIAJE</div>
         </div>
       )}
+      {showNewEvent && <NewEventSheet type="viaje" onClose={() => setShowNewEvent(false)} onCreated={() => setShowNewEvent(false)} />}
     </DesktopShell>
   );
 }

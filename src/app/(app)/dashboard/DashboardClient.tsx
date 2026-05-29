@@ -7,6 +7,7 @@ import DesktopNav from '@/components/layout/DesktopNav';
 import { QUOTES } from '@/lib/quotes';
 import dynamic from 'next/dynamic';
 const CaptureSheet = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
+const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
 
 /* ─── Types ─────────────────────────────────────────── */
 type AgentId = 'voice' | 'prio' | 'alert' | 'search' | 'executor' | 'solution';
@@ -390,6 +391,8 @@ export default function DashboardClient({
   );
   const [rightTab, setRightTab] = useState<TabId>('punchlist');
   const [showNewTask, setShowNewTask] = useState(false);
+  const [showNewEvent, setShowNewEvent] = useState(false);
+  const [showNewTrip,  setShowNewTrip]  = useState(false);
   const [activeAgent, setActiveAgent] = useState<AgentId | null>(null);
   const [showCapture, setShowCapture] = useState(false);
   const [inboxCount, setInboxCount] = useState(initialInboxCount);
@@ -461,7 +464,7 @@ export default function DashboardClient({
               <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" />
             </svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.20</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.21</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
@@ -589,17 +592,16 @@ export default function DashboardClient({
             </div>
           </div>
 
-          {/* Nueva Tarea button */}
-          <div style={{ padding: '12px 24px', flexShrink: 0 }}>
-            <button
-              onClick={() => setShowNewTask(true)}
-              style={{
-                background: 'transparent', border: '.5px solid var(--gold2)', borderRadius: '10px',
-                padding: '12px 20px', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)',
-                fontSize: '12px', letterSpacing: '.2em', cursor: 'pointer', width: '100%',
-              }}
-            >
+          {/* Botones de creación */}
+          <div style={{ padding: '12px 24px 20px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button onClick={() => setShowNewTask(true)} style={{ background: 'transparent', border: '.5px solid var(--gold2)', borderRadius: '10px', padding: '12px 20px', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', letterSpacing: '.2em', cursor: 'pointer', width: '100%' }}>
               + NUEVA TAREA
+            </button>
+            <button onClick={() => setShowNewEvent(true)} style={{ background: 'transparent', border: '.5px solid var(--purple)', borderRadius: '10px', padding: '12px 20px', color: 'var(--purple)', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', letterSpacing: '.2em', cursor: 'pointer', width: '100%' }}>
+              + NUEVO EVENTO
+            </button>
+            <button onClick={() => setShowNewTrip(true)} style={{ background: 'transparent', border: '.5px solid var(--blue)', borderRadius: '10px', padding: '12px 20px', color: 'var(--blue)', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', letterSpacing: '.2em', cursor: 'pointer', width: '100%' }}>
+              + NUEVO VIAJE
             </button>
           </div>
         </div>
@@ -645,6 +647,8 @@ export default function DashboardClient({
       {/* NEW TASK MODAL */}
       {showNewTask && <NewTaskModal onClose={() => setShowNewTask(false)} onCreated={handleTaskCreated} />}
       {showCapture && <CaptureSheet onClose={() => { setShowCapture(false); }} />}
+      {showNewEvent && <NewEventSheet onClose={() => setShowNewEvent(false)} onCreated={() => setShowNewEvent(false)} />}
+      {showNewTrip  && <NewEventSheet type="viaje" onClose={() => setShowNewTrip(false)} onCreated={() => setShowNewTrip(false)} />}
 
       <style>{`
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
