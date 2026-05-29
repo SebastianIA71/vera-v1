@@ -1,0 +1,22 @@
+{
+  "name": "Vera",
+  "short_name": "Vera",
+  "description": "Sistema operativo de vida personal",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07080a",
+  "theme_color": "#07080a",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Captura rápida",
+      "short_name": "Captura",
+      "url": "/",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "96x96" }]
+    }
+  ]
+}

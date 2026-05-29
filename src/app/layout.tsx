@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Syne, DM_Sans, DM_Mono } from 'next/font/google';
 import './globals.css';
+import SWRegister from './SWRegister';
 
 const syne = Syne({
   variable: '--font-syne',
@@ -38,7 +39,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="es"
       className={`${syne.variable} ${dmSans.variable} ${dmMono.variable} h-full`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {children}
+        <SWRegister />
+      </body>
     </html>
   );
 }
