@@ -260,7 +260,9 @@ function TaskRow({ task, selected, onSelect, onPrioChange }: { task: Task; selec
         display: 'flex', alignItems: 'center', gap: 12, padding: '10px 20px',
         cursor: 'pointer', borderBottom: '.5px solid var(--bg2)',
         position: 'relative', transition: 'background .1s',
-        background: task.prioFinal === 10 ? 'rgba(255,0,64,0.06)' : selected ? 'var(--bg2)' : 'transparent',
+        background: task.prioFinal === 10 ? 'rgba(255,0,64,0.12)' : selected ? 'var(--bg2)' : 'transparent',
+        border: task.prioFinal === 10 ? '.5px solid rgba(255,0,64,0.4)' : 'none',
+        borderRadius: task.prioFinal === 10 ? 6 : 0,
       }}
       onMouseEnter={e => { if (!selected) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg2)'; }}
       onMouseLeave={e => { if (!selected) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}

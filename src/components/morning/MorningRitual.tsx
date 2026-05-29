@@ -91,7 +91,7 @@ export default function MorningRitual({
         .catch(() => setBriefingLoading(false));
     }
     if (step === 5) {
-      router.replace('/dashboard');
+      router.replace('/');
       return;
     }
     setStep(s => Math.min(s + 1, 5));
@@ -325,7 +325,7 @@ export default function MorningRitual({
             )}
 
             <button onClick={next} style={{ width: '100%', padding: 11, borderRadius: 11, background: 'transparent', border: '.5px solid var(--gold2)', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.2em', cursor: 'pointer' }}>
-              IR AL DASHBOARD →
+              IR AL HOME →
             </button>
           </>
         )}

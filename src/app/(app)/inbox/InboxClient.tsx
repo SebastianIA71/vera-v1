@@ -120,7 +120,7 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
   return (
     <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={pendingCount}>
       {/* Lista */}
-      <div style={{ width: 340, display: 'flex', flexDirection: 'column', borderRight: '.5px solid var(--bg4)', flexShrink: 0 }}>
+      <div style={{ width: isMobile ? '100%' : 340, display: 'flex', flexDirection: 'column', borderRight: isMobile ? 'none' : '.5px solid var(--bg4)', flexShrink: 0 }}>
         {isMobile && <MobilePageHeader title="Inbox" />}
         <div style={{ padding: '14px 18px 0', flexShrink: 0 }}>
           {!isMobile && (
