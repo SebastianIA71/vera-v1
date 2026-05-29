@@ -22,12 +22,12 @@ const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV
 const pad = (n: number) => String(n).padStart(2, '0');
 
 const AGENTS: { id: AgentId; label: string; icon: string; top: number; left: number; labelPos: 'above' | 'below' }[] = [
-  { id: 'voice',    label: 'VOICE',    icon: 'mic',   top: 40,  left: 220, labelPos: 'above' },
-  { id: 'prio',     label: 'PRIO',     icon: 'prio',  top: 72,  left: 372, labelPos: 'above' },
-  { id: 'alert',    label: 'ALERT',    icon: 'bell',  top: 336, left: 380, labelPos: 'below' },
-  { id: 'solution', label: 'SOLUTION', icon: 'help',  top: 392, left: 220, labelPos: 'below' },
-  { id: 'executor', label: 'EXECUTOR', icon: 'send',  top: 328, left: 58,  labelPos: 'below' },
-  { id: 'search',   label: 'SEARCH',   icon: 'search',top: 96,  left: 68,  labelPos: 'above' },
+  { id: 'voice',    label: 'VOICE',    icon: 'mic',   top: 51,  left: 280, labelPos: 'above' },
+  { id: 'prio',     label: 'PRIO',     icon: 'prio',  top: 92,  left: 473, labelPos: 'above' },
+  { id: 'alert',    label: 'ALERT',    icon: 'bell',  top: 428, left: 484, labelPos: 'below' },
+  { id: 'solution', label: 'SOLUTION', icon: 'help',  top: 499, left: 280, labelPos: 'below' },
+  { id: 'executor', label: 'EXECUTOR', icon: 'send',  top: 417, left: 74,  labelPos: 'below' },
+  { id: 'search',   label: 'SEARCH',   icon: 'search',top: 122, left: 87,  labelPos: 'above' },
 ];
 
 /* ─── SVG icons ─────────────────────────────────────── */
@@ -84,7 +84,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone }: Ri
     .slice(0, 7);
 
   return (
-    <div style={{ width: '280px', background: 'var(--bg)', borderLeft: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+    <div style={{ width: '320px', background: 'var(--bg)', borderLeft: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
       {/* Tabs */}
       <div style={{ display: 'flex', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
         {([['punchlist', 'PUNCH LIST'], ['inbox', 'INBOX'], ['alerts', 'ALERTAS']] as [TabId, string][]).map(([id, label]) => (
@@ -92,8 +92,8 @@ function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone }: Ri
             key={id}
             onClick={() => setTab(id)}
             style={{
-              flex: 1, padding: '10px 4px', textAlign: 'center',
-              fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.18em',
+              flex: 1, padding: '12px 4px', textAlign: 'center',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.18em',
               color: tab === id ? 'var(--gold2)' : 'var(--text4)',
               background: 'transparent', border: 'none',
               borderBottom: `1.5px solid ${tab === id ? 'var(--gold2)' : 'transparent'}`,
@@ -102,7 +102,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone }: Ri
           >
             {label}
             {id === 'inbox' && inboxCount > 0 && (
-              <span style={{ position: 'absolute', top: '6px', right: '6px', background: 'var(--red)', color: '#fff', fontFamily: 'var(--font-dm-mono)', fontSize: '7px', padding: '1px 4px', borderRadius: '999px' }}>
+              <span style={{ position: 'absolute', top: '6px', right: '6px', background: 'var(--red)', color: '#fff', fontFamily: 'var(--font-dm-mono)', fontSize: '9px', padding: '1px 4px', borderRadius: '999px' }}>
                 {inboxCount}
               </span>
             )}
@@ -114,7 +114,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone }: Ri
       <div style={{ flex: 1, overflowY: 'auto', padding: '14px' }}>
         {tab === 'punchlist' && (
           <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-mono)', fontSize: '8px', letterSpacing: '.24em', color: 'var(--text4)', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.24em', color: 'var(--text4)', marginBottom: '10px' }}>
               <span>HOY · {topTasks.length} TAREAS</span>
               <span style={{ cursor: 'pointer' }}>VER TODAS →</span>
             </div>
@@ -127,18 +127,18 @@ function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone }: Ri
                   style={{
                     background: 'var(--bg2)', border: `.5px solid var(--bg4)`,
                     borderLeft: `2px solid ${bc}`,
-                    borderRadius: '10px', padding: '10px 12px', marginBottom: '6px',
-                    display: 'flex', gap: '8px', alignItems: 'flex-start',
+                    borderRadius: '10px', padding: '12px 14px', marginBottom: '8px',
+                    display: 'flex', gap: '10px', alignItems: 'flex-start',
                     opacity: isDone ? 0.45 : 1,
                     transition: 'opacity .3s ease, border-color .2s ease',
                   }}
                 >
-                  <div style={{ fontFamily: 'var(--font-syne)', fontSize: '11px', fontWeight: 600, color: isDone ? 'var(--green)' : 'var(--gold)', minWidth: '16px' }}>
+                  <div style={{ fontFamily: 'var(--font-syne)', fontSize: '13px', fontWeight: 600, color: isDone ? 'var(--green)' : 'var(--gold)', minWidth: '18px' }}>
                     {task.prioFinal}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{
-                      fontFamily: 'var(--font-dm-sans)', fontSize: '11px', lineHeight: 1.3,
+                      fontFamily: 'var(--font-dm-sans)', fontSize: '13px', lineHeight: 1.3,
                       color: isDone ? 'var(--text3)' : 'var(--text)',
                       textDecoration: isDone ? 'line-through' : 'none',
                       transition: 'color .2s, text-decoration .2s',
@@ -146,7 +146,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone }: Ri
                       {task.title}
                     </div>
                     {task.propertyId && (
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', letterSpacing: '.1em', color: isDone ? 'var(--text3)' : 'var(--gold2)', marginTop: '3px' }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.1em', color: isDone ? 'var(--text3)' : 'var(--gold2)', marginTop: '4px' }}>
                         {task.propertyId.toUpperCase()}
                       </div>
                     )}
@@ -155,9 +155,9 @@ function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone }: Ri
                     onClick={() => !isDone && handleMarkDone(task)}
                     disabled={isDone}
                     style={{
-                      width: '16px', height: '16px', borderRadius: '50%', flexShrink: 0, marginTop: '1px',
+                      width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0, marginTop: '1px',
                       border: isDone ? 'none' : '.5px solid var(--text3)',
-                      background: isDone ? 'transparent' : 'transparent',
+                      background: 'transparent',
                       cursor: isDone ? 'default' : 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       color: 'var(--green)',
@@ -165,7 +165,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone }: Ri
                     title={isDone ? 'Hecha' : 'Marcar hecha'}
                   >
                     {isDone && (
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     )}
@@ -176,11 +176,11 @@ function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone }: Ri
 
             {nextTrip && (
               <>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '8px', letterSpacing: '.24em', color: 'var(--text4)', marginTop: '16px', marginBottom: '8px' }}>PRÓXIMO VIAJE</div>
-                <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: '10px', padding: '10px 12px' }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.24em', color: 'var(--text4)', marginTop: '18px', marginBottom: '10px' }}>PRÓXIMO VIAJE</div>
+                <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: '10px', padding: '12px 14px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <div style={{ fontFamily: 'var(--font-syne)', fontSize: '13px', color: 'var(--text)' }}>{nextTrip.title}</div>
-                    <div style={{ fontFamily: 'var(--font-syne)', fontSize: '20px', color: 'var(--blue)', lineHeight: 1 }}>{nextTrip.daysTo}<span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', color: 'var(--text2)', marginLeft: '2px' }}>D</span></div>
+                    <div style={{ fontFamily: 'var(--font-syne)', fontSize: '15px', color: 'var(--text)' }}>{nextTrip.title}</div>
+                    <div style={{ fontFamily: 'var(--font-syne)', fontSize: '24px', color: 'var(--blue)', lineHeight: 1 }}>{nextTrip.daysTo}<span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--text2)', marginLeft: '2px' }}>D</span></div>
                   </div>
                 </div>
               </>
@@ -369,32 +369,32 @@ export default function DashboardClient({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)', overflow: 'hidden' }}>
 
       {/* TOP BAR */}
-      <div style={{ height: '44px', background: 'var(--bg)', borderBottom: '.5px solid var(--bg4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', flexShrink: 0, zIndex: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: '13px', letterSpacing: '.3em', color: 'var(--gold2)' }}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <div style={{ height: '54px', background: 'var(--bg)', borderBottom: '.5px solid var(--bg4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0, zIndex: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '9px', fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: '15px', letterSpacing: '.3em', color: 'var(--gold2)' }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" />
             </svg>
             VERA
           </div>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <Pill dot="red" label={`${urgentNow} URGENTES`} />
           <Pill dot="amber" label={`${staleCount} STALE`} />
           <Pill dot="green" label={`${initialInboxCount} INBOX`} />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', border: '.5px solid var(--bg4)', borderRadius: '999px', fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.14em', color: 'var(--green)' }}>
-            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--green)', display: 'inline-block', animation: 'blink 2s ease-in-out infinite' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', border: '.5px solid var(--bg4)', borderRadius: '999px', fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.14em', color: 'var(--green)' }}>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--green)', display: 'inline-block', animation: 'blink 2s ease-in-out infinite' }} />
             SISTEMA ACTIVO
           </div>
           <button
-            style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '6px 14px', border: '.5px solid var(--gold2)', borderRadius: '999px', background: 'transparent', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.18em', cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 16px', border: '.5px solid var(--gold2)', borderRadius: '999px', background: 'transparent', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', letterSpacing: '.18em', cursor: 'pointer' }}
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold2)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold2)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
               <rect x="9" y="3" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/>
             </svg>
             OYE VERA
@@ -406,7 +406,7 @@ export default function DashboardClient({
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
         {/* LEFT NAV */}
-        <nav style={{ width: navCollapsed ? '52px' : '200px', background: 'var(--bg)', borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', padding: '12px 0', flexShrink: 0, transition: 'width .25s ease', overflow: 'hidden' }}>
+        <nav style={{ width: navCollapsed ? '62px' : '220px', background: 'var(--bg)', borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', padding: '14px 0', flexShrink: 0, transition: 'width .25s ease', overflow: 'hidden' }}>
           <button
             onClick={() => setNavCollapsed(c => !c)}
             style={{ display: 'flex', alignItems: 'center', justifyContent: navCollapsed ? 'center' : 'flex-end', padding: '0 14px 10px', background: 'none', border: 'none', cursor: 'pointer' }}
@@ -433,19 +433,19 @@ export default function DashboardClient({
         {/* CENTER: ORBITAL */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '16px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexShrink: 0 }}>
-            <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: '18px', color: 'var(--text)', letterSpacing: '-.01em' }}>
+            <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: '22px', color: 'var(--text)', letterSpacing: '-.01em' }}>
               Command <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Centre</em>
             </div>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.2em', color: 'var(--text4)' }}>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.2em', color: 'var(--text4)' }}>
               6 AGENTES · TURSO SYNC
             </div>
           </div>
 
           {/* Orbital map */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            <div style={{ position: 'relative', width: '440px', height: '440px', flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: '560px', height: '560px', flexShrink: 0 }}>
               {/* Rings */}
-              {[140, 260, 380, 440].map((size, i) => (
+              {[178, 330, 480, 560].map((size, i) => (
                 <div key={size} style={{
                   position: 'absolute', borderRadius: '50%', top: '50%', left: '50%',
                   width: `${size}px`, height: `${size}px`,
@@ -458,11 +458,11 @@ export default function DashboardClient({
               {AGENTS.map(agent => {
                 const status = agentStatus[agent.id]?.status ?? 'idle';
                 const isActive = status === 'running' || status === 'active';
-                const angle = Math.atan2(agent.top - 220, agent.left - 220);
-                const dist = Math.sqrt(Math.pow(agent.left - 220, 2) + Math.pow(agent.top - 220, 2));
+                const angle = Math.atan2(agent.top - 280, agent.left - 280);
+                const dist = Math.sqrt(Math.pow(agent.left - 280, 2) + Math.pow(agent.top - 280, 2));
                 return (
                   <div key={`conn-${agent.id}`} style={{
-                    position: 'absolute', top: '220px', left: '220px',
+                    position: 'absolute', top: '280px', left: '280px',
                     width: `${dist}px`, height: '.5px',
                     background: isActive ? 'rgba(196,168,106,.35)' : 'rgba(196,168,106,.12)',
                     transformOrigin: '0 0',
@@ -475,14 +475,14 @@ export default function DashboardClient({
               {/* Core */}
               <div style={{
                 position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
-                width: '80px', height: '80px', borderRadius: '50%', background: 'var(--bg)',
+                width: '100px', height: '100px', borderRadius: '50%', background: 'var(--bg)',
                 border: '.5px solid var(--gold2)', display: 'flex', flexDirection: 'column',
                 alignItems: 'center', justifyContent: 'center', zIndex: 5,
               }}>
-                <div style={{ position: 'absolute', inset: '-8px', borderRadius: '50%', border: '.5px solid rgba(196,168,106,.18)' }} />
-                <div style={{ position: 'absolute', inset: '-18px', borderRadius: '50%', border: '.5px solid rgba(196,168,106,.07)' }} />
-                <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: '11px', letterSpacing: '.3em', color: 'var(--gold2)' }}>VERA</div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '7px', letterSpacing: '.2em', color: 'var(--green)', marginTop: '2px' }}>● ACTIVA</div>
+                <div style={{ position: 'absolute', inset: '-10px', borderRadius: '50%', border: '.5px solid rgba(196,168,106,.18)' }} />
+                <div style={{ position: 'absolute', inset: '-22px', borderRadius: '50%', border: '.5px solid rgba(196,168,106,.07)' }} />
+                <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: '14px', letterSpacing: '.3em', color: 'var(--gold2)' }}>VERA</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.2em', color: 'var(--green)', marginTop: '3px' }}>● ACTIVA</div>
               </div>
 
               {/* Agent nodes */}
@@ -491,7 +491,7 @@ export default function DashboardClient({
                 return (
                   <div key={agent.id} style={{ position: 'absolute', top: `${agent.top}px`, left: `${agent.left}px`, transform: 'translate(-50%,-50%)', zIndex: 4, cursor: 'pointer' }}>
                     <div style={{
-                      width: '52px', height: '52px', borderRadius: '50%', background: 'var(--bg2)',
+                      width: '66px', height: '66px', borderRadius: '50%', background: 'var(--bg2)',
                       border: `.5px solid ${nodeBorderColor(status)}`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
                       color: nodeIconColor(status),
@@ -499,15 +499,15 @@ export default function DashboardClient({
                       transition: 'border-color .2s',
                     }}>
                       <div style={{
-                        position: 'absolute', top: '2px', right: '2px', width: '8px', height: '8px',
+                        position: 'absolute', top: '3px', right: '3px', width: '10px', height: '10px',
                         borderRadius: '50%', border: '.5px solid var(--bg)', background: statusColor(status),
                         animation: status === 'running' ? 'blink 1.5s ease-in-out infinite' : 'none',
                       }} />
                       <AgentIcon icon={agent.icon} />
                     </div>
                     <div style={{
-                      position: 'absolute', fontFamily: 'var(--font-dm-mono)', fontSize: '8px', letterSpacing: '.14em',
-                      color: 'var(--text2)', whiteSpace: 'nowrap', textAlign: 'center', width: '80px',
+                      position: 'absolute', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em',
+                      color: 'var(--text2)', whiteSpace: 'nowrap', textAlign: 'center', width: '90px',
                       left: '50%', transform: 'translateX(-50%)',
                       ...(agent.labelPos === 'above' ? { bottom: 'calc(100% + 6px)' } : { top: 'calc(100% + 6px)' }),
                     }}>
@@ -525,8 +525,8 @@ export default function DashboardClient({
               onClick={() => setShowNewTask(true)}
               style={{
                 background: 'transparent', border: '.5px solid var(--gold2)', borderRadius: '10px',
-                padding: '10px 20px', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)',
-                fontSize: '10px', letterSpacing: '.2em', cursor: 'pointer', width: '100%',
+                padding: '12px 20px', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)',
+                fontSize: '12px', letterSpacing: '.2em', cursor: 'pointer', width: '100%',
               }}
             >
               + NUEVA TAREA
@@ -546,18 +546,18 @@ export default function DashboardClient({
       </div>
 
       {/* BOTTOM BAR */}
-      <div style={{ height: '32px', background: 'var(--bg)', borderTop: '.5px solid var(--bg4)', display: 'flex', alignItems: 'center', padding: '0 24px', gap: '18px', flexShrink: 0 }}>
+      <div style={{ height: '40px', background: 'var(--bg)', borderTop: '.5px solid var(--bg4)', display: 'flex', alignItems: 'center', padding: '0 24px', gap: '20px', flexShrink: 0 }}>
         {AGENTS.map(agent => {
           const status = agentStatus[agent.id]?.status ?? 'idle';
           const isOn = status !== 'idle';
           return (
-            <div key={agent.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.12em', color: isOn ? 'var(--text2)' : 'var(--text4)' }}>
-              <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: statusColor(status), display: 'inline-block' }} />
+            <div key={agent.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.12em', color: isOn ? 'var(--text2)' : 'var(--text4)' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusColor(status), display: 'inline-block' }} />
               {agent.label} — {status.toUpperCase()}
             </div>
           );
         })}
-        <div style={{ marginLeft: 'auto', fontFamily: 'var(--font-dm-mono)', fontSize: '8px', letterSpacing: '.14em', color: 'var(--text3)' }}>
+        <div style={{ marginLeft: 'auto', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--text3)' }}>
           VERA v0.2 · TURSO · VERCEL
         </div>
       </div>
@@ -578,8 +578,8 @@ export default function DashboardClient({
 function Pill({ dot, label }: { dot: string; label: string }) {
   const colors: Record<string, string> = { red: 'var(--red)', amber: 'var(--amber)', green: 'var(--green)' };
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', border: '.5px solid var(--bg4)', borderRadius: '999px', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--text2)' }}>
-      <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: colors[dot] ?? 'var(--text3)', display: 'inline-block' }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '5px 12px', border: '.5px solid var(--bg4)', borderRadius: '999px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', letterSpacing: '.14em', color: 'var(--text2)' }}>
+      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: colors[dot] ?? 'var(--text3)', display: 'inline-block' }} />
       {label}
     </div>
   );
@@ -588,14 +588,14 @@ function Pill({ dot, label }: { dot: string; label: string }) {
 function NavItem({ icon, label, active, badge, collapsed, onClick }: { icon: string; label: string; active?: boolean; badge?: number; collapsed?: boolean; onClick?: () => void }) {
   const s = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   const icons: Record<string, React.ReactNode> = {
-    command: <svg viewBox="0 0 24 24" width={16} height={16} {...s}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>,
-    tasks:   <svg viewBox="0 0 24 24" width={16} height={16} {...s}><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
-    inbox:   <svg viewBox="0 0 24 24" width={16} height={16} {...s}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
-    trips:   <svg viewBox="0 0 24 24" width={16} height={16} {...s}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
-    props:   <svg viewBox="0 0 24 24" width={16} height={16} {...s}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
-    finance: <svg viewBox="0 0 24 24" width={16} height={16} {...s}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
-    settings:<svg viewBox="0 0 24 24" width={16} height={16} {...s}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9z"/></svg>,
-    logout:  <svg viewBox="0 0 24 24" width={16} height={16} {...s}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+    command: <svg viewBox="0 0 24 24" width={18} height={18} {...s}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>,
+    tasks:   <svg viewBox="0 0 24 24" width={18} height={18} {...s}><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>,
+    inbox:   <svg viewBox="0 0 24 24" width={18} height={18} {...s}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+    trips:   <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+    props:   <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>,
+    finance: <svg viewBox="0 0 24 24" width={18} height={18} {...s}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+    settings:<svg viewBox="0 0 24 24" width={18} height={18} {...s}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9z"/></svg>,
+    logout:  <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
   };
 
   return (
@@ -611,12 +611,12 @@ function NavItem({ icon, label, active, badge, collapsed, onClick }: { icon: str
       {active && <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: '2px', height: '16px', background: 'var(--gold2)', borderRadius: '1px' }} />}
       <span style={{ color: active ? 'var(--gold2)' : 'var(--text2)', flexShrink: 0 }}>{icons[icon]}</span>
       {!collapsed && (
-        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.16em', color: active ? 'var(--gold2)' : 'var(--text2)', transition: 'opacity .15s' }}>
+        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '12px', letterSpacing: '.16em', color: active ? 'var(--gold2)' : 'var(--text2)', transition: 'opacity .15s' }}>
           {label}
         </span>
       )}
       {!collapsed && badge !== undefined && badge > 0 && (
-        <span style={{ marginLeft: 'auto', background: 'var(--red)', color: '#fff', fontFamily: 'var(--font-dm-mono)', fontSize: '7px', padding: '2px 5px', borderRadius: '999px' }}>
+        <span style={{ marginLeft: 'auto', background: 'var(--red)', color: '#fff', fontFamily: 'var(--font-dm-mono)', fontSize: '9px', padding: '2px 6px', borderRadius: '999px' }}>
           {badge}
         </span>
       )}
