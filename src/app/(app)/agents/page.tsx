@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 
 type AgentId = 'prio' | 'alert' | 'search' | 'executor' | 'solution';
 
@@ -30,7 +29,6 @@ const INPUT: React.CSSProperties = {
 };
 
 export default function AgentsPage() {
-  const router = useRouter();
   const [active, setActive] = useState<AgentId | null>(null);
 
   const toggle = (id: AgentId) => setActive(prev => prev === id ? null : id);
@@ -47,16 +45,13 @@ export default function AgentsPage() {
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', color: 'var(--text)', paddingBottom: 100 }}>
 
       {/* Header */}
-      <div style={{ padding: '20px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '.5px solid var(--bg4)' }}>
+      <div style={{ padding: '20px 20px 14px', borderBottom: '.5px solid var(--bg4)' }}>
         <div>
           <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 22, color: 'var(--text)', lineHeight: 1.1 }}>
             Agentes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Vera</em>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 4 }}>v.07</div>
         </div>
-        <button onClick={() => router.push('/')} style={{ ...BTN, width: 'auto', padding: '8px 14px', border: '.5px solid var(--bg4)', color: 'var(--text2)' }}>
-          ← HOME
-        </button>
       </div>
 
       {/* Agent list */}

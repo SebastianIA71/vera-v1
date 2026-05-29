@@ -14,19 +14,6 @@ type InboxItem = { id: number; content: string; source?: string | null; suggeste
 const SNM_ICONS = ['💧', '🚶', '💪', '🧘', '🍴'];
 const SNM_KEYS = ['snmAgua', 'snmCaminar', 'snmEntreno', 'snmEscucha', 'snmDisfruta'] as const;
 
-function MobileNavIcon({ name }: { name: string }) {
-  const s = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-  switch (name) {
-    case 'cmd':   return <svg viewBox="0 0 24 24" width={20} height={20} {...s}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>;
-    case 'tasks': return <svg viewBox="0 0 24 24" width={20} height={20} {...s}><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>;
-    case 'inbox': return <svg viewBox="0 0 24 24" width={20} height={20} {...s}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
-    case 'trips': return <svg viewBox="0 0 24 24" width={20} height={20} {...s}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>;
-    case 'props':  return <svg viewBox="0 0 24 24" width={20} height={20} {...s}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
-    case 'agents': return <svg viewBox="0 0 24 24" width={20} height={20} {...s}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>;
-    default: return null;
-  }
-}
-
 function SectionLabel({ label, color, meta, link }: { label: string; color?: string; meta?: string; link?: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
@@ -243,49 +230,6 @@ export default function MobileHome({
             </div>
           </div>
         )}
-      </div>
-
-      {/* BOTTOM NAV */}
-      <div style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
-        background: 'var(--bg)', borderTop: '.5px solid var(--bg4)',
-        display: 'flex', alignItems: 'center',
-        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-      }}>
-        {[
-          { label: 'HOME', path: '/', icon: 'cmd' },
-          { label: 'TAREAS', path: '/tasks', icon: 'tasks' },
-          { label: 'INBOX', path: null, icon: 'inbox', badge: inboxCount },
-          { label: 'AGENTES', path: '/agents', icon: 'agents' },
-          { label: 'VIAJES', path: '/trips', icon: 'trips' },
-        ].map(item => (
-          <button
-            key={item.label}
-            onPointerDown={e => {
-              e.preventDefault();
-              if (item.icon === 'inbox') {
-                inboxCount > 0 ? setShowInbox(true) : router.push('/inbox');
-              } else if (item.path) {
-                router.push(item.path);
-              }
-            }}
-            style={{
-              flex: 1, padding: '10px 4px 8px',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-              background: 'none', border: 'none', cursor: 'pointer',
-              color: 'var(--text3)', position: 'relative',
-              touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent',
-            }}
-          >
-            <MobileNavIcon name={item.icon} />
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.12em', color: 'var(--text3)' }}>
-              {item.label}
-            </span>
-            {item.badge && item.badge > 0 && (
-              <span style={{ position: 'absolute', top: 6, right: '20%', background: 'var(--red)', color: '#fff', fontFamily: 'var(--font-dm-mono)', fontSize: 8, padding: '1px 4px', borderRadius: 999 }}>{item.badge}</span>
-            )}
-          </button>
-        ))}
       </div>
 
       {showCapture && <CaptureSheet onClose={() => setShowCapture(false)} />}

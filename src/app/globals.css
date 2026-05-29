@@ -61,3 +61,22 @@ em.anchor {
   font-family: var(--font-dm-mono), 'DM Mono', monospace;
   color: var(--gold2);
 }
+
+/* ── MOBILE NAV ── */
+
+/* En móvil: mostrar bottom nav, ocultar desktop shells */
+@media (max-width: 768px) {
+  .desktop-sidebar {
+    display: none !important;
+  }
+  .mobile-nav {
+    display: flex !important;
+  }
+}
+
+/* En desktop: ocultar bottom nav, mostrar desktop shells */
+@media (min-width: 769px) {
+  .mobile-nav {
+    display: none !important;
+  }
+}
