@@ -55,6 +55,70 @@ function taskBorderColor(task: Task, now: Date): string {
   return 'transparent';
 }
 
+/* ─── Inbox Panel ───────────────────────────────────── */
+type InboxItem = { id: number; content: string; source?: string | null; type?: string | null; suggestedPropertyId?: string | null; createdAt?: Date | null };
+
+function InboxPanel({ inboxCount }: { inboxCount: number }) {
+  const [items, setItems] = useState<InboxItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/inbox')
+      .then(r => r.json())
+      .then(d => { setItems(d); setLoaded(true); })
+      .catch(() => setLoaded(true));
+  }, []);
+
+  if (!loaded) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 120 }}>
+        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--gold2)', letterSpacing: '.1em' }}>···</span>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 160, gap: 8 }}>
+        <div style={{ fontFamily: 'var(--font-syne)', fontSize: 32, color: 'var(--gold)' }}>0</div>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text2)' }}>INBOX VACÍO</div>
+      </div>
+    );
+  }
+
+  const sourceColor = (src?: string | null) => src === 'voice' ? 'var(--purple)' : 'var(--blue)';
+  const sourceLabel = (src?: string | null) => src === 'voice' ? 'VOZ' : src?.toUpperCase() ?? 'MANUAL';
+
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text4)', marginBottom: 10 }}>
+        <span>{inboxCount} PENDIENTES</span>
+      </div>
+      {items.map(item => (
+        <div key={item.id} style={{
+          background: 'var(--bg2)', border: '.5px solid var(--bg4)',
+          borderLeft: `2px solid ${sourceColor(item.source)}`,
+          borderRadius: 10, padding: '10px 12px', marginBottom: 8,
+        }}>
+          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, lineHeight: 1.35, color: 'var(--text)', marginBottom: 5 }}>
+            {item.content}
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: sourceColor(item.source) }}>
+              {sourceLabel(item.source)}
+            </span>
+            {item.suggestedPropertyId && (
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--gold2)' }}>
+                · {item.suggestedPropertyId.toUpperCase()}
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
+
 /* ─── Right Panel ───────────────────────────────────── */
 function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone }: RightPanelProps) {
   const now = new Date();
@@ -189,10 +253,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone }: Ri
         )}
 
         {tab === 'inbox' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px', gap: '8px' }}>
-            <div style={{ fontFamily: 'var(--font-syne)', fontSize: '32px', color: 'var(--gold)' }}>{inboxCount}</div>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.2em', color: 'var(--text2)' }}>CAPTURAS PENDIENTES</div>
-          </div>
+          <InboxPanel inboxCount={inboxCount} />
         )}
 
         {tab === 'alerts' && (

@@ -1,12 +1,20 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 const CaptureSheet = dynamic(() => import('./CaptureSheet'), { ssr: false });
 
 export default function FAB() {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
+
+  const handleClose = () => {
+    setOpen(false);
+    router.refresh(); // refresca el server component — actualiza inbox count
+  };
+
   return (
     <>
       <button
@@ -28,7 +36,7 @@ export default function FAB() {
           <line x1="8" y1="22" x2="16" y2="22" />
         </svg>
       </button>
-      {open && <CaptureSheet onClose={() => setOpen(false)} />}
+      {open && <CaptureSheet onClose={handleClose} />}
     </>
   );
 }
