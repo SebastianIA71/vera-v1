@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import AgentPanel from '@/components/command/AgentPanel';
 import DesktopNav from '@/components/layout/DesktopNav';
 import { QUOTES } from '@/lib/quotes';
+import { getRandomPersona } from '@/lib/personas';
 import dynamic from 'next/dynamic';
 const CaptureSheet = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
@@ -414,6 +415,7 @@ export default function DashboardClient({
   const [time, setTime] = useState('');
   const navCollapsed = false;
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+  const [persona] = useState(() => getRandomPersona());
   const renderQuote = (raw: string) => raw.split(/\*([^*]+)\*/).map((part, i) =>
     i % 2 === 1 ? <em key={i} style={{ fontStyle: 'italic', color: 'var(--gold)' }}>{part}</em> : part
   );
@@ -495,7 +497,7 @@ export default function DashboardClient({
               <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" />
             </svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.24</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.25</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
@@ -532,8 +534,14 @@ export default function DashboardClient({
         {/* CENTER: ORBITAL */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '16px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexShrink: 0 }}>
-            <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: '22px', color: 'var(--text)', letterSpacing: '-.01em' }}>
-              Command <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Centre</em>
+            <div>
+              <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: '22px', color: 'var(--text)', letterSpacing: '-.01em' }}>
+                Command <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Centre</em>
+              </div>
+              <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: '13px', color: 'var(--text3)', letterSpacing: '.01em', marginTop: 2 }}>
+                good {(() => { const h = new Date().getHours(); return h < 12 ? 'morning' : h < 19 ? 'afternoon' : 'evening'; })()},{' '}
+                <span style={{ color: 'var(--text2)' }}>{persona}</span>.
+              </div>
             </div>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.2em', color: 'var(--text4)' }}>
               6 AGENTES · TURSO SYNC

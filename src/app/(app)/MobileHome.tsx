@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { QUOTES } from '@/lib/quotes';
+import { getRandomPersona } from '@/lib/personas';
 
 const CaptureSheet = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const InboxMobile = dynamic(() => import('@/components/inbox/InboxMobile'), { ssr: false });
@@ -66,6 +67,7 @@ export default function MobileHome({
   const [greeting, setGreeting] = useState('');
   const [statusLine, setStatusLine] = useState('');
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+  const [persona] = useState(() => getRandomPersona());
 
   const renderQuote = (raw: string) => raw.split(/\*([^*]+)\*/).map((part, i) =>
     i % 2 === 1 ? <em key={i} style={{ fontStyle: 'italic', color: 'var(--gold)' }}>{part}</em> : part
@@ -118,7 +120,7 @@ export default function MobileHome({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" /></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.24</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.25</span>
           </span>
           <button onClick={() => router.push('/dashboard')} style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' }}>
             <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -130,7 +132,11 @@ export default function MobileHome({
         {/* Greeting */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 30, lineHeight: 1.15, color: 'var(--text)', letterSpacing: '-.01em' }}>
-            {greeting.split(' ').slice(0, -1).join(' ')}, <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>{greeting.split(' ').slice(-1)[0]}</em>.
+            {greeting.split(' ').slice(0, -1).join(' ')},{' '}
+            <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>{greeting.split(' ').slice(-1)[0]}</em>
+            {', '}
+            <span style={{ color: 'var(--text2)', fontWeight: 300 }}>{persona}</span>
+            {'.'}
           </div>
           {statusLine && (
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', color: 'var(--text2)', marginTop: 12 }}>
