@@ -18,7 +18,7 @@ const SNM_KEYS = ['snmAgua', 'snmCaminar', 'snmEntreno', 'snmEscucha', 'snmDisfr
 function SectionLabel({ label, color, meta, link }: { label: string; color?: string; meta?: string; link?: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-      <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 13, letterSpacing: '.22em', color: color ?? 'var(--gold2)', textTransform: 'uppercase' }}>{label}</span>
+      <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 15, letterSpacing: '.22em', color: color ?? 'var(--gold2)', textTransform: 'uppercase' }}>{label}</span>
       {meta && <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.12em' }}>{meta}</span>}
       {link && <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.2em', color: 'var(--text2)', cursor: 'pointer' }}>{link}</span>}
     </div>
@@ -116,7 +116,7 @@ export default function MobileHome({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" /></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.19</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.20</span>
           </span>
           <button onClick={() => router.push('/dashboard')} style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' }}>
             <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
@@ -127,7 +127,7 @@ export default function MobileHome({
 
         {/* Greeting */}
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 26, lineHeight: 1.15, color: 'var(--text)', letterSpacing: '-.01em' }}>
+          <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 30, lineHeight: 1.15, color: 'var(--text)', letterSpacing: '-.01em' }}>
             {greeting.split(' ').slice(0, -1).join(' ')}, <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>{greeting.split(' ').slice(-1)[0]}</em>.
           </div>
           {statusLine && (
@@ -138,7 +138,7 @@ export default function MobileHome({
         </div>
 
         {/* Quote */}
-        <div style={{ marginBottom: 24, fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 13, lineHeight: 1.5, color: 'var(--text3)', letterSpacing: '.01em', paddingLeft: 2 }}>
+        <div style={{ marginBottom: 24, fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 14, lineHeight: 1.5, color: 'var(--text3)', letterSpacing: '.01em', paddingLeft: 2 }}>
           {renderQuote(quote)}
         </div>
 
@@ -155,9 +155,9 @@ export default function MobileHome({
               }}>
                 <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 13, color: 'var(--gold)', minWidth: 20, paddingTop: 1 }}>{t.prioFinal}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, lineHeight: 1.35, color: 'var(--text)' }}>{t.title}</div>
+                  <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, lineHeight: 1.35, color: 'var(--text)' }}>{t.title}</div>
                   {t.propertyId && (
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--gold2)', marginTop: 5 }}>{t.propertyId.toUpperCase()}</div>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', color: 'var(--gold2)', marginTop: 5 }}>{t.propertyId.toUpperCase()}</div>
                   )}
                 </div>
                 <div style={{ width: 20, height: 20, borderRadius: '50%', border: '.5px solid var(--text3)', flexShrink: 0, marginTop: 2 }} />
@@ -234,13 +234,13 @@ export default function MobileHome({
             <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
-                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 15, color: 'var(--text)', letterSpacing: '-.01em' }}>{nextTrip.title}</div>
+                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 16, color: 'var(--text)', letterSpacing: '-.01em' }}>{nextTrip.title}</div>
                   <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text2)', letterSpacing: '.12em', marginTop: 5 }}>
                     {new Date(nextTrip.startDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase()}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 28, color: 'var(--blue)', lineHeight: 1, textAlign: 'right' }}>{nextTrip.daysTo}</div>
+                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 26, color: 'var(--blue)', lineHeight: 1, textAlign: 'right' }}>{nextTrip.daysTo}</div>
                   <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.18em', color: 'var(--text2)', marginTop: 2, textAlign: 'right' }}>DÍAS</div>
                 </div>
               </div>
@@ -274,8 +274,8 @@ export default function MobileHome({
                 <div key={prop.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${prop.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{prop.icon ?? '🏠'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: prop.color ?? 'var(--text3)', letterSpacing: '.12em', marginBottom: 2 }}>{prop.name.toUpperCase()}</div>
-                    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: prop.color ?? 'var(--text3)', letterSpacing: '.12em', marginBottom: 2 }}>{prop.name.toUpperCase()}</div>
+                    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
                   </div>
                   <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: 'var(--text3)', flexShrink: 0 }}>{task.prioFinal ?? 0}</span>
                 </div>
@@ -290,16 +290,16 @@ export default function MobileHome({
           <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
               <div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, color: 'var(--text)', lineHeight: 1 }}>2,7M</div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>PATRIMONIO</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 20, color: 'var(--text)', lineHeight: 1 }}>2,7M</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>PATRIMONIO</div>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, color: 'var(--text)', lineHeight: 1 }}>145,1K</div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>ANUAL</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 20, color: 'var(--text)', lineHeight: 1 }}>145,1K</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>ANUAL</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, color: 'var(--green)', lineHeight: 1 }}>10,2K</div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>MENSUAL</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 20, color: 'var(--green)', lineHeight: 1 }}>10,2K</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>MENSUAL</div>
               </div>
             </div>
             <svg width="100%" height="32" viewBox="0 0 300 32" preserveAspectRatio="none">

@@ -123,14 +123,16 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
       <div style={{ width: 340, display: 'flex', flexDirection: 'column', borderRight: '.5px solid var(--bg4)', flexShrink: 0 }}>
         {isMobile && <MobilePageHeader title="Inbox" />}
         <div style={{ padding: '14px 18px 0', flexShrink: 0 }}>
-          <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em' }}>
-            Inbox <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>capturas</em>
-          </div>
-          <div style={{ display: 'flex', borderBottom: '.5px solid var(--bg4)', marginTop: 12 }}>
+          {!isMobile && (
+            <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em', marginBottom: 12 }}>
+              Inbox <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>capturas</em>
+            </div>
+          )}
+          <div style={{ display: 'flex', borderBottom: '.5px solid var(--bg4)', marginTop: isMobile ? 0 : 0 }}>
             {([['pending','SIN PROCESAR',pendingCount],['all','TODAS',null],['done','PROCESADAS',null]] as const).map(([id, label, count]) => (
               <button key={id} onClick={() => setTab(id)} style={{
                 flex: 1, padding: '8px 4px', textAlign: 'center',
-                fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em',
+                fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em',
                 color: tab === id ? 'var(--gold2)' : 'var(--text4)',
                 background: 'transparent', border: 'none', cursor: 'pointer',
                 borderBottom: `1.5px solid ${tab === id ? 'var(--gold2)' : 'transparent'}`,
@@ -162,7 +164,7 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
             >
               {selected?.id === item.id && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--gold2)' }} />}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', color: srcColor(item.source) }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', color: srcColor(item.source) }}>
                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: srcColor(item.source), display: 'inline-block' }} />
                   {(item.source ?? 'manual').toUpperCase()}
                 </div>
@@ -190,7 +192,7 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '14px 20px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <button onClick={() => setSelected(null)} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer' }}>
+              <button onClick={() => setSelected(null)} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer' }}>
                 ← LISTA
               </button>
               <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', color: 'var(--text4)' }}>
@@ -219,7 +221,7 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: 'var(--purple)', marginBottom: 12 }}>CLASIFICAR COMO TAREA</div>
 
                 <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', marginBottom: 6 }}>TÍTULO</div>
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)', marginBottom: 6 }}>TÍTULO</div>
                   <input
                     value={editTitle}
                     onChange={e => setEditTitle(e.target.value)}
@@ -231,14 +233,14 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
 
                 <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', marginBottom: 6 }}>PROPIEDAD</div>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)', marginBottom: 6 }}>PROPIEDAD</div>
                     <select value={editProp} onChange={e => setEditProp(e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '7px 8px', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: 11 }}>
                       <option value="">— ninguna</option>
                       {PROPS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
                     </select>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', marginBottom: 6 }}>PRIORIDAD</div>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)', marginBottom: 6 }}>PRIORIDAD</div>
                     <select value={editPrio} onChange={e => setEditPrio(Number(e.target.value))} style={{ width: '100%', background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '7px 8px', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: 11 }}>
                       {[9,8,7,6,5,4,3,2,1].map(n => <option key={n} value={n}>{n}</option>)}
                     </select>

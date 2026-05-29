@@ -266,16 +266,16 @@ function TaskRow({ task, selected, onSelect, onPrioChange }: { task: Task; selec
     >
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: bc, borderRadius: 0 }} />
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 0, flexShrink: 0, background: 'var(--bg3)', borderRadius: 6, overflow: 'hidden' }}>
-        <button onClick={e => changePrio(e, -1)} style={{ width: 24, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 13, lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}>−</button>
-        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text2)', lineHeight: 1, minWidth: 16, textAlign: 'center' }}>{task.prioFinal ?? 0}</span>
-        <button onClick={e => changePrio(e, +1)} style={{ width: 24, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 13, lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}>+</button>
+        <button onClick={e => changePrio(e, -1)} style={{ width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 11, lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}>−</button>
+        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: 'var(--text2)', lineHeight: 1, minWidth: 16, textAlign: 'center' }}>{task.prioFinal ?? 0}</span>
+        <button onClick={e => changePrio(e, +1)} style={{ width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 11, lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}>+</button>
       </div>
       <div style={{ width: 16, height: 16, borderRadius: '50%', border: '.5px solid var(--text3)', flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {task.title}
         </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 3, fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text4)' }}>
+        <div style={{ display: 'flex', gap: 8, marginTop: 3, fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', color: 'var(--text4)' }}>
           {task.propertyId && <span style={{ color: 'var(--gold2)' }}>{task.propertyId.toUpperCase()}</span>}
           {task.propertyId && <span style={{ color: 'var(--text3)' }}>·</span>}
           {stale >= 14 && <span style={{ color: 'var(--amber)' }}>{stale}D SIN MOVER</span>}

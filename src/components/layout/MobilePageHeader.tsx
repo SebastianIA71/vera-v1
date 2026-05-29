@@ -1,6 +1,6 @@
 'use client';
 
-const APP_VERSION = 'v.19';
+const APP_VERSION = 'v.20';
 
 export default function MobilePageHeader({ title }: { title: string }) {
   return (
@@ -10,7 +10,7 @@ export default function MobilePageHeader({ title }: { title: string }) {
     }}>
       <span style={{
         display: 'flex', alignItems: 'center', gap: 7,
-        fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11,
+        fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 13,
         letterSpacing: '.3em', color: 'var(--gold2)',
       }}>
         <svg width={9} height={9} viewBox="0 0 24 24" fill="none">
@@ -18,14 +18,14 @@ export default function MobilePageHeader({ title }: { title: string }) {
         </svg>
         VERA
         <span style={{
-          fontFamily: 'var(--font-dm-mono)', fontSize: 9,
+          fontFamily: 'var(--font-dm-mono)', fontSize: 11,
           letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400,
         }}>
           {APP_VERSION}
         </span>
       </span>
       <span style={{
-        fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 13,
+        fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 15,
         color: 'var(--text)', letterSpacing: '-.01em',
       }}>
         {title}

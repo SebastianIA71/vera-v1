@@ -68,7 +68,7 @@ export default function AgentsClient({
           <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 22, color: 'var(--text)', lineHeight: 1.1 }}>
             Agentes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Vera</em>
           </div>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 4 }}>v.19</div>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 4 }}>v.20</div>
         </div>
       </div>
 
@@ -91,8 +91,8 @@ export default function AgentsClient({
             >
               <span style={{ width: 10, height: 10, borderRadius: '50%', background: sec.color, display: 'inline-block', flexShrink: 0 }} />
               <div style={{ flex: 1, textAlign: 'left' }}>
-                <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 16 }}>{sec.label}</div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--text3)', marginTop: 3 }}>{sec.desc}</div>
+                <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 15 }}>{sec.label}</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 12, letterSpacing: '.12em', color: 'var(--text3)', marginTop: 3 }}>{sec.desc}</div>
               </div>
               <span style={{ color: 'var(--text3)', fontSize: 16 }}>{active === sec.id ? '▲' : '▼'}</span>
             </button>

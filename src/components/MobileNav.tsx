@@ -119,7 +119,7 @@ export function MobileNav({ inboxCount = 0 }: { inboxCount?: number }) {
 
             {/* Icono */}
             <item.icon
-              size={20}
+              size={22}
               color={isActive ? 'var(--gold2)' : 'var(--text3)'}
             />
 
@@ -148,7 +148,7 @@ export function MobileNav({ inboxCount = 0 }: { inboxCount?: number }) {
             {/* Label */}
             <span style={{
               fontFamily: 'var(--font-dm-mono)',
-              fontSize: '8px',
+              fontSize: '9px',
               letterSpacing: '0.08em',
               textTransform: 'uppercase',
               color: isActive ? 'var(--gold2)' : 'var(--text3)',
