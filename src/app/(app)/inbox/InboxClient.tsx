@@ -128,7 +128,7 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
               Inbox <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>capturas</em>
             </div>
           )}
-          <div style={{ display: 'flex', borderBottom: '.5px solid var(--bg4)', marginTop: isMobile ? 0 : 0 }}>
+          <div style={{ display: 'flex', width: '100%', borderBottom: '.5px solid var(--bg4)', marginTop: 0 }}>
             {([['pending','SIN PROCESAR',pendingCount],['all','TODAS',null],['done','PROCESADAS',null]] as const).map(([id, label, count]) => (
               <button key={id} onClick={() => setTab(id)} style={{
                 flex: 1, padding: '8px 4px', textAlign: 'center',

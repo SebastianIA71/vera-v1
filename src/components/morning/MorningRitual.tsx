@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { getTodaySnm, toggleSnm } from '@/lib/snm';
 
 type Task = { id: number; title: string; detail?: string | null; propertyId?: string | null; prioFinal?: number | null; tags?: string | null };
 type Event = { id: number; title: string; startDate?: Date | null };
@@ -46,6 +47,17 @@ export default function MorningRitual({
   // Step 2 — weight
   const [weightVal, setWeightVal] = useState(lastWeightEntry?.value ?? null);
   const [snm, setSnm] = useState<Record<string, boolean>>({ snmAgua: false, snmCaminar: false, snmEntreno: false, snmEscucha: false, snmDisfruta: false });
+
+  useEffect(() => {
+    const active = getTodaySnm();
+    if (active.length > 0) {
+      setSnm(prev => {
+        const next = { ...prev };
+        active.forEach(k => { if (k in next) next[k] = true; });
+        return next;
+      });
+    }
+  }, []);
   const [weightSaved, setWeightSaved] = useState(false);
 
   // Step 3 — focus (tasks already passed as props)
@@ -103,7 +115,7 @@ export default function MorningRitual({
   const skipStyle: React.CSSProperties = { fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--text3)', cursor: 'pointer', background: 'none', border: 'none' };
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', flexDirection: 'column', position: 'relative', maxWidth: 430, margin: '0 auto' }}>
+    <div style={{ minHeight: '100dvh', paddingBottom: 80, background: 'var(--bg)', display: 'flex', flexDirection: 'column', position: 'relative', maxWidth: 430, margin: '0 auto' }}>
       <ProgressBar step={step} />
 
       <div style={{ flex: 1, padding: '42px 18px 24px', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
@@ -183,7 +195,7 @@ export default function MorningRitual({
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.22em', color: 'var(--text2)', margin: '12px 0 7px' }}>INTENCIONES DE HOY</div>
             <div style={{ display: 'flex', gap: 5 }}>
               {SNM.map(s => (
-                <button key={s.key} onClick={() => setSnm(prev => ({ ...prev, [s.key]: !prev[s.key] }))} title={s.label} style={{
+                <button key={s.key} onClick={() => { toggleSnm(s.key); setSnm(prev => ({ ...prev, [s.key]: !prev[s.key] })); }} title={s.label} style={{
                   flex: 1, background: snm[s.key] ? 'rgba(78,203,141,.08)' : 'var(--bg2)',
                   border: `.5px solid ${snm[s.key] ? 'var(--green)' : 'var(--bg4)'}`,
                   borderRadius: 9, padding: '9px 3px', textAlign: 'center', fontSize: 14, cursor: 'pointer',

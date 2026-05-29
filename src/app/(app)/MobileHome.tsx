@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { QUOTES } from '@/lib/quotes';
 import { getRandomPersona } from '@/lib/personas';
+import { getTodaySnm } from '@/lib/snm';
 
 const CaptureSheet = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const InboxMobile = dynamic(() => import('@/components/inbox/InboxMobile'), { ssr: false });
@@ -68,6 +69,9 @@ export default function MobileHome({
   const [statusLine, setStatusLine] = useState('');
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const [persona] = useState(() => getRandomPersona());
+  const [snmActive, setSnmActive] = useState<string[]>([]);
+
+  useEffect(() => { setSnmActive(getTodaySnm()); }, []);
 
   const renderQuote = (raw: string) => raw.split(/\*([^*]+)\*/).map((part, i) =>
     i % 2 === 1 ? <em key={i} style={{ fontStyle: 'italic', color: 'var(--gold)' }}>{part}</em> : part
@@ -85,6 +89,7 @@ export default function MobileHome({
 
     const parts: string[] = [];
     if (weightLogs[0]) parts.push(`${weightLogs[0].value} KG`);
+    parts.push('10,2K');
     if (nextTrip) parts.push(`${nextTrip.title.toUpperCase()} · ${nextTrip.daysTo} D`);
     setStatusLine(parts.join(' · '));
   }, [weightLogs, nextTrip]);
@@ -120,11 +125,15 @@ export default function MobileHome({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" /></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.26</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.27</span>
           </span>
-          <button onClick={() => router.push('/dashboard')} style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' }}>
-            <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+          <button onClick={() => router.push('/morning')} style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' }}>
+            <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+              <circle cx="12" cy="12" r="4"/>
+              <line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
             </svg>
           </button>
         </div>
@@ -132,7 +141,7 @@ export default function MobileHome({
         {/* Greeting */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 30, lineHeight: 1.15, color: 'var(--text)', letterSpacing: '-.01em' }}>
-            {greeting.split(' ').slice(0, -1).join(' ')},{' '}
+            {'g. '}
             <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>{greeting.split(' ').slice(-1)[0]}</em>
             {', '}
             <span style={{ color: 'var(--text2)', fontWeight: 300 }}>{persona}</span>
@@ -220,14 +229,14 @@ export default function MobileHome({
 
               {/* SNM */}
               <div style={{ display: 'flex', gap: 6, marginTop: 14, paddingTop: 12, borderTop: '.5px solid var(--bg4)' }}>
-                {todaySNM.map((s, i) => (
-                  <div key={i} style={{
-                    flex: 1, background: s.on ? 'rgba(78,203,141,.08)' : 'var(--bg3)',
-                    border: `.5px solid ${s.on ? 'var(--green)' : 'var(--bg4)'}`,
+                {SNM_KEYS.map((key, i) => (
+                  <div key={key} style={{
+                    flex: 1, background: snmActive.includes(key) ? 'rgba(78,203,141,.08)' : 'var(--bg3)',
+                    border: `.5px solid ${snmActive.includes(key) ? 'var(--green)' : 'var(--bg4)'}`,
                     borderRadius: 10, padding: '10px 4px', textAlign: 'center',
-                    fontSize: 16, opacity: s.on ? 1 : 0.25,
+                    fontSize: 16, opacity: snmActive.includes(key) ? 1 : 0.25,
                   }}>
-                    {s.icon}
+                    {SNM_ICONS[i]}
                   </div>
                 ))}
               </div>

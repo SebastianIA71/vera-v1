@@ -23,6 +23,7 @@ type Filters = {
 
 function taskBorderColor(t: Task): string {
   const p = t.prioFinal ?? 0;
+  if (p === 10) return '#ff0040';
   if (p >= 8) return 'var(--red)';
   if (t.lastActionAt && Math.floor((Date.now() - new Date(t.lastActionAt).getTime()) / 86400000) >= 14 && p >= 4) return 'var(--amber)';
   if (t.tags?.includes('creativo')) return 'var(--purple)';
@@ -259,7 +260,7 @@ function TaskRow({ task, selected, onSelect, onPrioChange }: { task: Task; selec
         display: 'flex', alignItems: 'center', gap: 12, padding: '10px 20px',
         cursor: 'pointer', borderBottom: '.5px solid var(--bg2)',
         position: 'relative', transition: 'background .1s',
-        background: selected ? 'var(--bg2)' : 'transparent',
+        background: task.prioFinal === 10 ? 'rgba(255,0,64,0.06)' : selected ? 'var(--bg2)' : 'transparent',
       }}
       onMouseEnter={e => { if (!selected) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg2)'; }}
       onMouseLeave={e => { if (!selected) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
@@ -267,7 +268,7 @@ function TaskRow({ task, selected, onSelect, onPrioChange }: { task: Task; selec
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: bc, borderRadius: 0 }} />
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 0, flexShrink: 0, background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 6, overflow: 'hidden' }}>
         <button onClick={e => changePrio(e, -1)} style={{ width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: 14, lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}>−</button>
-        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: 'var(--gold2)', lineHeight: 1, minWidth: 18, textAlign: 'center' }}>{task.prioFinal ?? 0}</span>
+        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: task.prioFinal === 10 ? '#ffffff' : 'var(--gold2)', lineHeight: 1, minWidth: 18, textAlign: 'center' }}>{task.prioFinal ?? 0}</span>
         <button onClick={e => changePrio(e, +1)} style={{ width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: 14, lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}>+</button>
       </div>
       <div style={{ width: 16, height: 16, borderRadius: '50%', border: '.5px solid var(--text3)', flexShrink: 0 }} />
