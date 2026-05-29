@@ -1,55 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import DesktopNav from './DesktopNav';
 
 const DAYS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
 const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
 const pad = (n: number) => String(n).padStart(2,'0');
-
-const NAV = [
-  { id: 'dashboard', path: '/dashboard', icon: 'command' },
-  { id: 'tasks',     path: '/tasks',     icon: 'tasks'   },
-  { id: 'inbox',     path: '/inbox',     icon: 'inbox',  badge: true },
-  { id: 'trips',     path: '/trips',     icon: 'trips'   },
-  { id: 'properties',path: '/properties',icon: 'props'   },
-  { id: 'div' },
-  { id: 'finance',   path: '/finance',   icon: 'finance' },
-  { id: 'agents',    path: '/agents',    icon: 'agents'  },
-  { id: 'div2' },
-  { id: 'settings',  path: '/settings',  icon: 'settings', bottom: true },
-  { id: 'logout',    path: '/lock',      icon: 'logout',   bottom: true },
-] as const;
-
-type NavEntry = { id: string; path?: string; icon?: string; badge?: boolean; bottom?: boolean };
-
-const NAV_LABELS: Record<string, string> = {
-  dashboard:  'COMMAND',
-  tasks:      'TAREAS',
-  inbox:      'INBOX',
-  trips:      'VIAJES',
-  properties: 'PROPIEDADES',
-  finance:    'FINANZAS',
-  agents:     'AGENTES',
-  settings:   'AJUSTES',
-  logout:     'SALIR',
-};
-
-function NavIcon({ icon }: { icon: string }) {
-  const s = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
-  switch (icon) {
-    case 'command':  return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>;
-    case 'tasks':    return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>;
-    case 'inbox':    return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
-    case 'trips':    return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21 4 19 4s-2 1-3.5 2.5L9 8.2 1.8 6.4C1 6 .5 7 1 7.5L5.5 12l-2 3.5c-.5 1 .5 2 1.5 1.5L8 15l4.5 4.5c.5.5 1.5 0 1.5-1l-1.8-7.2z"/></svg>;
-    case 'props':    return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>;
-    case 'finance':  return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>;
-    case 'agents':   return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z"/></svg>;
-    case 'settings': return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9z"/></svg>;
-    case 'logout':   return <svg viewBox="0 0 24 24" width={16} height={16} {...s}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
-    default: return null;
-  }
-}
 
 export default function DesktopShell({
   children,
@@ -67,7 +24,6 @@ export default function DesktopShell({
   pageActions?: React.ReactNode;
 }) {
   const router = useRouter();
-  const pathname = usePathname();
   const [time, setTime] = useState('');
 
   useEffect(() => {
@@ -80,15 +36,6 @@ export default function DesktopShell({
     return () => clearInterval(id);
   }, []);
 
-  const navigate = async (path: string) => {
-    if (path === '/lock') {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    }
-    router.push(path);
-  };
-
-  const topEntries = (NAV as readonly NavEntry[]).filter(n => n.id !== 'div' && n.id !== 'div2' && !n.bottom);
-  const bottomEntries = (NAV as readonly NavEntry[]).filter(n => n.bottom);
 
   return (
     <div className="desktop-shell-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)', overflow: 'hidden' }}>
@@ -98,7 +45,7 @@ export default function DesktopShell({
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 15, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={12} height={12} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.16</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.17</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 14, color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
@@ -123,51 +70,7 @@ export default function DesktopShell({
 
       {/* LAYOUT */}
       <div className="desktop-shell-layout" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* NAV CON LABELS — oculta en móvil */}
-        <nav className="desktop-sidebar-nav" style={{ width: 200, background: 'var(--bg)', borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', padding: '12px 0', flexShrink: 0 }}>
-          {(NAV as readonly NavEntry[]).filter(n => !n.bottom).map(n => {
-            if (n.id === 'div' || n.id === 'div2') {
-              return <div key={n.id} style={{ height: .5, background: 'var(--bg4)', margin: '6px 14px' }} />;
-            }
-            return (
-              <button
-                key={n.id}
-                onPointerDown={e => { e.preventDefault(); n.path && navigate(n.path); }}
-                style={{
-                  width: '100%', height: 44, display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '0 16px', cursor: 'pointer', position: 'relative',
-                  background: 'none', border: 'none',
-                  color: pathname === n.path ? 'var(--gold2)' : 'var(--text3)',
-                  touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent',
-                }}
-              >
-                {pathname === n.path && (
-                  <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: 2, height: 16, background: 'var(--gold2)', borderRadius: 1 }} />
-                )}
-                {n.icon && <NavIcon icon={n.icon} />}
-                {n.badge && inboxCount > 0 && (
-                  <span style={{ background: 'var(--red)', color: '#fff', fontFamily: 'var(--font-dm-mono)', fontSize: 7, padding: '1px 4px', borderRadius: 999 }}>{inboxCount}</span>
-                )}
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, fontWeight: 400, letterSpacing: '.14em', color: 'inherit', whiteSpace: 'nowrap' }}>
-                  {NAV_LABELS[n.id] ?? n.id.toUpperCase()}
-                </span>
-              </button>
-            );
-          })}
-          <div style={{ marginTop: 'auto' }}>
-            <div style={{ height: .5, background: 'var(--bg4)', margin: '6px 14px' }} />
-            {bottomEntries.map(n => (
-              <button
-                key={n.id}
-                onPointerDown={e => { e.preventDefault(); n.path && navigate(n.path); }}
-                style={{ width: '100%', height: 44, display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px', cursor: 'pointer', background: 'none', border: 'none', color: 'var(--text3)', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-              >
-                {n.icon && <NavIcon icon={n.icon} />}
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, fontWeight: 400, letterSpacing: '.14em', whiteSpace: 'nowrap' }}>{NAV_LABELS[n.id] ?? n.id.toUpperCase()}</span>
-              </button>
-            ))}
-          </div>
-        </nav>
+        <DesktopNav inboxCount={inboxCount} />
 
         {/* CONTENIDO */}
         <div className="desktop-shell-content" style={{ flex: 1, display: 'flex', overflow: 'hidden', minWidth: 0 }}>
