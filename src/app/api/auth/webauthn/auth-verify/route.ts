@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
       expectedRPID: process.env.WEBAUTHN_RP_ID ?? 'localhost',
       credential: {
         id: cred.credentialId,
+        // Buffer extends Uint8Array — aceptado por simplewebauthn v13
         publicKey: Buffer.from(cred.publicKey, 'base64url'),
         counter: cred.counter,
       },

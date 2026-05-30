@@ -27,8 +27,10 @@ export async function POST(req: NextRequest) {
 
     const { credential } = verification.registrationInfo;
 
+    // v13: credential.id ya es un string base64url — no convertir con Buffer.from()
+    // credential.publicKey es Uint8Array — convertir a base64url con Buffer
     await db.insert(webauthnCredentials).values({
-      credentialId: Buffer.from(credential.id).toString('base64url'),
+      credentialId: credential.id,
       publicKey:    Buffer.from(credential.publicKey).toString('base64url'),
       counter:      credential.counter,
       deviceName:   body.deviceName ?? 'iPhone',
