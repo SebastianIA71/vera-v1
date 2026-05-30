@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { tasks, events, inbox, properties, weightLog } from '@/lib/db/schema';
-import { ne, desc, gte, and } from 'drizzle-orm';
+import { ne, desc, gte, and, eq } from 'drizzle-orm';
 import DashboardClient from './DashboardClient';
 
 export const dynamic = 'force-dynamic';
@@ -32,7 +32,7 @@ export default async function DashboardPage() {
     ? Math.ceil((nextTrip.startDate.getTime() - now.getTime()) / 86400000)
     : null;
 
-  const inboxCount = await db.$count(inbox);
+  const inboxCount = await db.$count(inbox, eq(inbox.processed, false));
 
   const upcomingEvents = allEvents.filter(e => e.startDate && e.startDate > now);
   const tasksActive  = allTasks.filter(t => t.status !== 'done').length;
@@ -42,6 +42,13 @@ export default async function DashboardPage() {
   const propsCount   = allProperties.length;
   const currentWeight = weightLogs[0]?.value ?? null;
 
+  const nextEventItem = allEvents
+    .filter(e => e.type !== 'viaje' && e.startDate && e.startDate > now)
+    .sort((a, b) => (a.startDate?.getTime() ?? 0) - (b.startDate?.getTime() ?? 0))[0] ?? null;
+  const daysToNextEvent = nextEventItem?.startDate
+    ? Math.ceil((nextEventItem.startDate.getTime() - now.getTime()) / 86400000)
+    : null;
+
   return (
     <DashboardClient
       initialTasks={allTasks}
@@ -49,6 +56,8 @@ export default async function DashboardPage() {
       staleCount={staleTasks.length}
       inboxCount={inboxCount}
       nextTrip={nextTrip ? { title: nextTrip.title, daysTo: daysToNextTrip ?? 0 } : null}
+      nextEvent={nextEventItem && daysToNextEvent ? { title: nextEventItem.title, daysTo: daysToNextEvent, startDate: nextEventItem.startDate!.toISOString() } : null}
+      allEvents={allEvents.map(e => ({ startDate: e.startDate, type: e.type ?? '' }))}
       kpis={{ tasksActive, tasksDone, inboxPending: inboxCount, tripsCount, eventsCount, propsCount, currentWeight }}
     />
   );

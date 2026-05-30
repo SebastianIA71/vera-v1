@@ -19,8 +19,6 @@ type Task = {
   inNow?: boolean | null; type?: string | null; lastActionAt?: Date | null;
   tags?: string | null; dueDate?: Date | null;
 };
-type TabId = 'punchlist' | 'inbox' | 'alerts';
-type RightPanelProps = { tasks: Task[]; inboxCount: number; nextTrip: { title: string; daysTo: number } | null; tab: TabId; setTab: (t: TabId) => void; onMarkDone: (id: number) => void; onInboxCountChange?: (n: number) => void };
 type CompletingTask = Task & { completingAt: number };
 
 /* ─── Constants ─────────────────────────────────────── */
@@ -29,12 +27,12 @@ const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV
 const pad = (n: number) => String(n).padStart(2, '0');
 
 const AGENTS: { id: AgentId; label: string; icon: string; top: number; left: number; labelPos: 'above' | 'below' }[] = [
-  { id: 'voice',    label: 'VOICE',    icon: 'mic',   top: 98,  left: 350, labelPos: 'above' },
-  { id: 'prio',     label: 'PRIO',     icon: 'prio',  top: 143, left: 562, labelPos: 'above' },
-  { id: 'alert',    label: 'ALERT',    icon: 'bell',  top: 513, left: 574, labelPos: 'below' },
-  { id: 'solution', label: 'SOLUTION', icon: 'help',  top: 591, left: 350, labelPos: 'below' },
-  { id: 'executor', label: 'EXECUTOR', icon: 'send',  top: 501, left: 123, labelPos: 'below' },
-  { id: 'search',   label: 'SEARCH',   icon: 'search',top: 176, left: 138, labelPos: 'above' },
+  { id: 'voice',    label: 'VOICE',    icon: 'mic',    top: 55,  left: 280, labelPos: 'above' },
+  { id: 'prio',     label: 'PRIO',     icon: 'prio',   top: 93,  left: 448, labelPos: 'above' },
+  { id: 'alert',    label: 'ALERT',    icon: 'bell',   top: 410, left: 458, labelPos: 'below' },
+  { id: 'solution', label: 'SOLUTION', icon: 'help',   top: 475, left: 280, labelPos: 'below' },
+  { id: 'executor', label: 'EXECUTOR', icon: 'send',   top: 400, left: 102, labelPos: 'below' },
+  { id: 'search',   label: 'SEARCH',   icon: 'search', top: 100, left: 112, labelPos: 'above' },
 ];
 
 /* ─── SVG icons ─────────────────────────────────────── */
@@ -62,216 +60,147 @@ function taskBorderColor(task: Task, now: Date): string {
   return 'transparent';
 }
 
-/* ─── Inbox Panel ───────────────────────────────────── */
-type InboxItem = { id: number; content: string; source?: string | null; type?: string | null; suggestedPropertyId?: string | null; createdAt?: Date | null };
-
-function InboxPanel({ inboxCount, onCountChange }: { inboxCount: number; onCountChange?: (n: number) => void }) {
-  const [items, setItems] = useState<InboxItem[]>([]);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    fetch('/api/inbox')
-      .then(r => r.json())
-      .then(d => {
-        setItems(d);
-        setLoaded(true);
-        onCountChange?.(d.length);
-      })
-      .catch(() => setLoaded(true));
-  }, [onCountChange]);
-
-  if (!loaded) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 120 }}>
-        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--gold2)', letterSpacing: '.1em' }}>···</span>
-      </div>
-    );
-  }
-
-  if (items.length === 0) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 160, gap: 8 }}>
-        <div style={{ fontFamily: 'var(--font-syne)', fontSize: 32, color: 'var(--gold)' }}>0</div>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text2)' }}>INBOX VACÍO</div>
-      </div>
-    );
-  }
-
-  const sourceColor = (src?: string | null) => src === 'voice' ? 'var(--purple)' : 'var(--blue)';
-  const sourceLabel = (src?: string | null) => src === 'voice' ? 'VOZ' : src?.toUpperCase() ?? 'MANUAL';
-
-  return (
-    <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text4)', marginBottom: 10 }}>
-        <span>{inboxCount} PENDIENTES</span>
-      </div>
-      {items.map(item => (
-        <div key={item.id} style={{
-          background: 'var(--bg2)', border: '.5px solid var(--bg4)',
-          borderLeft: `2px solid ${sourceColor(item.source)}`,
-          borderRadius: 10, padding: '10px 12px', marginBottom: 8,
-        }}>
-          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, lineHeight: 1.35, color: 'var(--text)', marginBottom: 5 }}>
-            {item.content}
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: sourceColor(item.source) }}>
-              {sourceLabel(item.source)}
-            </span>
-            {item.suggestedPropertyId && (
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--gold2)' }}>
-                · {item.suggestedPropertyId.toUpperCase()}
-              </span>
-            )}
-          </div>
-        </div>
-      ))}
-    </>
-  );
-}
-
 /* ─── Right Panel ───────────────────────────────────── */
-function RightPanel({ tasks, inboxCount, nextTrip, tab, setTab, onMarkDone, onInboxCountChange }: RightPanelProps) {
+function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkDone }: {
+  tasks: Task[];
+  inboxCount: number;
+  nextTrip: { title: string; daysTo: number } | null;
+  nextEvent: { title: string; daysTo: number; startDate: string } | null;
+  allEvents: { startDate: Date | null; type: string }[];
+  onMarkDone: (id: number) => void;
+}) {
   const now = new Date();
-  const [completing, setCompleting] = useState<Map<number, CompletingTask>>(new Map());
 
-  const handleMarkDone = useCallback((task: Task) => {
-    setCompleting(prev => new Map([...prev, [task.id, { ...task, completingAt: Date.now() }]]));
-    onMarkDone(task.id);
-    setTimeout(() => {
-      setCompleting(prev => {
-        const next = new Map(prev);
-        next.delete(task.id);
-        return next;
-      });
-    }, 1400);
-  }, [onMarkDone]);
+  const eventDays = new Set(
+    allEvents
+      .filter(e => e.startDate && e.startDate.getMonth() === now.getMonth() && e.startDate.getFullYear() === now.getFullYear())
+      .map(e => e.startDate!.getDate())
+  );
 
-  // Active tasks (not yet clicked done, not already completing)
-  const activeTasks = tasks
-    .filter(t => t.status !== 'done' && t.status !== 'archived' && !completing.has(t.id))
-    .slice(0, 6);
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const prevMonthDays = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+  const startOffset = (firstDay + 6) % 7;
 
-  // Merge: active + completing, sorted by prioFinal desc, cap at 6
-  const completingList = [...completing.values()];
-  const topTasks = [...activeTasks, ...completingList]
+  const MONTH_NAMES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+  const DAY_NAMES = ['L','M','X','J','V','S','D'];
+
+  const topTasks = tasks
+    .filter(t => t.status !== 'done' && t.status !== 'archived')
     .sort((a, b) => (b.prioFinal ?? 0) - (a.prioFinal ?? 0))
-    .slice(0, 7);
+    .slice(0, 5);
 
   return (
-    <div style={{ width: '320px', background: 'var(--bg)', borderLeft: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-      {/* Tabs */}
-      <div style={{ display: 'flex', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
-        {([['punchlist', 'PUNCH LIST'], ['inbox', 'INBOX'], ['alerts', 'ALERTAS']] as [TabId, string][]).map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            style={{
-              flex: 1, padding: '12px 4px', textAlign: 'center',
-              fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.18em',
-              color: tab === id ? 'var(--gold2)' : 'var(--text4)',
-              background: 'transparent', border: 'none',
-              borderBottom: `1.5px solid ${tab === id ? 'var(--gold2)' : 'transparent'}`,
-              cursor: 'pointer', position: 'relative',
-            }}
-          >
-            {label}
-            {id === 'inbox' && inboxCount > 0 && (
-              <span style={{ position: 'absolute', top: '6px', right: '6px', background: 'var(--red)', color: '#fff', fontFamily: 'var(--font-dm-mono)', fontSize: '9px', padding: '1px 4px', borderRadius: '999px' }}>
-                {inboxCount}
-              </span>
-            )}
-          </button>
-        ))}
+    <div style={{
+      width: 300, flexShrink: 0,
+      borderLeft: '.5px solid var(--bg4)',
+      display: 'flex', flexDirection: 'column',
+      overflow: 'hidden',
+    }}>
+      <div style={{ padding: '14px 18px 10px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.22em', color: 'var(--text3)' }}>
+          PUNCH LIST · HOY
+        </div>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', color: 'var(--text3)', marginTop: 2 }}>
+          {topTasks.length} TAREAS · {inboxCount > 0 ? `${inboxCount} INBOX` : 'INBOX OK'}
+        </div>
       </div>
 
-      {/* Panel content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '14px' }}>
-        {tab === 'punchlist' && (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.24em', color: 'var(--text4)', marginBottom: '10px' }}>
-              <span>HOY · {topTasks.length} TAREAS</span>
-              <span style={{ cursor: 'pointer' }}>VER TODAS →</span>
-            </div>
-            {topTasks.map(task => {
-              const isDone = completing.has(task.id);
-              const bc = isDone ? 'var(--green)' : taskBorderColor(task, now);
-              return (
-                <div
-                  key={task.id}
-                  style={{
-                    background: 'var(--bg2)', border: `.5px solid var(--bg4)`,
-                    borderLeft: `2px solid ${bc}`,
-                    borderRadius: '10px', padding: '12px 14px', marginBottom: '8px',
-                    display: 'flex', gap: '10px', alignItems: 'flex-start',
-                    opacity: isDone ? 0.45 : 1,
-                    transition: 'opacity .3s ease, border-color .2s ease',
-                  }}
-                >
-                  <div style={{ fontFamily: 'var(--font-syne)', fontSize: '13px', fontWeight: 600, color: isDone ? 'var(--green)' : 'var(--gold)', minWidth: '18px' }}>
-                    {task.prioFinal}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+
+        {/* PUNCH LIST */}
+        <div style={{ padding: '0 18px', marginBottom: 12 }}>
+          {topTasks.map(task => {
+            const prio = task.prioFinal ?? 0;
+            const color = prio >= 9 ? 'var(--red)' : prio >= 7 ? 'var(--amber)' : 'var(--text3)';
+            return (
+              <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '.5px solid var(--bg2)' }}>
+                <button
+                  onClick={() => onMarkDone(task.id)}
+                  style={{ width: 16, height: 16, borderRadius: '50%', border: `.5px solid ${color}`, background: 'transparent', cursor: 'pointer', flexShrink: 0 }}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {task.title}
                   </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontFamily: 'var(--font-dm-sans)', fontSize: '13px', lineHeight: 1.3,
-                      color: isDone ? 'var(--text3)' : 'var(--text)',
-                      textDecoration: isDone ? 'line-through' : 'none',
-                      transition: 'color .2s, text-decoration .2s',
-                    }}>
-                      {task.title}
+                  {task.propertyId && (
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--gold2)', letterSpacing: '.1em', marginTop: 1 }}>
+                      {task.propertyId.toUpperCase()}
                     </div>
-                    {task.propertyId && (
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.1em', color: isDone ? 'var(--text3)' : 'var(--gold2)', marginTop: '4px' }}>
-                        {task.propertyId.toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => !isDone && handleMarkDone(task)}
-                    disabled={isDone}
-                    style={{
-                      width: '20px', height: '20px', borderRadius: '50%', flexShrink: 0, marginTop: '1px',
-                      border: isDone ? 'none' : '.5px solid var(--text3)',
-                      background: 'transparent',
-                      cursor: isDone ? 'default' : 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      color: 'var(--green)',
-                    }}
-                    title={isDone ? 'Hecha' : 'Marcar hecha'}
-                  >
-                    {isDone && (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </button>
+                  )}
+                </div>
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color, flexShrink: 0 }}>{prio}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* PRÓXIMO EVENTO */}
+        {nextEvent && (
+          <div style={{ padding: '8px 18px 12px', borderTop: '.5px solid var(--bg2)' }}>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--purple)', marginBottom: 6 }}>PRÓXIMO EVENTO</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)' }}>{nextEvent.title}</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', marginTop: 2 }}>
+                  {new Date(nextEvent.startDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase()}
+                </div>
+              </div>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, color: 'var(--purple)', lineHeight: 1 }}>
+                {nextEvent.daysTo}<span style={{ fontSize: 8, marginLeft: 2 }}>D</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PRÓXIMO VIAJE */}
+        {nextTrip && (
+          <div style={{ padding: '8px 18px 12px', borderTop: '.5px solid var(--bg2)' }}>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--blue)', marginBottom: 6 }}>PRÓXIMO VIAJE</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)' }}>{nextTrip.title}</div>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, color: 'var(--blue)', lineHeight: 1 }}>
+                {nextTrip.daysTo}<span style={{ fontSize: 8, marginLeft: 2 }}>D</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MINI CALENDAR */}
+        <div style={{ padding: '8px 18px 12px', borderTop: '.5px solid var(--bg2)' }}>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--text3)', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>{MONTH_NAMES[now.getMonth()]} {now.getFullYear()}</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, textAlign: 'center' }}>
+            {DAY_NAMES.map(d => (
+              <div key={d} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, color: 'var(--text3)', letterSpacing: '.06em', padding: '2px 0' }}>{d}</div>
+            ))}
+            {Array.from({ length: startOffset }, (_, i) => (
+              <div key={`prev-${i}`} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', padding: '4px 2px', lineHeight: 1, opacity: 0.4 }}>
+                {prevMonthDays - startOffset + i + 1}
+              </div>
+            ))}
+            {Array.from({ length: daysInMonth }, (_, i) => {
+              const day = i + 1;
+              const isToday = day === now.getDate();
+              const hasEvent = eventDays.has(day);
+              return (
+                <div key={day} style={{
+                  fontFamily: 'var(--font-dm-mono)', fontSize: 9, padding: '4px 2px', lineHeight: 1,
+                  borderRadius: 2, position: 'relative',
+                  background: isToday ? 'rgba(196,168,106,0.12)' : 'transparent',
+                  color: isToday ? 'var(--gold2)' : 'var(--text2)',
+                  fontWeight: isToday ? 500 : 400,
+                }}>
+                  {day}
+                  {hasEvent && !isToday && <span style={{ position: 'absolute', bottom: 1, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: 'var(--blue)', display: 'block' }} />}
+                  {hasEvent && isToday && <span style={{ position: 'absolute', bottom: 1, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: 'var(--gold2)', display: 'block' }} />}
                 </div>
               );
             })}
-
-            {nextTrip && (
-              <>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.24em', color: 'var(--text4)', marginTop: '18px', marginBottom: '10px' }}>PRÓXIMO VIAJE</div>
-                <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: '10px', padding: '12px 14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <div style={{ fontFamily: 'var(--font-syne)', fontSize: '15px', color: 'var(--text)' }}>{nextTrip.title}</div>
-                    <div style={{ fontFamily: 'var(--font-syne)', fontSize: '24px', color: 'var(--blue)', lineHeight: 1 }}>{nextTrip.daysTo}<span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', color: 'var(--text2)', marginLeft: '2px' }}>D</span></div>
-                  </div>
-                </div>
-              </>
-            )}
-          </>
-        )}
-
-        {tab === 'inbox' && (
-          <InboxPanel inboxCount={inboxCount} onCountChange={onInboxCountChange} />
-        )}
-
-        {tab === 'alerts' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.2em', color: 'var(--text3)' }}>SIN ALERTAS ACTIVAS</div>
           </div>
-        )}
+        </div>
+
       </div>
     </div>
   );
@@ -380,21 +309,14 @@ type Kpis = {
   currentWeight: number | null;
 };
 
-const KPI_RADIUS = 340;
-
 const getKpiNodes = (kpis: Kpis) => [
-  { id: 'tasks',  label: 'TAREAS',  value: kpis.tasksActive,                                color: 'var(--gold2)',  angle: 300 },
-  { id: 'inbox',  label: 'INBOX',   value: kpis.inboxPending,                               color: 'var(--red)',    angle: 0   },
-  { id: 'trips',  label: 'VIAJES',  value: kpis.tripsCount,                                 color: 'var(--blue)',   angle: 60  },
-  { id: 'events', label: 'EVENTOS', value: kpis.eventsCount,                                color: 'var(--purple)', angle: 120 },
-  { id: 'props',  label: 'PROPS',   value: kpis.propsCount,                                 color: 'var(--green)',  angle: 180 },
-  { id: 'weight', label: 'KG',      value: kpis.currentWeight !== null ? kpis.currentWeight : '—', color: 'var(--amber)', angle: 240 },
+  { id: 'tasks',  label: 'TAREAS',  value: kpis.tasksActive,                                         color: 'var(--gold2)'  },
+  { id: 'inbox',  label: 'INBOX',   value: kpis.inboxPending,                                         color: 'var(--red)'    },
+  { id: 'trips',  label: 'VIAJES',  value: kpis.tripsCount,                                           color: 'var(--blue)'   },
+  { id: 'events', label: 'EVENTOS', value: kpis.eventsCount,                                          color: 'var(--purple)' },
+  { id: 'props',  label: 'PROPS',   value: kpis.propsCount,                                           color: 'var(--green)'  },
+  { id: 'weight', label: 'KG',      value: kpis.currentWeight !== null ? kpis.currentWeight : '—',    color: 'var(--amber)'  },
 ];
-
-const kpiPos = (angle: number) => ({
-  top:  350 + KPI_RADIUS * Math.sin((angle - 90) * Math.PI / 180),
-  left: 350 + KPI_RADIUS * Math.cos((angle - 90) * Math.PI / 180),
-});
 
 export default function DashboardClient({
   initialTasks,
@@ -402,6 +324,8 @@ export default function DashboardClient({
   staleCount,
   inboxCount: initialInboxCount,
   nextTrip,
+  nextEvent,
+  allEvents,
   kpis,
 }: {
   initialTasks: Task[];
@@ -409,6 +333,8 @@ export default function DashboardClient({
   staleCount: number;
   inboxCount: number;
   nextTrip: { title: string; daysTo: number } | null;
+  nextEvent: { title: string; daysTo: number; startDate: string } | null;
+  allEvents: { startDate: Date | null; type: string }[];
   kpis: Kpis;
 }) {
   const router = useRouter();
@@ -423,7 +349,6 @@ export default function DashboardClient({
   const [agentStatus, setAgentStatus] = useState<Record<AgentId, AgentStatus>>(
     Object.fromEntries(['voice','prio','alert','search','executor','solution'].map(id => [id, { status: 'idle' }])) as Record<AgentId, AgentStatus>
   );
-  const [rightTab, setRightTab] = useState<TabId>('punchlist');
   const [showNewTask, setShowNewTask] = useState(false);
   const [showNewEvent, setShowNewEvent] = useState(false);
   const [activeAgent, setActiveAgent] = useState<AgentId | null>(null);
@@ -481,8 +406,8 @@ export default function DashboardClient({
   };
 
   const statusColor = (s: string) => s === 'running' ? 'var(--gold2)' : s === 'active' ? 'var(--green)' : s === 'error' ? 'var(--red)' : 'var(--text3)';
-  const nodeBorderColor = (s: string) => s === 'running' ? 'var(--gold2)' : s === 'active' ? 'var(--green)' : 'var(--bg4)';
-  const nodeIconColor = (s: string) => s === 'running' ? 'var(--gold2)' : s === 'active' ? 'var(--green)' : 'var(--text3)';
+  const nodeBorderColor = (s: string) => s === 'running' ? 'var(--gold2)' : s === 'active' ? 'var(--green)' : 'rgba(255,255,255,0.15)';
+  const nodeIconColor = (s: string) => s === 'running' ? 'var(--gold2)' : s === 'active' ? 'var(--green)' : 'var(--text2)';
 
   const urgentNow = tasks.filter(t => (t.prioFinal ?? 0) >= 7 && t.status !== 'done' && t.status !== 'archived').length;
 
@@ -529,7 +454,7 @@ export default function DashboardClient({
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
         {/* LEFT NAV */}
-        <DesktopNav inboxCount={initialInboxCount} activeOverride="dashboard" />
+        <DesktopNav inboxCount={initialInboxCount} activeOverride="dashboard" counts={{ tasks: kpis.tasksActive, trips: kpis.tripsCount, properties: kpis.propsCount, agents: 6 }} />
 
         {/* CENTER: ORBITAL */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -540,7 +465,14 @@ export default function DashboardClient({
               </div>
               <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: '13px', color: 'var(--text3)', letterSpacing: '.01em', marginTop: 2 }}>
                 good {(() => { const h = new Date().getHours(); return h < 12 ? 'morning' : h < 19 ? 'afternoon' : 'evening'; })()},{' '}
-                <span style={{ color: 'var(--text2)' }}>{persona}</span>.
+                <a
+                  href={`https://en.wikipedia.org/wiki/${encodeURIComponent(persona.replace(/ /g, '_'))}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: 'var(--text2)', fontWeight: 300, textDecoration: 'none', borderBottom: '.5px solid rgba(255,255,255,0.15)', cursor: 'pointer', transition: 'color .15s, border-color .15s' }}
+                  onMouseEnter={e => { (e.target as HTMLAnchorElement).style.color = 'var(--text)'; (e.target as HTMLAnchorElement).style.borderBottomColor = 'var(--text2)'; }}
+                  onMouseLeave={e => { (e.target as HTMLAnchorElement).style.color = 'var(--text2)'; (e.target as HTMLAnchorElement).style.borderBottomColor = 'rgba(255,255,255,0.15)'; }}
+                >{persona}</a>.
               </div>
             </div>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.2em', color: 'var(--text4)' }}>
@@ -554,10 +486,34 @@ export default function DashboardClient({
           </div>
 
           {/* Orbital map */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-            <div style={{ position: 'relative', width: '700px', height: '700px', flexShrink: 0 }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', gap: 0 }}>
+            {/* KPI columna izquierda */}
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, paddingRight: 24, flexShrink: 0 }}>
+              {getKpiNodes(kpis).map(kpi => (
+                <div key={kpi.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '5px 10px',
+                  background: 'var(--bg)',
+                  border: `.5px solid ${kpi.color}33`,
+                  borderLeft: `2px solid ${kpi.color}`,
+                  borderRadius: '0 6px 6px 0',
+                  minWidth: 72,
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                      {kpi.value}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, letterSpacing: '.1em', color: 'var(--text3)', marginTop: 2 }}>
+                      {kpi.label}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Orbital */}
+            <div style={{ position: 'relative', width: '560px', height: '560px', flexShrink: 0 }}>
               {/* Rings */}
-              {[196, 363, 528, 616].map((size, i) => (
+              {[140, 260, 380, 440].map((size, i) => (
                 <div key={size} style={{
                   position: 'absolute', borderRadius: '50%', top: '50%', left: '50%',
                   width: `${size}px`, height: `${size}px`,
@@ -570,43 +526,17 @@ export default function DashboardClient({
               {AGENTS.map(agent => {
                 const status = agentStatus[agent.id]?.status ?? 'idle';
                 const isActive = status === 'running' || status === 'active';
-                const angle = Math.atan2(agent.top - 350, agent.left - 350);
-                const dist = Math.sqrt(Math.pow(agent.left - 350, 2) + Math.pow(agent.top - 350, 2));
+                const angle = Math.atan2(agent.top - 280, agent.left - 280);
+                const dist = Math.sqrt(Math.pow(agent.left - 280, 2) + Math.pow(agent.top - 280, 2));
                 return (
                   <div key={`conn-${agent.id}`} style={{
-                    position: 'absolute', top: '350px', left: '350px',
+                    position: 'absolute', top: '280px', left: '280px',
                     width: `${dist}px`, height: '.5px',
                     background: isActive ? 'rgba(196,168,106,.35)' : 'rgba(196,168,106,.12)',
                     transformOrigin: '0 0',
                     transform: `rotate(${angle}rad)`,
                     animation: isActive ? 'pulse-conn 2s ease-in-out infinite' : 'none',
                   }} />
-                );
-              })}
-
-              {/* KPI badges — perimetrales, fuera del radar */}
-              {getKpiNodes(kpis).map(kpi => {
-                const pos = kpiPos(kpi.angle);
-                const isLarge = typeof kpi.value === 'number' && kpi.value >= 100;
-                return (
-                  <div key={kpi.id} style={{
-                    position: 'absolute',
-                    top: `${pos.top}px`, left: `${pos.left}px`,
-                    transform: 'translate(-50%, -50%)',
-                    zIndex: 6, pointerEvents: 'none',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                    background: 'var(--bg)',
-                    border: `.5px solid ${kpi.color}55`,
-                    borderRadius: 8, padding: '5px 8px', minWidth: 44,
-                    boxShadow: `0 0 12px ${kpi.color}18`,
-                  }}>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: isLarge ? 13 : 15, fontWeight: 500, color: kpi.color, lineHeight: 1, textAlign: 'center' }}>
-                      {kpi.value}
-                    </div>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, letterSpacing: '.1em', color: 'var(--text3)', whiteSpace: 'nowrap', textAlign: 'center' }}>
-                      {kpi.label}
-                    </div>
-                  </div>
                 );
               })}
 
@@ -655,6 +585,7 @@ export default function DashboardClient({
                 );
               })}
             </div>
+            {/* fin orbital */}
           </div>
 
           {/* Botones de creación */}
@@ -680,10 +611,9 @@ export default function DashboardClient({
             tasks={tasks.filter(t => t.status !== 'done' && t.status !== 'archived')}
             inboxCount={inboxCount}
             nextTrip={nextTrip}
-            tab={rightTab}
-            setTab={setRightTab}
+            nextEvent={nextEvent}
+            allEvents={allEvents}
             onMarkDone={markDone}
-            onInboxCountChange={setInboxCount}
           />
         ))}
       </div>

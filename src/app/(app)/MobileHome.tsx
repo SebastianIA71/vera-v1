@@ -18,12 +18,16 @@ type InboxItem = { id: number; content: string; source?: string | null; suggeste
 const SNM_ICONS = ['💧', '🚶', '💪', '🧘', '🍴'];
 const SNM_KEYS = ['snmAgua', 'snmCaminar', 'snmEntreno', 'snmEscucha', 'snmDisfruta'] as const;
 
-function SectionLabel({ label, color, meta, link }: { label: string; color?: string; meta?: string; link?: string }) {
+function SectionLabel({ label, color, meta, link, onLinkClick }: { label: string; color?: string; meta?: string; link?: string; onLinkClick?: () => void }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
       <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 15, letterSpacing: '.22em', color: color ?? 'var(--gold2)', textTransform: 'uppercase' }}>{label}</span>
       {meta && <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.12em' }}>{meta}</span>}
-      {link && <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.2em', color: 'var(--text2)', cursor: 'pointer' }}>{link}</span>}
+      {link && (
+        <button onClick={onLinkClick} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '.1em' }}>
+          {link}
+        </button>
+      )}
     </div>
   );
 }
@@ -144,7 +148,12 @@ export default function MobileHome({
             {'g. '}
             <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>{greeting.split(' ').slice(-1)[0]}</em>
             {', '}
-            <span style={{ color: 'var(--text2)', fontWeight: 300 }}>{persona}</span>
+            <a
+              href={`https://en.wikipedia.org/wiki/${encodeURIComponent(persona.replace(/ /g, '_'))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--text2)', fontWeight: 300, textDecoration: 'none', borderBottom: '.5px solid rgba(255,255,255,0.12)' }}
+            >{persona}</a>
             {'.'}
           </div>
           {statusLine && (
@@ -162,7 +171,7 @@ export default function MobileHome({
         {/* Now section */}
         {urgentTasks.length > 0 && (
           <div style={{ marginBottom: 28 }}>
-            <SectionLabel label="Now" meta={`${urgentTasks.length} ACTIVAS`} />
+            <SectionLabel label="Now" meta={`${urgentTasks.length} ACTIVAS`} link="→" onLinkClick={() => router.push('/tasks')} />
             {urgentTasks.map(t => (
               <div key={t.id} style={{
                 background: 'var(--bg2)', border: `.5px solid var(--bg4)`,
@@ -185,9 +194,9 @@ export default function MobileHome({
 
         {/* Inbox strip */}
         <div style={{ marginBottom: 28 }}>
-          <SectionLabel label="Inbox" link="ABRIR →" />
+          <SectionLabel label="Inbox" link="→" onLinkClick={() => router.push('/inbox')} />
           <div style={{ border: '.5px dashed #2c2c2a', borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}
-            onClick={() => inboxCount > 0 ? setShowInbox(true) : router.push('/inbox')}>
+            onClick={() => router.push('/inbox')}>
             <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 28, color: 'var(--gold)', lineHeight: 1, minWidth: 32 }}>{inboxCount}</div>
             <div>
               <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)' }}>capturas sin procesar</div>
@@ -246,10 +255,7 @@ export default function MobileHome({
 
         {/* Upcoming events (social) */}
         <div style={{ marginBottom: 28 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-            <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 15, letterSpacing: '.22em', color: 'var(--gold2)', textTransform: 'uppercase' }}>Upcoming Events</span>
-            <button onClick={() => setShowNewEvent(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 20, lineHeight: 1, padding: '0 2px' }}>+</button>
-          </div>
+          <SectionLabel label="Upcoming Events" link="→" onLinkClick={() => router.push('/trips')} />
         {nextEvent ? (
           <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
@@ -274,7 +280,7 @@ export default function MobileHome({
         {/* Upcoming trips */}
         {nextTrip && (
           <div style={{ marginBottom: 28 }}>
-            <SectionLabel label="Upcoming trips" link="VER TODO →" />
+            <SectionLabel label="Upcoming trips" link="→" onLinkClick={() => router.push('/trips')} />
             <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
@@ -300,7 +306,7 @@ export default function MobileHome({
         {/* Real estate — top task por propiedad */}
         {topTaskByProperty.length > 0 && (
           <div style={{ marginBottom: 28 }}>
-            <SectionLabel label="Real Estate" />
+            <SectionLabel label="Real Estate" link="→" onLinkClick={() => router.push('/properties')} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {topTaskByProperty.map(({ prop, task }) => (
                 <div key={prop.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${prop.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
