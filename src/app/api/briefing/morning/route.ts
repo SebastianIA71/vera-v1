@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { tasks, events, weightLog, inbox } from '@/lib/db/schema';
-import { ne, desc } from 'drizzle-orm';
+import { tasks, events, weightLog, inbox, memory } from '@/lib/db/schema';
+import { ne, desc, eq } from 'drizzle-orm';
 import { buildSystemPrompt, callClaude } from '@/lib/claude';
 
 export const dynamic = 'force-dynamic';
@@ -9,6 +9,14 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
+  const key = `morning_briefing_${today}`;
+
+  // Devolver el briefing cacheado si ya existe hoy
+  const [cached] = await db.select().from(memory).where(eq(memory.key, key)).limit(1);
+  if (cached?.value) {
+    return NextResponse.json({ briefing: cached.value, cached: true });
+  }
+
   const DAYS_ES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
   const MONTHS_ES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
@@ -58,8 +66,13 @@ export async function GET() {
   );
 
   if (!result.ok) {
-    return NextResponse.json({ briefing: null, ctx });
+    return NextResponse.json({ briefing: null, cached: false });
   }
 
-  return NextResponse.json({ briefing: result.text, ctx });
+  // Guardar en memory para reutilizar todo el día
+  await db.insert(memory)
+    .values({ key, value: result.text, updatedAt: new Date() })
+    .onConflictDoUpdate({ target: memory.key, set: { value: result.text, updatedAt: new Date() } });
+
+  return NextResponse.json({ briefing: result.text, cached: false });
 }
