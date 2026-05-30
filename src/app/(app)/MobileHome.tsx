@@ -390,7 +390,7 @@ export default function MobileHome({
                     const isToday = isCurrentMonth && displayDay === now.getDate();
                     const evs = isCurrentMonth ? (eventDays.get(displayDay) ?? []) : (nextMonthEventDays.get(displayDay) ?? []);
                     return (
-                      <div key={`cell-${i}`} style={{ position: 'relative', fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: isToday ? 'var(--gold2)' : isCurrentMonth ? 'var(--text2)' : 'var(--text3)', textAlign: 'center', padding: '5px 2px 8px', lineHeight: 1, borderRadius: 4, background: isToday ? 'rgba(196,168,106,0.10)' : 'transparent', fontWeight: isToday ? 500 : 400, opacity: isCurrentMonth ? 1 : 0.55 }}>
+                      <div key={`cell-${i}`} style={{ position: 'relative', fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: isToday ? 'var(--gold2)' : isCurrentMonth ? 'var(--text2)' : 'rgba(255,255,255,0.25)', textAlign: 'center', padding: '5px 2px 8px', lineHeight: 1, borderRadius: 4, background: isToday ? 'rgba(196,168,106,0.10)' : 'transparent', fontWeight: isToday ? 500 : 400 }}>
                         {displayDay}
                         {evs.length > 0 && (
                           <div style={{ position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 2 }}>

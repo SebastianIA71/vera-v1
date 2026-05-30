@@ -203,9 +203,8 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
                   fontFamily: 'var(--font-dm-mono)', fontSize: 9, padding: '4px 2px', lineHeight: 1,
                   borderRadius: 2, position: 'relative',
                   background: isToday ? 'rgba(196,168,106,0.12)' : 'transparent',
-                  color: isToday ? 'var(--gold2)' : isCurrentMonth ? 'var(--text2)' : 'var(--text3)',
+                  color: isToday ? 'var(--gold2)' : isCurrentMonth ? 'var(--text2)' : 'rgba(255,255,255,0.25)',
                   fontWeight: isToday ? 500 : 400,
-                  opacity: isCurrentMonth ? 1 : 0.55,
                   textAlign: 'center',
                 }}>
                   {displayDay}
