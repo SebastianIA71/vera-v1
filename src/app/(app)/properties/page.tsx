@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { tasks, events, inbox } from '@/lib/db/schema';
+import { tasks, events, inbox, properties as propertiesTable } from '@/lib/db/schema';
 import { ne, desc, asc } from 'drizzle-orm';
 import PropertiesClient from './PropertiesClient';
 
@@ -9,10 +9,11 @@ export default async function PropertiesPage() {
   const now = new Date();
   const in90 = new Date(Date.now() + 90 * 86400000);
 
-  const [allTasks, allEvents, inboxItems] = await Promise.all([
+  const [allTasks, allEvents, inboxItems, allProperties] = await Promise.all([
     db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)),
     db.select().from(events).orderBy(asc(events.startDate)),
     db.select({ id: inbox.id }).from(inbox).limit(100),
+    db.select().from(propertiesTable),
   ]);
 
   const urgentCount = allTasks.filter(t => (t.prioFinal ?? 0) >= 7 && t.status !== 'done').length;
@@ -30,6 +31,7 @@ export default async function PropertiesPage() {
       urgentCount={urgentCount}
       staleCount={staleCount}
       inboxCount={inboxItems.length}
+      properties={allProperties}
     />
   );
 }

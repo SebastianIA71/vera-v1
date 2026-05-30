@@ -58,10 +58,11 @@ export async function callClaude(
   userMessage: string,
   systemPrompt: string,
   maxTokens = 800,
+  model = 'claude-haiku-4-5-20251001',
 ): Promise<ClaudeResult> {
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+      model,
       max_tokens: maxTokens,
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }],

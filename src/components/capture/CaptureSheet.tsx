@@ -44,7 +44,6 @@ export default function CaptureSheet({ onClose }: Props) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [countdown, setCountdown] = useState(3);
-  const [destination, setDestination] = useState<'inbox' | 'task'>('inbox');
   const [taskSaving, setTaskSaving] = useState(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -71,10 +70,9 @@ export default function CaptureSheet({ onClose }: Props) {
 
   const { state, interim, elapsedStr, start, stop, reset } = useVoice(handleTranscript);
 
-  // Auto-save countdown when result appears — se pausa si el destino es TAREA
+  // Auto-save countdown when result appears
   useEffect(() => {
     if (!result) return;
-    if (destination === 'task') return;
     setCountdown(3);
     countdownRef.current = setInterval(() => {
       setCountdown(c => {
@@ -88,7 +86,7 @@ export default function CaptureSheet({ onClose }: Props) {
       });
     }, 1000);
     return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
-  }, [result, onClose, destination]);
+  }, [result, onClose]);
 
   const saveNow = () => {
     if (countdownRef.current) clearInterval(countdownRef.current);
@@ -294,35 +292,25 @@ export default function CaptureSheet({ onClose }: Props) {
                     {saved ? '✓' : countdown}
                   </div>
                 </div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: 'var(--text4)', marginTop: 8 }}>
-                  {destination === 'task' ? 'CREATING TASK' : 'SAVING TO INBOX'}
-                </div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: 'var(--text4)', marginTop: 8 }}>SAVING TO INBOX</div>
               </div>
 
-              {/* Selector destino */}
-              <div style={{ display: 'flex', gap: 6, marginTop: 16 }}>
+              {/* 2 botones directos */}
+              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
                 <button
-                  onClick={() => setDestination('inbox')}
-                  style={{ flex: 1, padding: '10px 8px', borderRadius: 10, border: `.5px solid ${destination === 'inbox' ? 'var(--gold2)' : 'var(--bg4)'}`, background: destination === 'inbox' ? 'rgba(196,168,106,0.08)' : 'transparent', color: destination === 'inbox' ? 'var(--gold)' : 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', cursor: 'pointer' }}
+                  onClick={saveNow}
+                  style={{ flex: 1, padding: '12px 8px', borderRadius: 12, border: '.5px solid var(--gold2)', background: 'transparent', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', cursor: 'pointer' }}
                 >
-                  INBOX
+                  INBOX →
                 </button>
                 <button
-                  onClick={() => setDestination('task')}
-                  style={{ flex: 1, padding: '10px 8px', borderRadius: 10, border: `.5px solid ${destination === 'task' ? 'var(--blue)' : 'var(--bg4)'}`, background: destination === 'task' ? 'rgba(91,168,232,0.08)' : 'transparent', color: destination === 'task' ? 'var(--blue)' : 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', cursor: 'pointer' }}
+                  onClick={createAsTask}
+                  disabled={taskSaving}
+                  style={{ flex: 1, padding: '12px 8px', borderRadius: 12, border: '.5px solid var(--blue)', background: 'transparent', color: 'var(--blue)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', cursor: 'pointer', opacity: taskSaving ? 0.5 : 1 }}
                 >
-                  TAREA
+                  {taskSaving ? '···' : 'TAREA →'}
                 </button>
               </div>
-
-              {/* Botón de confirmación */}
-              <button
-                onClick={destination === 'task' ? createAsTask : saveNow}
-                disabled={taskSaving}
-                style={{ width: '100%', marginTop: 12, padding: 13, borderRadius: 12, border: `.5px solid ${destination === 'task' ? 'var(--blue)' : 'var(--gold2)'}`, background: 'transparent', color: destination === 'task' ? 'var(--blue)' : 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', cursor: 'pointer' }}
-              >
-                {taskSaving ? '···' : destination === 'task' ? 'CREAR TAREA →' : 'GUARDAR EN INBOX →'}
-              </button>
             </>
           )}
         </div>

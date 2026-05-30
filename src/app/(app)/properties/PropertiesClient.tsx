@@ -1,17 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import DesktopShell from '@/components/layout/DesktopShell';
 import TaskDetailPanel, { TaskDetail } from '@/components/tasks/TaskDetailPanel';
 
+const NewTaskModal = dynamic(() => import('@/components/tasks/NewTaskModal'), { ssr: false });
+
 type Task = TaskDetail & { inNow?: boolean | null };
 type Event = { id: number; title: string; startDate?: Date | null; propertyId?: string | null; type?: string | null };
-
-const PROPS = [
-  { id: 'flat',     label: 'Flat',     loc: 'Palma',    icon: '🏙', color: '#5ba8e8' },
-  { id: 'sarapita', label: 'Sarapita', loc: 'Campos',   icon: '🌿', color: '#9b7fe8' },
-  { id: 'willys',   label: "Willy's",  loc: 'Marratxí', icon: '🎪', color: '#4ecb8d' },
-];
+type Property = { id: string; name: string; location: string | null; icon: string | null; color: string | null };
 
 function daysUntil(d: Date | null | undefined): number | null {
   if (!d) return null;
@@ -26,17 +24,19 @@ function taskBorderColor(t: Task): string {
 }
 
 export default function PropertiesClient({
-  allTasks, upcomingEvents, urgentCount, staleCount, inboxCount,
+  allTasks, upcomingEvents, urgentCount, staleCount, inboxCount, properties,
 }: {
   allTasks: Task[];
   upcomingEvents: Event[];
   urgentCount: number;
   staleCount: number;
   inboxCount: number;
+  properties: Property[];
 }) {
   const [selected, setSelected] = useState<Task | null>(null);
   const [tasks, setTasks] = useState<Task[]>(allTasks);
-  const [activeProp, setActiveProp] = useState('flat');
+  const [activeProp, setActiveProp] = useState(properties[0]?.id ?? '');
+  const [newTaskPropId, setNewTaskPropId] = useState<string | null>(null);
 
   const markDone = (id: number) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t));
@@ -44,6 +44,7 @@ export default function PropertiesClient({
   };
 
   return (
+    <>
     <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}
       rightSlot={selected && (
         <TaskDetailPanel key={selected.id} task={selected} onClose={() => setSelected(null)} onMarkDone={markDone}
@@ -57,24 +58,25 @@ export default function PropertiesClient({
             Propiedades <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>&amp; inmuebles</em>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text4)' }}>
-            3 PROPIEDADES · {tasks.filter(t => t.status !== 'done').length} TAREAS ACTIVAS
+            {properties.length} PROPIEDADES · {tasks.filter(t => t.status !== 'done').length} TAREAS ACTIVAS
           </div>
         </div>
 
         {/* Tab selector */}
         <div style={{ display: 'flex', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
-          {PROPS.map(prop => (
-            <button key={prop.id} onClick={() => setActiveProp(prop.id)} style={{ flex: 1, padding: '10px 8px', background: 'none', border: 'none', borderBottom: activeProp === prop.id ? `2px solid ${prop.color}` : '2px solid transparent', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em', color: activeProp === prop.id ? prop.color : 'var(--text3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, transition: 'all .15s' }}>
-              <span style={{ fontSize: 16 }}>{prop.icon}</span>
-              <span>{prop.label.toUpperCase()}</span>
+          {properties.map(prop => (
+            <button key={prop.id} onClick={() => setActiveProp(prop.id)} style={{ flex: 1, padding: '10px 8px', background: 'none', border: 'none', borderBottom: activeProp === prop.id ? `2px solid ${prop.color ?? 'var(--gold2)'}` : '2px solid transparent', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em', color: activeProp === prop.id ? (prop.color ?? 'var(--gold2)') : 'var(--text3)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, transition: 'all .15s' }}>
+              <span style={{ fontSize: 16 }}>{prop.icon ?? '🏠'}</span>
+              <span>{prop.name.toUpperCase()}</span>
               <span style={{ fontSize: 8, color: 'var(--text3)' }}>{tasks.filter(t => t.propertyId === prop.id && t.status !== 'done').length} tareas</span>
             </button>
           ))}
         </div>
 
         <div style={{ flex: 1, overflow: 'hidden' }}>
-          {PROPS.map((prop) => {
+          {properties.map((prop) => {
             if (prop.id !== activeProp) return null;
+            const color = prop.color ?? 'var(--gold2)';
             const propTasks = tasks.filter(t => t.propertyId === prop.id && t.status !== 'done');
             const staleTasks = propTasks.filter(t => t.lastActionAt && Math.floor((Date.now() - new Date(t.lastActionAt).getTime()) / 86400000) >= 14);
             const propEvents = upcomingEvents.filter(e => e.propertyId === prop.id);
@@ -86,20 +88,21 @@ export default function PropertiesClient({
                 {/* Col header */}
                 <div style={{ padding: '14px 16px 12px', flexShrink: 0, borderBottom: '.5px solid var(--bg4)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 14, color: prop.color, letterSpacing: '.04em' }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: prop.color, display: 'inline-block', flexShrink: 0 }} />
-                      {prop.icon} {prop.label} · {prop.loc}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 14, color, letterSpacing: '.04em' }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
+                      {prop.icon ?? '🏠'} {prop.name} · {prop.location ?? ''}
                     </div>
                     <button
+                      onClick={() => setNewTaskPropId(prop.id)}
                       style={{ width: 24, height: 24, borderRadius: 7, background: 'transparent', border: '.5px solid var(--bg4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', cursor: 'pointer' }}
-                      title={`Nueva tarea en ${prop.label}`}
+                      title={`Nueva tarea en ${prop.name}`}
                     >
                       <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     </button>
                   </div>
                   <div style={{ display: 'flex', gap: 12 }}>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em' }}>
-                      <span style={{ color: prop.color, fontWeight: 500 }}>{propTasks.length}</span>{' '}
+                      <span style={{ color, fontWeight: 500 }}>{propTasks.length}</span>{' '}
                       <span style={{ color: 'var(--text4)' }}>tareas</span>
                     </div>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em' }}>
@@ -112,10 +115,10 @@ export default function PropertiesClient({
                     </div>
                   </div>
                   {nextEvent && eventDays !== null && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', borderRadius: 8, marginTop: 8, background: `rgba(${prop.color === '#5ba8e8' ? '91,168,232' : prop.color === '#9b7fe8' ? '155,127,232' : '78,203,141'},.06)`, border: `.5px solid rgba(${prop.color === '#5ba8e8' ? '91,168,232' : prop.color === '#9b7fe8' ? '155,127,232' : '78,203,141'},.22)` }}>
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: prop.color, flexShrink: 0, display: 'inline-block' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 8px', borderRadius: 8, marginTop: 8, background: `${color}0f`, border: `.5px solid ${color}33` }}>
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: color, flexShrink: 0, display: 'inline-block' }} />
                       <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.12em', color: 'var(--text2)', flex: 1 }}>{nextEvent.title}</span>
-                      <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', color: prop.color, fontWeight: 500 }}>~{eventDays}D</span>
+                      <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', color, fontWeight: 500 }}>~{eventDays}D</span>
                     </div>
                   )}
                 </div>
@@ -160,5 +163,16 @@ export default function PropertiesClient({
       </div>
     </DesktopShell>
 
+    {newTaskPropId && (
+      <NewTaskModal
+        defaultPropertyId={newTaskPropId}
+        onClose={() => setNewTaskPropId(null)}
+        onCreated={(task) => {
+          setTasks(prev => [...prev, task as Task]);
+          setNewTaskPropId(null);
+        }}
+      />
+    )}
+    </>
   );
 }

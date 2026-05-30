@@ -334,9 +334,11 @@ export default function MobileHome({
           const year = now.getFullYear();
           const month = now.getMonth();
           const daysInMonth = new Date(year, month + 1, 0).getDate();
-          const firstDay = new Date(year, month, 1).getDay();
-          const startOffset = (firstDay + 6) % 7;
-          const prevMonthDays = new Date(year, month, 0).getDate();
+          const todayDay = now.getDay();
+          const daysFromMonday = (todayDay + 6) % 7;
+          const monday = new Date(now);
+          monday.setDate(now.getDate() - daysFromMonday);
+          const startDay = monday.getMonth() === month ? monday.getDate() : 1;
           const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
           const DAY_NAMES = ['L','M','X','J','V','S','D'];
 
@@ -366,13 +368,8 @@ export default function MobileHome({
                   ))}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
-                  {Array.from({ length: startOffset }, (_, i) => (
-                    <div key={`p${i}`} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', textAlign: 'center', padding: '5px 2px', opacity: 0.3, lineHeight: 1 }}>
-                      {prevMonthDays - startOffset + i + 1}
-                    </div>
-                  ))}
-                  {Array.from({ length: daysInMonth }, (_, i) => {
-                    const day = i + 1;
+                  {Array.from({ length: daysInMonth - startDay + 1 }, (_, i) => {
+                    const day = startDay + i;
                     const isToday = day === now.getDate();
                     const evs = eventDays.get(day) ?? [];
                     return (
