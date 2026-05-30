@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { generateRegistrationOptions } from '@simplewebauthn/server';
 import { db } from '@/lib/db';
 import { webauthnCredentials } from '@/lib/db/schema';
-import { verifySession } from '@/lib/auth';
+import { verifySession, getRpId } from '@/lib/auth';
 
 export async function GET(req: Request) {
   const session = await verifySession(req);
@@ -14,7 +14,7 @@ export async function GET(req: Request) {
 
   const options = await generateRegistrationOptions({
     rpName: process.env.WEBAUTHN_RP_NAME ?? 'VERA',
-    rpID: process.env.WEBAUTHN_RP_ID ?? 'localhost',
+    rpID: getRpId(),
     userName: 'sebastian',
     userDisplayName: 'Sebastián',
     attestationType: 'none',

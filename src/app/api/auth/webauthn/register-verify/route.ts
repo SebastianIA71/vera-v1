@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import { db } from '@/lib/db';
 import { webauthnCredentials } from '@/lib/db/schema';
-import { verifySession, getExpectedOrigin } from '@/lib/auth';
+import { verifySession, getExpectedOrigin, getRpId } from '@/lib/auth';
 
 // isoBase64URL.fromBuffer equivalent — normaliza Uint8Array antes de codificar
 // new Uint8Array(buffer) evita problemas de offset/byteOffset en vistas parciales
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       response: body,
       expectedChallenge: challenge,
       expectedOrigin: getExpectedOrigin(),
-      expectedRPID: process.env.WEBAUTHN_RP_ID ?? 'localhost',
+      expectedRPID: getRpId(),
     });
 
     if (!verification.verified || !verification.registrationInfo) {

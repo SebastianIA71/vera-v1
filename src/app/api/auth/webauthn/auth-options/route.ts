@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { generateAuthenticationOptions } from '@simplewebauthn/server';
 import { db } from '@/lib/db';
 import { webauthnCredentials } from '@/lib/db/schema';
+import { getRpId } from '@/lib/auth';
 
 export async function GET() {
   const credentials = await db.select({
@@ -13,7 +14,7 @@ export async function GET() {
   }
 
   const options = await generateAuthenticationOptions({
-    rpID: process.env.WEBAUTHN_RP_ID ?? 'localhost',
+    rpID: getRpId(),
     userVerification: 'required',
     allowCredentials: credentials.map(c => ({
       id: c.credentialId,

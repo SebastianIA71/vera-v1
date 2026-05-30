@@ -4,7 +4,7 @@ import { SignJWT } from 'jose';
 import { db } from '@/lib/db';
 import { webauthnCredentials } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { getExpectedOrigin } from '@/lib/auth';
+import { getExpectedOrigin, getRpId } from '@/lib/auth';
 
 // isoBase64URL.toBuffer equivalent — base64url → Uint8Array limpio
 function safeToBuffer(base64url: string): Uint8Array<ArrayBuffer> {
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
       response: body,
       expectedChallenge: challenge,
       expectedOrigin: getExpectedOrigin(),
-      expectedRPID: process.env.WEBAUTHN_RP_ID ?? 'localhost',
+      expectedRPID: getRpId(),
       credential: {
         id: cred.credentialId,
         publicKey: safeToBuffer(cred.publicKey), // base64url → Uint8Array correcto
