@@ -13,6 +13,7 @@ const NewPropertySheet = dynamic(() => import('@/components/properties/NewProper
 const NewProjectSheet  = dynamic(() => import('@/components/projects/NewProjectSheet'), { ssr: false });
 const NewTaskModal     = dynamic(() => import('@/components/tasks/NewTaskModal'), { ssr: false });
 const DailyInsight     = dynamic(() => import('@/components/DailyInsight'), { ssr: false });
+const DailyBriefing    = dynamic(() => import('@/components/DailyBriefing'), { ssr: false });
 
 /* ─── Types ─────────────────────────────────────────── */
 type AgentId = 'voice' | 'prio' | 'alert' | 'search' | 'executor' | 'solution';
@@ -519,6 +520,11 @@ export default function DashboardClient({
               })}
             </div>
             {/* fin orbital */}
+          </div>
+
+          {/* Briefing diario */}
+          <div style={{ padding: '0 24px 16px', flexShrink: 0 }}>
+            <DailyBriefing compact={true} />
           </div>
 
           {/* Botones de creación */}
