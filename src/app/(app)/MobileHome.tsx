@@ -7,9 +7,10 @@ import { QUOTES } from '@/lib/quotes';
 import { getRandomPersona } from '@/lib/personas';
 import { getTodaySnm } from '@/lib/snm';
 
-const CaptureSheet = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
-const InboxMobile = dynamic(() => import('@/components/inbox/InboxMobile'), { ssr: false });
+const CaptureSheet  = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
+const InboxMobile   = dynamic(() => import('@/components/inbox/InboxMobile'), { ssr: false });
 const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
+const DailyInsight  = dynamic(() => import('@/components/DailyInsight'), { ssr: false });
 
 type Task = { id: number; title: string; detail?: string | null; propertyId?: string | null; prioFinal?: number | null; lastActionAt?: Date | null; tags?: string | null };
 type WeightLog = { id: number; date: string; value: number; snmAgua?: boolean | null; snmCaminar?: boolean | null; snmEntreno?: boolean | null; snmEscucha?: boolean | null; snmDisfruta?: boolean | null };
@@ -17,6 +18,10 @@ type InboxItem = { id: number; content: string; source?: string | null; suggeste
 
 const SNM_ICONS = ['💧', '🚶', '💪', '🧘', '🍴'];
 const SNM_KEYS = ['snmAgua', 'snmCaminar', 'snmEntreno', 'snmEscucha', 'snmDisfruta'] as const;
+
+function personaSearchUrl(name: string): string {
+  return `https://www.google.com/search?q=${encodeURIComponent(`"${name}" fictional character`)}`;
+}
 
 function SectionLabel({ label, color, meta, link, onLinkClick }: { label: string; color?: string; meta?: string; link?: string; onLinkClick?: () => void }) {
   return (
@@ -174,7 +179,7 @@ export default function MobileHome({
             <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>{greeting.split(' ').slice(-1)[0]}</em>
             {', '}
             <a
-              href={`https://en.wikipedia.org/wiki/${encodeURIComponent(persona.replace(/ /g, '_'))}`}
+              href={personaSearchUrl(persona)}
               target="_blank"
               rel="noopener noreferrer"
               style={{ color: 'var(--text2)', fontWeight: 300, textDecoration: 'none', borderBottom: '.5px solid rgba(255,255,255,0.12)' }}
@@ -339,6 +344,7 @@ export default function MobileHome({
           const monday = new Date(now);
           monday.setDate(now.getDate() - daysFromMonday);
           const startDay = monday.getMonth() === month ? monday.getDate() : 1;
+          const TOTAL_CELLS = 35;
           const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
           const DAY_NAMES = ['L','M','X','J','V','S','D'];
 
@@ -368,13 +374,16 @@ export default function MobileHome({
                   ))}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
-                  {Array.from({ length: daysInMonth - startDay + 1 }, (_, i) => {
-                    const day = startDay + i;
-                    const isToday = day === now.getDate();
-                    const evs = eventDays.get(day) ?? [];
+                  {Array.from({ length: TOTAL_CELLS }, (_, i) => {
+                    const dayNum = startDay + i;
+                    const isCurrentMonth = dayNum >= 1 && dayNum <= daysInMonth;
+                    const isNextMonth = dayNum > daysInMonth;
+                    const displayDay = isNextMonth ? dayNum - daysInMonth : dayNum;
+                    const isToday = isCurrentMonth && displayDay === now.getDate();
+                    const evs = isCurrentMonth ? (eventDays.get(displayDay) ?? []) : [];
                     return (
-                      <div key={day} style={{ position: 'relative', fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: isToday ? 'var(--gold2)' : 'var(--text2)', textAlign: 'center', padding: '5px 2px 8px', lineHeight: 1, borderRadius: 4, background: isToday ? 'rgba(196,168,106,0.10)' : 'transparent', fontWeight: isToday ? 500 : 400 }}>
-                        {day}
+                      <div key={`cell-${i}`} style={{ position: 'relative', fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: isToday ? 'var(--gold2)' : isCurrentMonth ? 'var(--text2)' : 'var(--text3)', textAlign: 'center', padding: '5px 2px 8px', lineHeight: 1, borderRadius: 4, background: isToday ? 'rgba(196,168,106,0.10)' : 'transparent', fontWeight: isToday ? 500 : 400, opacity: isCurrentMonth ? 1 : 0.3 }}>
+                        {displayDay}
                         {evs.length > 0 && (
                           <div style={{ position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 2 }}>
                             {evs.slice(0, 3).map((ev, j) => (
@@ -447,6 +456,8 @@ export default function MobileHome({
             </svg>
           </div>
         </div>
+
+        <DailyInsight />
 
       </div>
 

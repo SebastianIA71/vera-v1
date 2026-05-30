@@ -12,6 +12,7 @@ const NewEventSheet    = dynamic(() => import('@/components/events/NewEventSheet
 const NewPropertySheet = dynamic(() => import('@/components/properties/NewPropertySheet'), { ssr: false });
 const NewProjectSheet  = dynamic(() => import('@/components/projects/NewProjectSheet'), { ssr: false });
 const NewTaskModal     = dynamic(() => import('@/components/tasks/NewTaskModal'), { ssr: false });
+const DailyInsight     = dynamic(() => import('@/components/DailyInsight'), { ssr: false });
 
 /* ─── Types ─────────────────────────────────────────── */
 type AgentId = 'voice' | 'prio' | 'alert' | 'search' | 'executor' | 'solution';
@@ -86,6 +87,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
   const monday = new Date(now);
   monday.setDate(now.getDate() - daysFromMonday);
   const startDay = monday.getMonth() === now.getMonth() ? monday.getDate() : 1;
+  const TOTAL_CELLS = 35;
 
   const MONTH_NAMES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
   const DAY_NAMES = ['L','M','X','J','V','S','D'];
@@ -180,30 +182,42 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
             {DAY_NAMES.map(d => (
               <div key={d} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, color: 'var(--text3)', letterSpacing: '.06em', padding: '2px 0' }}>{d}</div>
             ))}
-            {Array.from({ length: daysInMonth - startDay + 1 }, (_, i) => {
-              const day = startDay + i;
-              const isToday = day === now.getDate();
-              const hasEvent = eventDays.has(day);
+            {Array.from({ length: TOTAL_CELLS }, (_, i) => {
+              const dayNum = startDay + i;
+              const isCurrentMonth = dayNum >= 1 && dayNum <= daysInMonth;
+              const displayDay = dayNum > daysInMonth ? dayNum - daysInMonth : dayNum;
+              const isToday = isCurrentMonth && displayDay === now.getDate();
+              const hasEvent = isCurrentMonth && eventDays.has(displayDay);
               return (
-                <div key={day} style={{
+                <div key={`cell-${i}`} style={{
                   fontFamily: 'var(--font-dm-mono)', fontSize: 9, padding: '4px 2px', lineHeight: 1,
                   borderRadius: 2, position: 'relative',
                   background: isToday ? 'rgba(196,168,106,0.12)' : 'transparent',
-                  color: isToday ? 'var(--gold2)' : 'var(--text2)',
+                  color: isToday ? 'var(--gold2)' : isCurrentMonth ? 'var(--text2)' : 'var(--text3)',
                   fontWeight: isToday ? 500 : 400,
+                  opacity: isCurrentMonth ? 1 : 0.3,
+                  textAlign: 'center',
                 }}>
-                  {day}
-                  {hasEvent && !isToday && <span style={{ position: 'absolute', bottom: 1, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: 'var(--blue)', display: 'block' }} />}
-                  {hasEvent && isToday && <span style={{ position: 'absolute', bottom: 1, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: 'var(--gold2)', display: 'block' }} />}
+                  {displayDay}
+                  {hasEvent && <span style={{ position: 'absolute', bottom: 1, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: isToday ? 'var(--gold2)' : 'var(--blue)', display: 'block' }} />}
                 </div>
               );
             })}
           </div>
         </div>
 
+        <div style={{ padding: '8px 18px 12px', borderTop: '.5px solid var(--bg2)' }}>
+          <DailyInsight />
+        </div>
+
       </div>
     </div>
   );
+}
+
+/* ─── Persona search URL ────────────────────────────── */
+function personaSearchUrl(name: string): string {
+  return `https://www.google.com/search?q=${encodeURIComponent(`"${name}" fictional character`)}`;
 }
 
 /* ─── Main Client Component ─────────────────────────── */
@@ -376,7 +390,7 @@ export default function DashboardClient({
               <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: '13px', color: 'var(--text3)', letterSpacing: '.01em', marginTop: 2 }}>
                 good {(() => { const h = new Date().getHours(); return h < 12 ? 'morning' : h < 19 ? 'afternoon' : 'evening'; })()},{' '}
                 <a
-                  href={`https://en.wikipedia.org/wiki/${encodeURIComponent(persona.replace(/ /g, '_'))}`}
+                  href={personaSearchUrl(persona)}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: 'var(--text2)', fontWeight: 300, textDecoration: 'none', borderBottom: '.5px solid rgba(255,255,255,0.15)', cursor: 'pointer', transition: 'color .15s, border-color .15s' }}
