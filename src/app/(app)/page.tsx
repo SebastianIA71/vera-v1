@@ -51,6 +51,9 @@ export default async function AppRootPage() {
       inboxCount={inboxItems.length}
       inboxItems={inboxItems}
       topTaskByProperty={topTaskByProperty}
+      allEvents={allEvents
+        .filter(e => e.startDate && e.startDate >= new Date(now.getFullYear(), now.getMonth(), 1))
+        .map(e => ({ startDate: e.startDate!.toISOString(), type: e.type ?? 'social', title: e.title }))}
     />
   );
 }

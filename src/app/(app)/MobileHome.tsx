@@ -56,6 +56,7 @@ export default function MobileHome({
   inboxCount,
   inboxItems = [],
   topTaskByProperty = [],
+  allEvents = [],
 }: {
   urgentTasks: Task[];
   nextTrip: { title: string; daysTo: number; startDate: string; who: string } | null;
@@ -64,6 +65,7 @@ export default function MobileHome({
   inboxCount: number;
   inboxItems?: InboxItem[];
   topTaskByProperty?: PropTask[];
+  allEvents?: { startDate: string; type: string; title: string }[];
 }) {
   const router = useRouter();
   const [showCapture, setShowCapture] = useState(false);
@@ -325,6 +327,80 @@ export default function MobileHome({
             </div>
           </div>
         )}
+
+        {/* ── CALENDAR ── */}
+        {(() => {
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = now.getMonth();
+          const daysInMonth = new Date(year, month + 1, 0).getDate();
+          const firstDay = new Date(year, month, 1).getDay();
+          const startOffset = (firstDay + 6) % 7;
+          const prevMonthDays = new Date(year, month, 0).getDate();
+          const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+          const DAY_NAMES = ['L','M','X','J','V','S','D'];
+
+          const eventDays = new Map<number, { type: string; title: string }[]>();
+          allEvents.forEach(e => {
+            const d = new Date(e.startDate);
+            if (d.getMonth() === month && d.getFullYear() === year) {
+              const day = d.getDate();
+              if (!eventDays.has(day)) eventDays.set(day, []);
+              eventDays.get(day)!.push({ type: e.type, title: e.title });
+            }
+          });
+
+          const dotColor = (type: string) =>
+            type === 'viaje' ? 'var(--blue)' : type === 'social' ? 'var(--purple)' : 'var(--green)';
+
+          return (
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
+                <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 15, letterSpacing: '.22em', color: 'var(--gold2)', textTransform: 'uppercase' }}>Calendar</span>
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em' }}>{MONTHS[month]} {year}</span>
+              </div>
+              <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
+                  {DAY_NAMES.map(d => (
+                    <div key={d} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.08em', textAlign: 'center', padding: '2px 0' }}>{d}</div>
+                  ))}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
+                  {Array.from({ length: startOffset }, (_, i) => (
+                    <div key={`p${i}`} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', textAlign: 'center', padding: '5px 2px', opacity: 0.3, lineHeight: 1 }}>
+                      {prevMonthDays - startOffset + i + 1}
+                    </div>
+                  ))}
+                  {Array.from({ length: daysInMonth }, (_, i) => {
+                    const day = i + 1;
+                    const isToday = day === now.getDate();
+                    const evs = eventDays.get(day) ?? [];
+                    return (
+                      <div key={day} style={{ position: 'relative', fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: isToday ? 'var(--gold2)' : 'var(--text2)', textAlign: 'center', padding: '5px 2px 8px', lineHeight: 1, borderRadius: 4, background: isToday ? 'rgba(196,168,106,0.10)' : 'transparent', fontWeight: isToday ? 500 : 400 }}>
+                        {day}
+                        {evs.length > 0 && (
+                          <div style={{ position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 2 }}>
+                            {evs.slice(0, 3).map((ev, j) => (
+                              <span key={j} style={{ width: 3, height: 3, borderRadius: '50%', background: dotColor(ev.type), display: 'inline-block' }} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{ display: 'flex', gap: 14, marginTop: 12, paddingTop: 10, borderTop: '.5px solid var(--bg4)' }}>
+                  {[{ color: 'var(--blue)', label: 'Viaje' }, { color: 'var(--purple)', label: 'Evento' }, { color: 'var(--green)', label: 'Otro' }].map(l => (
+                    <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: l.color, display: 'inline-block' }} />
+                      <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.08em' }}>{l.label.toUpperCase()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Real estate — top task por propiedad */}
         {topTaskByProperty.length > 0 && (

@@ -8,6 +8,7 @@ type CaptureResult = {
   title: string;
   propertyId: string | null;
   prio: number | null;
+  type?: string | null;
   chips: string[];
   classified: boolean;
 };
@@ -43,6 +44,8 @@ export default function CaptureSheet({ onClose }: Props) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [countdown, setCountdown] = useState(3);
+  const [destination, setDestination] = useState<'inbox' | 'task'>('inbox');
+  const [taskSaving, setTaskSaving] = useState(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [translateY, setTranslateY] = useState(0);
@@ -68,9 +71,10 @@ export default function CaptureSheet({ onClose }: Props) {
 
   const { state, interim, elapsedStr, start, stop, reset } = useVoice(handleTranscript);
 
-  // Auto-save countdown when result appears
+  // Auto-save countdown when result appears — se pausa si el destino es TAREA
   useEffect(() => {
     if (!result) return;
+    if (destination === 'task') return;
     setCountdown(3);
     countdownRef.current = setInterval(() => {
       setCountdown(c => {
@@ -84,7 +88,7 @@ export default function CaptureSheet({ onClose }: Props) {
       });
     }, 1000);
     return () => { if (countdownRef.current) clearInterval(countdownRef.current); };
-  }, [result, onClose]);
+  }, [result, onClose, destination]);
 
   const saveNow = () => {
     if (countdownRef.current) clearInterval(countdownRef.current);
@@ -94,8 +98,30 @@ export default function CaptureSheet({ onClose }: Props) {
 
   const handleEdit = () => {
     if (countdownRef.current) clearInterval(countdownRef.current);
-    // For now just save — full edit flow is Phase 2
     saveNow();
+  };
+
+  const createAsTask = async () => {
+    if (!result || taskSaving) return;
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    setTaskSaving(true);
+    try {
+      await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: result.title,
+          propertyId: result.propertyId ?? null,
+          prio: result.prio ?? 5,
+          type: result.type ?? 'task',
+          tags: result.chips?.join(',') ?? null,
+        }),
+      });
+      setSaved(true);
+      setTimeout(onClose, 300);
+    } catch {
+      setTaskSaving(false);
+    }
   };
 
   // Swipe down to close
@@ -268,17 +294,35 @@ export default function CaptureSheet({ onClose }: Props) {
                     {saved ? '✓' : countdown}
                   </div>
                 </div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: 'var(--text4)', marginTop: 8 }}>SAVING TO INBOX</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: 'var(--text4)', marginTop: 8 }}>
+                  {destination === 'task' ? 'CREATING TASK' : 'SAVING TO INBOX'}
+                </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                <button onClick={handleEdit} style={{ flex: 1, padding: 12, borderRadius: 12, border: '.5px solid var(--bg4)', background: 'transparent', color: 'var(--text2)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', cursor: 'pointer' }}>
-                  EDIT
+              {/* Selector destino */}
+              <div style={{ display: 'flex', gap: 6, marginTop: 16 }}>
+                <button
+                  onClick={() => setDestination('inbox')}
+                  style={{ flex: 1, padding: '10px 8px', borderRadius: 10, border: `.5px solid ${destination === 'inbox' ? 'var(--gold2)' : 'var(--bg4)'}`, background: destination === 'inbox' ? 'rgba(196,168,106,0.08)' : 'transparent', color: destination === 'inbox' ? 'var(--gold)' : 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', cursor: 'pointer' }}
+                >
+                  INBOX
                 </button>
-                <button onClick={saveNow} style={{ flex: 1, padding: 12, borderRadius: 12, border: '.5px solid var(--gold2)', background: 'transparent', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', cursor: 'pointer' }}>
-                  SAVE NOW
+                <button
+                  onClick={() => setDestination('task')}
+                  style={{ flex: 1, padding: '10px 8px', borderRadius: 10, border: `.5px solid ${destination === 'task' ? 'var(--blue)' : 'var(--bg4)'}`, background: destination === 'task' ? 'rgba(91,168,232,0.08)' : 'transparent', color: destination === 'task' ? 'var(--blue)' : 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', cursor: 'pointer' }}
+                >
+                  TAREA
                 </button>
               </div>
+
+              {/* Botón de confirmación */}
+              <button
+                onClick={destination === 'task' ? createAsTask : saveNow}
+                disabled={taskSaving}
+                style={{ width: '100%', marginTop: 12, padding: 13, borderRadius: 12, border: `.5px solid ${destination === 'task' ? 'var(--blue)' : 'var(--gold2)'}`, background: 'transparent', color: destination === 'task' ? 'var(--blue)' : 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', cursor: 'pointer' }}
+              >
+                {taskSaving ? '···' : destination === 'task' ? 'CREAR TAREA →' : 'GUARDAR EN INBOX →'}
+              </button>
             </>
           )}
         </div>

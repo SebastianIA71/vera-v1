@@ -18,6 +18,18 @@ export const properties = sqliteTable('properties', {
   icon: text('icon'),
 });
 
+export const projects = sqliteTable('projects', {
+  id:          integer('id').primaryKey({ autoIncrement: true }),
+  name:        text('name').notNull(),
+  description: text('description'),
+  status:      text('status').default('active'),
+  color:       text('color'),
+  icon:        text('icon'),
+  dueDate:     integer('due_date', { mode: 'timestamp' }),
+  createdAt:   integer('created_at', { mode: 'timestamp' }).defaultNow(),
+  updatedAt:   integer('updated_at', { mode: 'timestamp' }).defaultNow(),
+});
+
 export const tasks = sqliteTable('tasks', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   propertyId: text('property_id').references(() => properties.id),

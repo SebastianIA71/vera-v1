@@ -7,8 +7,10 @@ import DesktopNav from '@/components/layout/DesktopNav';
 import { QUOTES } from '@/lib/quotes';
 import { getRandomPersona } from '@/lib/personas';
 import dynamic from 'next/dynamic';
-const CaptureSheet = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
-const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
+const CaptureSheet     = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
+const NewEventSheet    = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
+const NewPropertySheet = dynamic(() => import('@/components/properties/NewPropertySheet'), { ssr: false });
+const NewProjectSheet  = dynamic(() => import('@/components/projects/NewProjectSheet'), { ssr: false });
 
 /* ─── Types ─────────────────────────────────────────── */
 type AgentId = 'voice' | 'prio' | 'alert' | 'search' | 'executor' | 'solution';
@@ -351,6 +353,8 @@ export default function DashboardClient({
   );
   const [showNewTask, setShowNewTask] = useState(false);
   const [showNewEvent, setShowNewEvent] = useState(false);
+  const [showNewProperty, setShowNewProperty] = useState(false);
+  const [showNewProject, setShowNewProject] = useState(false);
   const [activeAgent, setActiveAgent] = useState<AgentId | null>(null);
   const [showCapture, setShowCapture] = useState(false);
   const [inboxCount, setInboxCount] = useState(initialInboxCount);
@@ -589,13 +593,15 @@ export default function DashboardClient({
           </div>
 
           {/* Botones de creación */}
-          <div style={{ padding: '12px 24px 20px', flexShrink: 0, display: 'flex', flexDirection: 'row', gap: 8 }}>
-            <button onClick={() => setShowNewTask(true)} style={{ flex: 1, background: 'transparent', border: '.5px solid var(--gold2)', borderRadius: '10px', padding: '12px 8px', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.16em', cursor: 'pointer' }}>
-              + TAREA
-            </button>
-            <button onClick={() => setShowNewEvent(true)} style={{ flex: 1, background: 'transparent', border: '.5px solid var(--purple)', borderRadius: '10px', padding: '12px 8px', color: 'var(--purple)', fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.16em', cursor: 'pointer' }}>
-              + EVENTO
-            </button>
+          <div style={{ padding: '12px 24px 20px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowNewTask(true)}     style={{ flex: 1, background: 'transparent', border: '.5px solid var(--gold2)',  borderRadius: 10, padding: '11px 8px', color: 'var(--gold)',   fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', cursor: 'pointer' }}>+ TAREA</button>
+              <button onClick={() => setShowNewEvent(true)}    style={{ flex: 1, background: 'transparent', border: '.5px solid var(--purple)', borderRadius: 10, padding: '11px 8px', color: 'var(--purple)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', cursor: 'pointer' }}>+ EVENTO</button>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setShowNewProperty(true)} style={{ flex: 1, background: 'transparent', border: '.5px solid var(--green)',  borderRadius: 10, padding: '11px 8px', color: 'var(--green)',  fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', cursor: 'pointer' }}>+ PROPIEDAD</button>
+              <button onClick={() => setShowNewProject(true)}  style={{ flex: 1, background: 'transparent', border: '.5px solid var(--amber)', borderRadius: 10, padding: '11px 8px', color: 'var(--amber)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', cursor: 'pointer' }}>+ PROYECTO</button>
+            </div>
           </div>
         </div>
 
@@ -637,9 +643,11 @@ export default function DashboardClient({
       )}
 
       {/* NEW TASK MODAL */}
-      {showNewTask && <NewTaskModal onClose={() => setShowNewTask(false)} onCreated={handleTaskCreated} />}
-      {showCapture && <CaptureSheet onClose={() => { setShowCapture(false); }} />}
-      {showNewEvent && <NewEventSheet onClose={() => setShowNewEvent(false)} onCreated={() => setShowNewEvent(false)} />}
+      {showNewTask     && <NewTaskModal     onClose={() => setShowNewTask(false)} onCreated={handleTaskCreated} />}
+      {showCapture     && <CaptureSheet     onClose={() => setShowCapture(false)} />}
+      {showNewEvent    && <NewEventSheet    onClose={() => setShowNewEvent(false)} onCreated={() => setShowNewEvent(false)} />}
+      {showNewProperty && <NewPropertySheet onClose={() => setShowNewProperty(false)} />}
+      {showNewProject  && <NewProjectSheet  onClose={() => setShowNewProject(false)} />}
 
       <style>{`
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
