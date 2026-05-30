@@ -75,9 +75,19 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
 }) {
   const now = new Date();
 
+  const curMonth  = now.getMonth();
+  const curYear   = now.getFullYear();
+  const nextMonth = curMonth === 11 ? 0 : curMonth + 1;
+  const nextYear  = curMonth === 11 ? curYear + 1 : curYear;
+
   const eventDays = new Set(
     allEvents
-      .filter(e => e.startDate && e.startDate.getMonth() === now.getMonth() && e.startDate.getFullYear() === now.getFullYear())
+      .filter(e => e.startDate && e.startDate.getMonth() === curMonth && e.startDate.getFullYear() === curYear)
+      .map(e => e.startDate!.getDate())
+  );
+  const nextMonthEventDays = new Set(
+    allEvents
+      .filter(e => e.startDate && e.startDate.getMonth() === nextMonth && e.startDate.getFullYear() === nextYear)
       .map(e => e.startDate!.getDate())
   );
 
@@ -187,7 +197,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
               const isCurrentMonth = dayNum >= 1 && dayNum <= daysInMonth;
               const displayDay = dayNum > daysInMonth ? dayNum - daysInMonth : dayNum;
               const isToday = isCurrentMonth && displayDay === now.getDate();
-              const hasEvent = isCurrentMonth && eventDays.has(displayDay);
+              const hasEvent = isCurrentMonth ? eventDays.has(displayDay) : nextMonthEventDays.has(displayDay);
               return (
                 <div key={`cell-${i}`} style={{
                   fontFamily: 'var(--font-dm-mono)', fontSize: 9, padding: '4px 2px', lineHeight: 1,
@@ -195,7 +205,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
                   background: isToday ? 'rgba(196,168,106,0.12)' : 'transparent',
                   color: isToday ? 'var(--gold2)' : isCurrentMonth ? 'var(--text2)' : 'var(--text3)',
                   fontWeight: isToday ? 500 : 400,
-                  opacity: isCurrentMonth ? 1 : 0.3,
+                  opacity: isCurrentMonth ? 1 : 0.55,
                   textAlign: 'center',
                 }}>
                   {displayDay}
