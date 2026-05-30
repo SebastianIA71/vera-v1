@@ -133,6 +133,16 @@ export default function MobileHome({
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
+              onClick={() => router.push('/settings')}
+              style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', cursor: 'pointer' }}
+              aria-label="Ajustes"
+            >
+              <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+              </svg>
+            </button>
+            <button
               onClick={async () => { await fetch('/api/auth/logout', { method: 'POST' }); router.replace('/lock'); }}
               style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', cursor: 'pointer' }}
               title="Cerrar sesión" aria-label="Cerrar sesión"

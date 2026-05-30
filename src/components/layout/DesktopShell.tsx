@@ -1,10 +1,10 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DesktopNav from './DesktopNav';
 
-const DAYS = ['DOM','LUN','MAR','MIÃ‰','JUE','VIE','SÃB'];
+const DAYS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
 const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
 const pad = (n: number) => String(n).padStart(2,'0');
 
@@ -29,7 +29,7 @@ export default function DesktopShell({
   useEffect(() => {
     const tick = () => {
       const d = new Date();
-      setTime(`${DAYS[d.getDay()]} Â· ${d.getDate()} ${MONTHS[d.getMonth()]} Â· ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`);
+      setTime(`${DAYS[d.getDay()]} · ${d.getDate()} ${MONTHS[d.getMonth()]} · ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`);
     };
     tick();
     const id = setInterval(tick, 1000);
@@ -39,7 +39,7 @@ export default function DesktopShell({
 
   return (
     <div className="desktop-shell-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)', overflow: 'hidden' }}>
-      {/* TOP BAR â€” oculto en mÃ³vil */}
+      {/* TOP BAR — oculto en móvil */}
       <div className="desktop-topbar" style={{ height: 54, background: 'var(--bg)', borderBottom: '.5px solid var(--bg4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 15, letterSpacing: '.3em', color: 'var(--gold2)' }}>
