@@ -32,12 +32,12 @@ const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV
 const pad = (n: number) => String(n).padStart(2, '0');
 
 const AGENTS: { id: AgentId; label: string; icon: string; top: number; left: number; labelPos: 'above' | 'below' }[] = [
-  { id: 'voice',    label: 'VOICE',    icon: 'mic',    top: 55,  left: 280, labelPos: 'above' },
-  { id: 'prio',     label: 'PRIO',     icon: 'prio',   top: 93,  left: 448, labelPos: 'above' },
-  { id: 'alert',    label: 'ALERT',    icon: 'bell',   top: 410, left: 458, labelPos: 'below' },
-  { id: 'solution', label: 'SOLUTION', icon: 'help',   top: 475, left: 280, labelPos: 'below' },
-  { id: 'executor', label: 'EXECUTOR', icon: 'send',   top: 400, left: 102, labelPos: 'below' },
-  { id: 'search',   label: 'SEARCH',   icon: 'search', top: 100, left: 112, labelPos: 'above' },
+  { id: 'voice',    label: 'VOICE',    icon: 'mic',    top: 15,  left: 240, labelPos: 'above' },
+  { id: 'prio',     label: 'PRIO',     icon: 'prio',   top: 53,  left: 408, labelPos: 'above' },
+  { id: 'alert',    label: 'ALERT',    icon: 'bell',   top: 370, left: 418, labelPos: 'below' },
+  { id: 'solution', label: 'SOLUTION', icon: 'help',   top: 435, left: 240, labelPos: 'below' },
+  { id: 'executor', label: 'EXECUTOR', icon: 'send',   top: 360, left: 62,  labelPos: 'below' },
+  { id: 'search',   label: 'SEARCH',   icon: 'search', top: 60,  left: 72,  labelPos: 'above' },
 ];
 
 /* ─── SVG icons ─────────────────────────────────────── */
@@ -110,7 +110,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
 
   return (
     <div style={{
-      width: 300, flexShrink: 0,
+      width: 360, flexShrink: 0,
       borderLeft: '.5px solid var(--bg4)',
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
@@ -387,8 +387,14 @@ export default function DashboardClient({
       {/* LAYOUT */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
-        {/* LEFT NAV */}
-        <DesktopNav inboxCount={initialInboxCount} activeOverride="dashboard" counts={{ tasks: kpis.tasksActive, trips: kpis.tripsCount, properties: kpis.propsCount, agents: 6 }} />
+        {/* LEFT PANEL — nav + briefing */}
+        <div style={{ width: 260, flexShrink: 0, borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <DesktopNav inboxCount={initialInboxCount} activeOverride="dashboard" counts={{ tasks: kpis.tasksActive, trips: kpis.tripsCount, properties: kpis.propsCount, agents: 6 }} />
+          <div style={{ height: '.5px', background: 'var(--bg4)', margin: '4px 16px' }} />
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px 20px' }}>
+            <DailyBriefing compact={true} />
+          </div>
+        </div>
 
         {/* CENTER: ORBITAL */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -445,7 +451,7 @@ export default function DashboardClient({
               ))}
             </div>
             {/* Orbital */}
-            <div style={{ position: 'relative', width: '560px', height: '560px', flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: '480px', height: '480px', flexShrink: 0 }}>
               {/* Rings */}
               {[140, 260, 380, 440].map((size, i) => (
                 <div key={size} style={{
@@ -460,11 +466,11 @@ export default function DashboardClient({
               {AGENTS.map(agent => {
                 const status = agentStatus[agent.id]?.status ?? 'idle';
                 const isActive = status === 'running' || status === 'active';
-                const angle = Math.atan2(agent.top - 280, agent.left - 280);
-                const dist = Math.sqrt(Math.pow(agent.left - 280, 2) + Math.pow(agent.top - 280, 2));
+                const angle = Math.atan2(agent.top - 240, agent.left - 240);
+                const dist = Math.sqrt(Math.pow(agent.left - 240, 2) + Math.pow(agent.top - 240, 2));
                 return (
                   <div key={`conn-${agent.id}`} style={{
-                    position: 'absolute', top: '280px', left: '280px',
+                    position: 'absolute', top: '240px', left: '240px',
                     width: `${dist}px`, height: '.5px',
                     background: isActive ? 'rgba(196,168,106,.35)' : 'rgba(196,168,106,.12)',
                     transformOrigin: '0 0',
@@ -520,11 +526,6 @@ export default function DashboardClient({
               })}
             </div>
             {/* fin orbital */}
-          </div>
-
-          {/* Briefing diario */}
-          <div style={{ padding: '0 24px 16px', flexShrink: 0 }}>
-            <DailyBriefing compact={true} />
           </div>
 
           {/* Botones de creación */}
