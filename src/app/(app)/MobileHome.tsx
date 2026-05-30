@@ -10,7 +10,8 @@ import { getTodaySnm } from '@/lib/snm';
 const CaptureSheet  = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const InboxMobile   = dynamic(() => import('@/components/inbox/InboxMobile'), { ssr: false });
 const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
-const DailyInsight  = dynamic(() => import('@/components/DailyInsight'), { ssr: false });
+const DailyInsight   = dynamic(() => import('@/components/DailyInsight'), { ssr: false });
+const DailyBriefing  = dynamic(() => import('@/components/DailyBriefing'), { ssr: false });
 
 type Task = { id: number; title: string; detail?: string | null; propertyId?: string | null; prioFinal?: number | null; lastActionAt?: Date | null; tags?: string | null };
 type WeightLog = { id: number; date: string; value: number; snmAgua?: boolean | null; snmCaminar?: boolean | null; snmEntreno?: boolean | null; snmEscucha?: boolean | null; snmDisfruta?: boolean | null };
@@ -465,6 +466,7 @@ export default function MobileHome({
           </div>
         </div>
 
+        <DailyBriefing />
         <DailyInsight />
 
       </div>
