@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { tasks, memory } from '@/lib/db/schema';
-import { ne, lte, and, eq } from 'drizzle-orm';
+import { ne, and, eq } from 'drizzle-orm';
 import { runSearchAgent } from '@/lib/agents/SearchAgent';
 
 export const dynamic = 'force-dynamic';
@@ -16,11 +16,13 @@ export async function GET() {
     return NextResponse.json(JSON.parse(cached.value));
   }
 
-  // Candidatas: tareas activas de prio ≤ 6
-  const candidates = await db.select({ id: tasks.id, title: tasks.title, prioFinal: tasks.prioFinal })
+  // Candidatas: filtrar nulls en JS (lte falla con NULL en libSQL)
+  const allActive = await db.select({ id: tasks.id, title: tasks.title, prioFinal: tasks.prioFinal })
     .from(tasks)
-    .where(and(ne(tasks.status, 'done'), ne(tasks.status, 'archived'), lte(tasks.prioFinal, 6)))
-    .limit(20);
+    .where(and(ne(tasks.status, 'done'), ne(tasks.status, 'archived')))
+    .limit(50);
+
+  const candidates = allActive.filter(t => (t.prioFinal ?? 0) >= 1 && (t.prioFinal ?? 0) <= 6);
 
   if (candidates.length === 0) return NextResponse.json({ insight: null });
 
@@ -39,7 +41,6 @@ export async function GET() {
     date: today,
   };
 
-  // Guardar en memory (upsert)
   await db.insert(memory).values({ key, value: JSON.stringify(insight), updatedAt: new Date() })
     .onConflictDoUpdate({ target: memory.key, set: { value: JSON.stringify(insight), updatedAt: new Date() } });
 
