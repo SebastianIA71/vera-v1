@@ -85,7 +85,7 @@ export default function LockPage() {
 
       if (res.ok) {
         await deriveAndStoreKey(fullPin);
-        router.replace('/dashboard');
+        router.replace('/');
       } else {
         const data = await res.json();
         setShaking(true);
@@ -123,7 +123,7 @@ export default function LockPage() {
       });
 
       if (verifyRes.ok) {
-        router.replace('/dashboard');
+        router.replace('/');
       } else {
         setLockState('pin');
         setError('Face ID no reconocido');
