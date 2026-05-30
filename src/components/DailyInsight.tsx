@@ -97,14 +97,14 @@ export default function DailyInsight() {
                 color: 'var(--text3)', flexShrink: 0 }}>{data.taskPrio}</span>
             </div>
 
-            {data.ideas.length === 0 ? (
+            {(data.ideas ?? []).length === 0 ? (
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9,
                 color: 'var(--text3)', letterSpacing: '.1em' }}>
                 Sin resultados para esta búsqueda.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {data.ideas.map((idea, i) => (
+                {(data.ideas ?? []).map((idea, i) => (
                   idea.url ? (
                     <a key={i} href={idea.url} target="_blank" rel="noopener noreferrer"
                       style={{ textDecoration: 'none', display: 'block' }}>
