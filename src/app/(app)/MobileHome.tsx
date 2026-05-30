@@ -348,13 +348,21 @@ export default function MobileHome({
           const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
           const DAY_NAMES = ['L','M','X','J','V','S','D'];
 
+          const nextMonth = month === 11 ? 0 : month + 1;
+          const nextYear  = month === 11 ? year + 1 : year;
           const eventDays = new Map<number, { type: string; title: string }[]>();
+          const nextMonthEventDays = new Map<number, { type: string; title: string }[]>();
           allEvents.forEach(e => {
             const d = new Date(e.startDate);
             if (d.getMonth() === month && d.getFullYear() === year) {
               const day = d.getDate();
               if (!eventDays.has(day)) eventDays.set(day, []);
               eventDays.get(day)!.push({ type: e.type, title: e.title });
+            }
+            if (d.getMonth() === nextMonth && d.getFullYear() === nextYear) {
+              const day = d.getDate();
+              if (!nextMonthEventDays.has(day)) nextMonthEventDays.set(day, []);
+              nextMonthEventDays.get(day)!.push({ type: e.type, title: e.title });
             }
           });
 
@@ -380,9 +388,9 @@ export default function MobileHome({
                     const isNextMonth = dayNum > daysInMonth;
                     const displayDay = isNextMonth ? dayNum - daysInMonth : dayNum;
                     const isToday = isCurrentMonth && displayDay === now.getDate();
-                    const evs = isCurrentMonth ? (eventDays.get(displayDay) ?? []) : [];
+                    const evs = isCurrentMonth ? (eventDays.get(displayDay) ?? []) : (nextMonthEventDays.get(displayDay) ?? []);
                     return (
-                      <div key={`cell-${i}`} style={{ position: 'relative', fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: isToday ? 'var(--gold2)' : isCurrentMonth ? 'var(--text2)' : 'var(--text3)', textAlign: 'center', padding: '5px 2px 8px', lineHeight: 1, borderRadius: 4, background: isToday ? 'rgba(196,168,106,0.10)' : 'transparent', fontWeight: isToday ? 500 : 400, opacity: isCurrentMonth ? 1 : 0.3 }}>
+                      <div key={`cell-${i}`} style={{ position: 'relative', fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: isToday ? 'var(--gold2)' : isCurrentMonth ? 'var(--text2)' : 'var(--text3)', textAlign: 'center', padding: '5px 2px 8px', lineHeight: 1, borderRadius: 4, background: isToday ? 'rgba(196,168,106,0.10)' : 'transparent', fontWeight: isToday ? 500 : 400, opacity: isCurrentMonth ? 1 : 0.55 }}>
                         {displayDay}
                         {evs.length > 0 && (
                           <div style={{ position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 2 }}>
