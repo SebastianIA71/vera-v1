@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-const APP_VERSION = 'v.29';
+const APP_VERSION = 'v.30';
 
 export default function MobilePageHeader({ title }: { title: string }) {
   return (
@@ -33,3 +33,4 @@ export default function MobilePageHeader({ title }: { title: string }) {
     </div>
   );
 }
+

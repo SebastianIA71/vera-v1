@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getDailyQuote, parseQuote } from '@/lib/quotes';
+import { startAuthentication } from '@simplewebauthn/browser';
 
 type LockState = 'faceid' | 'pin';
 
@@ -101,10 +102,49 @@ export default function LockPage() {
     }
   }, [router]);
 
+  const handleFaceId = useCallback(async () => {
+    setLockState('faceid');
+    try {
+      const optRes = await fetch('/api/auth/webauthn/auth-options');
+      if (!optRes.ok) {
+        setLockState('pin');
+        setError('Face ID no configurado. Usa el PIN.');
+        setTimeout(() => setError(''), 2500);
+        return;
+      }
+      const options = await optRes.json();
+
+      const credential = await startAuthentication({ optionsJSON: options });
+
+      const verifyRes = await fetch('/api/auth/webauthn/auth-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credential),
+      });
+
+      if (verifyRes.ok) {
+        router.replace('/dashboard');
+      } else {
+        setLockState('pin');
+        setError('Face ID no reconocido');
+        setShaking(true);
+        setTimeout(() => { setShaking(false); setError(''); }, 600);
+      }
+    } catch (err: unknown) {
+      setLockState('pin');
+      if (err instanceof Error && err.name === 'NotAllowedError') {
+        setError('Cancelado');
+      } else {
+        setError('Error de Face ID');
+      }
+      setTimeout(() => setError(''), 2000);
+    }
+  }, [router]);
+
   const handleKey = useCallback(
     (key: string) => {
       if (key === 'CLR') { setPin(p => p.slice(0, -1)); return; }
-      if (key === 'FACE') { setLockState('faceid'); return; }
+      if (key === 'FACE') { handleFaceId(); return; }
 
       const next = pin + key;
       if (next.length > 6) return;
@@ -114,7 +154,7 @@ export default function LockPage() {
         submitPin(next);
       }
     },
-    [pin, submitPin]
+    [pin, submitPin, handleFaceId]
   );
 
   const dots = pin.length;
@@ -371,7 +411,7 @@ export default function LockPage() {
         {/* Face ID */}
         {biometricAvailable && (
           <button
-            onClick={() => alert('Face ID próximamente')}
+            onClick={handleFaceId}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'transparent', border: '.5px solid var(--bg4)', borderRadius: 999, padding: '10px 24px', color: 'var(--text2)', fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.18em', cursor: 'pointer', marginTop: 12 }}
           >
             <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">

@@ -1,10 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DesktopNav from './DesktopNav';
 
-const DAYS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+const DAYS = ['DOM','LUN','MAR','MIÃ‰','JUE','VIE','SÃB'];
 const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
 const pad = (n: number) => String(n).padStart(2,'0');
 
@@ -29,7 +29,7 @@ export default function DesktopShell({
   useEffect(() => {
     const tick = () => {
       const d = new Date();
-      setTime(`${DAYS[d.getDay()]} · ${d.getDate()} ${MONTHS[d.getMonth()]} · ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`);
+      setTime(`${DAYS[d.getDay()]} Â· ${d.getDate()} ${MONTHS[d.getMonth()]} Â· ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`);
     };
     tick();
     const id = setInterval(tick, 1000);
@@ -39,13 +39,13 @@ export default function DesktopShell({
 
   return (
     <div className="desktop-shell-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)', overflow: 'hidden' }}>
-      {/* TOP BAR — oculto en móvil */}
+      {/* TOP BAR â€” oculto en mÃ³vil */}
       <div className="desktop-topbar" style={{ height: 54, background: 'var(--bg)', borderBottom: '.5px solid var(--bg4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 15, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={12} height={12} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a"/></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.29</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.30</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 14, color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
@@ -93,3 +93,4 @@ function Pill({ dot, label }: { dot: string; label: string }) {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -10,7 +10,7 @@ import dynamic from 'next/dynamic';
 const CaptureSheet = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
 
-/* ─── Types ─────────────────────────────────────────── */
+/* â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 type AgentId = 'voice' | 'prio' | 'alert' | 'search' | 'executor' | 'solution';
 type AgentStatus = { status: 'running' | 'active' | 'idle' | 'error'; lastRun?: string; message?: string };
 type Task = {
@@ -21,8 +21,8 @@ type Task = {
 };
 type CompletingTask = Task & { completingAt: number };
 
-/* ─── Constants ─────────────────────────────────────── */
-const DAYS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+/* â”€â”€â”€ Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+const DAYS = ['DOM','LUN','MAR','MIÃ‰','JUE','VIE','SÃB'];
 const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -35,7 +35,7 @@ const AGENTS: { id: AgentId; label: string; icon: string; top: number; left: num
   { id: 'search',   label: 'SEARCH',   icon: 'search', top: 100, left: 112, labelPos: 'above' },
 ];
 
-/* ─── SVG icons ─────────────────────────────────────── */
+/* â”€â”€â”€ SVG icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function AgentIcon({ icon }: { icon: string }) {
   const s = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.3, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   switch (icon) {
@@ -49,7 +49,7 @@ function AgentIcon({ icon }: { icon: string }) {
   }
 }
 
-/* ─── Task border color ─────────────────────────────── */
+/* â”€â”€â”€ Task border color â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function taskBorderColor(task: Task, now: Date): string {
   const prio = task.prioFinal ?? 0;
   if (prio >= 7) return 'var(--red)';
@@ -60,7 +60,7 @@ function taskBorderColor(task: Task, now: Date): string {
   return 'transparent';
 }
 
-/* ─── Right Panel ───────────────────────────────────── */
+/* â”€â”€â”€ Right Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkDone }: {
   tasks: Task[];
   inboxCount: number;
@@ -99,10 +99,10 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
     }}>
       <div style={{ padding: '14px 18px 10px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.22em', color: 'var(--text3)' }}>
-          PUNCH LIST · HOY
+          PUNCH LIST Â· HOY
         </div>
         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', color: 'var(--text3)', marginTop: 2 }}>
-          {topTasks.length} TAREAS · {inboxCount > 0 ? `${inboxCount} INBOX` : 'INBOX OK'}
+          {topTasks.length} TAREAS Â· {inboxCount > 0 ? `${inboxCount} INBOX` : 'INBOX OK'}
         </div>
       </div>
 
@@ -135,10 +135,10 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
           })}
         </div>
 
-        {/* PRÓXIMO EVENTO */}
+        {/* PRÃ“XIMO EVENTO */}
         {nextEvent && (
           <div style={{ padding: '8px 18px 12px', borderTop: '.5px solid var(--bg2)' }}>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--purple)', marginBottom: 6 }}>PRÓXIMO EVENTO</div>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--purple)', marginBottom: 6 }}>PRÃ“XIMO EVENTO</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)' }}>{nextEvent.title}</div>
@@ -153,10 +153,10 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
           </div>
         )}
 
-        {/* PRÓXIMO VIAJE */}
+        {/* PRÃ“XIMO VIAJE */}
         {nextTrip && (
           <div style={{ padding: '8px 18px 12px', borderTop: '.5px solid var(--bg2)' }}>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--blue)', marginBottom: 6 }}>PRÓXIMO VIAJE</div>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--blue)', marginBottom: 6 }}>PRÃ“XIMO VIAJE</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)' }}>{nextTrip.title}</div>
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, color: 'var(--blue)', lineHeight: 1 }}>
@@ -206,7 +206,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
   );
 }
 
-/* ─── New Task Modal ─────────────────────────────────── */
+/* â”€â”€â”€ New Task Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function NewTaskModal({ onClose, onCreated }: { onClose: () => void; onCreated: (t: Task) => void }) {
   const [title, setTitle]           = useState('');
   const [prio, setPrio]             = useState(5);
@@ -249,8 +249,8 @@ function NewTaskModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div>
-            <label style={LABEL}>TÍTULO</label>
-            <input autoFocus value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} placeholder="Qué hay que hacer..." style={INPUT} />
+            <label style={LABEL}>TÃTULO</label>
+            <input autoFocus value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} placeholder="QuÃ© hay que hacer..." style={INPUT} />
           </div>
 
           <div>
@@ -298,7 +298,7 @@ function NewTaskModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
   );
 }
 
-/* ─── Main Client Component ─────────────────────────── */
+/* â”€â”€â”€ Main Client Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 type Kpis = {
   tasksActive: number;
   tasksDone: number;
@@ -315,7 +315,7 @@ const getKpiNodes = (kpis: Kpis) => [
   { id: 'trips',  label: 'VIAJES',  value: kpis.tripsCount,                                           color: 'var(--blue)'   },
   { id: 'events', label: 'EVENTOS', value: kpis.eventsCount,                                          color: 'var(--purple)' },
   { id: 'props',  label: 'PROPS',   value: kpis.propsCount,                                           color: 'var(--green)'  },
-  { id: 'weight', label: 'KG',      value: kpis.currentWeight !== null ? kpis.currentWeight : '—',    color: 'var(--amber)'  },
+  { id: 'weight', label: 'KG',      value: kpis.currentWeight !== null ? kpis.currentWeight : 'â€”',    color: 'var(--amber)'  },
 ];
 
 export default function DashboardClient({
@@ -367,7 +367,7 @@ export default function DashboardClient({
   useEffect(() => {
     const tick = () => {
       const d = new Date();
-      setTime(`${DAYS[d.getDay()]} · ${d.getDate()} ${MONTHS[d.getMonth()]} · ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`);
+      setTime(`${DAYS[d.getDay()]} Â· ${d.getDate()} ${MONTHS[d.getMonth()]} Â· ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`);
     };
     tick();
     const id = setInterval(tick, 1000);
@@ -422,7 +422,7 @@ export default function DashboardClient({
               <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" />
             </svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.29</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.30</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
@@ -476,7 +476,7 @@ export default function DashboardClient({
               </div>
             </div>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.2em', color: 'var(--text4)' }}>
-              6 AGENTES · TURSO SYNC
+              6 AGENTES Â· TURSO SYNC
             </div>
           </div>
 
@@ -522,7 +522,7 @@ export default function DashboardClient({
                 }} />
               ))}
 
-              {/* Connection lines — agentes */}
+              {/* Connection lines â€” agentes */}
               {AGENTS.map(agent => {
                 const status = agentStatus[agent.id]?.status ?? 'idle';
                 const isActive = status === 'running' || status === 'active';
@@ -550,7 +550,7 @@ export default function DashboardClient({
                 <div style={{ position: 'absolute', inset: '-11px', borderRadius: '50%', border: '.5px solid rgba(196,168,106,.18)' }} />
                 <div style={{ position: 'absolute', inset: '-24px', borderRadius: '50%', border: '.5px solid rgba(196,168,106,.07)' }} />
                 <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: '14px', letterSpacing: '.3em', color: 'var(--gold2)' }}>VERA</div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.2em', color: 'var(--green)', marginTop: '3px' }}>● ACTIVA</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.2em', color: 'var(--green)', marginTop: '3px' }}>â— ACTIVA</div>
               </div>
 
               {/* Agent nodes */}
@@ -588,7 +588,7 @@ export default function DashboardClient({
             {/* fin orbital */}
           </div>
 
-          {/* Botones de creación */}
+          {/* Botones de creaciÃ³n */}
           <div style={{ padding: '12px 24px 20px', flexShrink: 0, display: 'flex', flexDirection: 'row', gap: 8 }}>
             <button onClick={() => setShowNewTask(true)} style={{ flex: 1, background: 'transparent', border: '.5px solid var(--gold2)', borderRadius: '10px', padding: '12px 8px', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.16em', cursor: 'pointer' }}>
               + TAREA
@@ -599,7 +599,7 @@ export default function DashboardClient({
           </div>
         </div>
 
-        {/* RIGHT PANEL — oculto en móvil */}
+        {/* RIGHT PANEL â€” oculto en mÃ³vil */}
         {!isMobile && (activeAgent ? (
           <AgentPanel
             agentId={activeAgent}
@@ -618,7 +618,7 @@ export default function DashboardClient({
         ))}
       </div>
 
-      {/* BOTTOM BAR — solo desktop */}
+      {/* BOTTOM BAR â€” solo desktop */}
       {!isMobile && (
         <div style={{ height: '36px', background: 'var(--bg)', borderTop: '.5px solid var(--bg4)', display: 'flex', alignItems: 'center', padding: '0 24px', gap: '16px', flexShrink: 0 }}>
           {AGENTS.filter(a => agentStatus[a.id]?.status !== 'idle').map(agent => {
@@ -631,7 +631,7 @@ export default function DashboardClient({
             );
           })}
           <div style={{ marginLeft: 'auto', fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.14em', color: 'var(--text3)' }}>
-            VERA · TURSO · VERCEL
+            VERA Â· TURSO Â· VERCEL
           </div>
         </div>
       )}
@@ -650,7 +650,7 @@ export default function DashboardClient({
   );
 }
 
-/* ─── NavItem helper ────────────────────────────────── */
+/* â”€â”€â”€ NavItem helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function Pill({ dot, label }: { dot: string; label: string }) {
   const colors: Record<string, string> = { red: 'var(--red)', amber: 'var(--amber)', green: 'var(--green)' };
   return (
@@ -660,4 +660,5 @@ function Pill({ dot, label }: { dot: string; label: string }) {
     </div>
   );
 }
+
 

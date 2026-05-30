@@ -13,6 +13,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
     "@libsql/client": "^0.17.3",
+    "@simplewebauthn/browser": "^13.3.0",
+    "@simplewebauthn/server": "^13.3.1",
     "axios": "^1.16.1",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.2",

@@ -130,6 +130,16 @@ export const contracts = sqliteTable('contracts', {
   notes: text('notes'),
 });
 
+export const webauthnCredentials = sqliteTable('webauthn_credentials', {
+  id:           integer('id').primaryKey({ autoIncrement: true }),
+  credentialId: text('credential_id').notNull().unique(),
+  publicKey:    text('public_key').notNull(),
+  counter:      integer('counter').notNull().default(0),
+  deviceName:   text('device_name'),
+  createdAt:    integer('created_at', { mode: 'timestamp' }).defaultNow(),
+  lastUsedAt:   integer('last_used_at', { mode: 'timestamp' }),
+});
+
 export const contacts = sqliteTable('contacts', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
