@@ -15,7 +15,10 @@ export default function SettingsPage() {
     setMessage('');
     try {
       const optRes = await fetch('/api/auth/webauthn/register-options');
-      if (!optRes.ok) throw new Error('Error obteniendo opciones');
+      if (!optRes.ok) {
+        const body = await optRes.json().catch(() => ({}));
+        throw new Error(`OPTIONS ${optRes.status}: ${body.error ?? optRes.statusText}`);
+      }
       const options = await optRes.json();
 
       const credential = await startRegistration({ optionsJSON: options });
@@ -30,15 +33,13 @@ export default function SettingsPage() {
         setStatus('ok');
         setMessage('Face ID configurado correctamente');
       } else {
-        throw new Error('Verificación fallida');
+        const body = await verifyRes.json().catch(() => ({}));
+        throw new Error(`VERIFY ${verifyRes.status}: ${body.error ?? verifyRes.statusText}`);
       }
     } catch (err: unknown) {
       setStatus('error');
-      if (err instanceof Error && err.name === 'NotAllowedError') {
-        setMessage('Cancelado por el usuario');
-      } else {
-        setMessage('Error al configurar Face ID');
-      }
+      const msg = err instanceof Error ? err.message : String(err);
+      setMessage(msg);
     } finally {
       setRegistering(false);
     }
