@@ -6,6 +6,12 @@ import { webauthnCredentials } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getExpectedOrigin } from '@/lib/auth';
 
+// isoBase64URL.toBuffer equivalent — base64url → Uint8Array limpio
+function safeToBuffer(base64url: string): Uint8Array<ArrayBuffer> {
+  const buf = Buffer.from(base64url, 'base64url');
+  return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength) as Uint8Array<ArrayBuffer>;
+}
+
 const SESSION_SECRET = new TextEncoder().encode(process.env.SESSION_SECRET ?? '');
 const SESSION_DURATION = 60 * 60 * 24 * 30;
 
@@ -31,8 +37,7 @@ export async function POST(req: NextRequest) {
       expectedRPID: process.env.WEBAUTHN_RP_ID ?? 'localhost',
       credential: {
         id: cred.credentialId,
-        // Buffer extends Uint8Array — aceptado por simplewebauthn v13
-        publicKey: Buffer.from(cred.publicKey, 'base64url'),
+        publicKey: safeToBuffer(cred.publicKey), // base64url → Uint8Array correcto
         counter: cred.counter,
       },
     });
@@ -42,10 +47,7 @@ export async function POST(req: NextRequest) {
     }
 
     await db.update(webauthnCredentials)
-      .set({
-        counter: verification.authenticationInfo.newCounter,
-        lastUsedAt: new Date(),
-      })
+      .set({ counter: verification.authenticationInfo.newCounter, lastUsedAt: new Date() })
       .where(eq(webauthnCredentials.credentialId, credentialIdB64));
 
     const token = await new SignJWT({ sub: '1' })
@@ -66,6 +68,6 @@ export async function POST(req: NextRequest) {
     return res;
   } catch (err) {
     console.error('WebAuthn auth error:', err);
-    return NextResponse.json({ error: 'Error de autenticación' }, { status: 500 });
+    return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }
