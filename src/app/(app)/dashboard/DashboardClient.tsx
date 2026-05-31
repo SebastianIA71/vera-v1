@@ -7,6 +7,7 @@ import DesktopNav from '@/components/layout/DesktopNav';
 import { QUOTES } from '@/lib/quotes';
 import { getRandomPersona } from '@/lib/personas';
 import { getGreeting, personaSearchUrl, taskBorderColor } from '@/lib/utils';
+import { APP_VERSION } from '@/lib/version';
 import dynamic from 'next/dynamic';
 const CaptureSheet     = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const NewEventSheet    = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
@@ -341,7 +342,7 @@ export default function DashboardClient({
               <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" />
             </svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.1.08</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>{APP_VERSION}</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>

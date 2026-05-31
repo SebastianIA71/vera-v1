@@ -7,6 +7,7 @@ import { QUOTES } from '@/lib/quotes';
 import { getRandomPersona } from '@/lib/personas';
 import { getTodaySnm } from '@/lib/snm';
 import { getGreeting, personaSearchUrl, taskBorderColor } from '@/lib/utils';
+import { APP_VERSION } from '@/lib/version';
 
 const CaptureSheet  = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const InboxMobile   = dynamic(() => import('@/components/inbox/InboxMobile'), { ssr: false });
@@ -145,7 +146,7 @@ export default function MobileHome({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" /></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.1.08</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>{APP_VERSION}</span>
             {clockStr && (
               <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.08em', color: 'var(--text3)', fontWeight: 400 }}>{clockStr}</span>
             )}

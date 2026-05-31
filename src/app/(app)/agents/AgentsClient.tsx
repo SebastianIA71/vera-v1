@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import DesktopShell from '@/components/layout/DesktopShell';
 import MobilePageHeader from '@/components/layout/MobilePageHeader';
 import { urlB64ToUint8Array } from '@/lib/utils';
+import { APP_VERSION } from '@/lib/version';
 
 type AgentId = 'prio' | 'alert' | 'search' | 'executor' | 'solution';
 
@@ -80,7 +81,7 @@ export default function AgentsClient({
           <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 26, color: 'var(--text)', lineHeight: 1.1 }}>
             Agentes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Vera</em>
           </div>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 4 }}>v.35</div>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 4 }}>{APP_VERSION}</div>
         </div>
       </div>
 
