@@ -8,7 +8,6 @@ export async function GET(req: NextRequest) {
   const type = searchParams.get('type');
   const upcomingDays = searchParams.get('upcoming');
 
-  let query = db.select().from(events);
   const rows = await db.select().from(events).orderBy(asc(events.startDate));
 
   let filtered = rows;

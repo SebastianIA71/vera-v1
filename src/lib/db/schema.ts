@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core';
 
 export const auth = sqliteTable('auth', {
   id: integer('id').primaryKey(),
@@ -54,7 +54,11 @@ export const tasks = sqliteTable('tasks', {
   notes: text('notes'),
   isCapricho: integer('is_capricho', { mode: 'boolean' }).default(false),
   isException: integer('is_exception', { mode: 'boolean' }).default(false),
-});
+}, (t) => ({
+  statusPrioIdx: index('tasks_status_prio').on(t.status, t.prioFinal),
+  propertyIdx:   index('tasks_property').on(t.propertyId),
+  inNowIdx:      index('tasks_in_now').on(t.inNow),
+}));
 
 export const weightLog = sqliteTable('weight_log', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -68,7 +72,9 @@ export const weightLog = sqliteTable('weight_log', {
   snmDisfruta: integer('snm_disfruta', { mode: 'boolean' }),
   notes: text('notes'),
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow(),
-});
+}, (t) => ({
+  dateIdx: index('weight_log_date').on(t.date),
+}));
 
 export const events = sqliteTable('events', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -84,7 +90,10 @@ export const events = sqliteTable('events', {
   status: text('status').default('planning'),
   notes: text('notes'),
   approx: integer('approx', { mode: 'boolean' }).default(false),
-});
+}, (t) => ({
+  startDateIdx: index('events_start_date').on(t.startDate),
+  typeIdx:      index('events_type').on(t.type),
+}));
 
 export const inbox = sqliteTable('inbox', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -96,7 +105,10 @@ export const inbox = sqliteTable('inbox', {
   suggestedPropertyId: text('suggested_property_id'),
   suggestedTaskId: integer('suggested_task_id'),
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow(),
-});
+}, (t) => ({
+  processedIdx: index('inbox_processed').on(t.processed),
+  createdIdx:   index('inbox_created').on(t.createdAt),
+}));
 
 export const memory = sqliteTable('memory', {
   key: text('key').primaryKey(),
@@ -113,7 +125,9 @@ export const agentLog = sqliteTable('agent_log', {
   status: text('status'),
   durationMs: integer('duration_ms'),
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow(),
-});
+}, (t) => ({
+  agentCreatedIdx: index('agent_log_agent_created').on(t.agentId, t.createdAt),
+}));
 
 export const notifications = sqliteTable('notifications', {
   id: integer('id').primaryKey({ autoIncrement: true }),
