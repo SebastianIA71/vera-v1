@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import MobilePageHeader from '@/components/layout/MobilePageHeader';
 import DesktopShell from '@/components/layout/DesktopShell';
 import TaskDetailPanel, { TaskDetail } from '@/components/tasks/TaskDetailPanel';
+import { taskBorderColor } from '@/lib/utils';
 
 type Task = TaskDetail & { inNow?: boolean | null };
 
@@ -21,14 +22,6 @@ type Filters = {
   context: 'now' | 'stale' | null;
 };
 
-function taskBorderColor(t: Task): string {
-  const p = t.prioFinal ?? 0;
-  if (p === 10) return '#ff0040';
-  if (p >= 8) return 'var(--red)';
-  if (t.lastActionAt && Math.floor((Date.now() - new Date(t.lastActionAt).getTime()) / 86400000) >= 14 && p >= 4) return 'var(--amber)';
-  if (t.tags?.includes('creativo')) return 'var(--purple)';
-  return 'transparent';
-}
 
 function matchFilters(t: Task, f: Filters): boolean {
   if (f.propertyId && t.propertyId !== f.propertyId) return false;
@@ -243,7 +236,7 @@ export default function TasksClient({
 }
 
 function TaskRow({ task, selected, onSelect, onPrioChange }: { task: Task; selected: boolean; onSelect: (t: Task) => void; onPrioChange: (id: number, v: number) => void }) {
-  const bc = selected ? 'var(--gold2)' : taskBorderColor(task);
+  const bc = selected ? 'var(--gold2)' : taskBorderColor(task.prioFinal ?? 0, task.lastActionAt);
   const stale = task.lastActionAt ? Math.floor((Date.now() - new Date(task.lastActionAt).getTime()) / 86400000) : 0;
 
   const changePrio = async (e: React.MouseEvent, delta: number) => {

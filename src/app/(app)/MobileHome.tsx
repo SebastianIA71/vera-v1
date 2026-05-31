@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { QUOTES } from '@/lib/quotes';
 import { getRandomPersona } from '@/lib/personas';
 import { getTodaySnm } from '@/lib/snm';
+import { getGreeting, personaSearchUrl, taskBorderColor } from '@/lib/utils';
 
 const CaptureSheet  = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const InboxMobile   = dynamic(() => import('@/components/inbox/InboxMobile'), { ssr: false });
@@ -19,10 +20,6 @@ type InboxItem = { id: number; content: string; source?: string | null; suggeste
 
 const SNM_ICONS = ['💧', '🚶', '💪', '🧘', '🍴'];
 const SNM_KEYS = ['snmAgua', 'snmCaminar', 'snmEntreno', 'snmEscucha', 'snmDisfruta'] as const;
-
-function personaSearchUrl(name: string): string {
-  return `https://www.google.com/search?q=${encodeURIComponent(`"${name}" fictional character`)}`;
-}
 
 function SectionLabel({ label, color, meta, link, onLinkClick }: { label: string; color?: string; meta?: string; link?: string; onLinkClick?: () => void }) {
   return (
@@ -77,7 +74,6 @@ export default function MobileHome({
   const [showCapture, setShowCapture] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
   const [showNewEvent, setShowNewEvent] = useState(false);
-  const [greeting, setGreeting] = useState('');
   const [statusLine, setStatusLine] = useState('');
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const [persona] = useState(() => getRandomPersona());
@@ -107,15 +103,6 @@ export default function MobileHome({
   );
 
   useEffect(() => {
-    const h = new Date().getHours();
-    const greetings = [
-      ['morning', 'good morning'],
-      ['afternoon', 'good afternoon'],
-      ['evening', 'good evening'],
-    ];
-    const g = h < 12 ? greetings[0] : h < 19 ? greetings[1] : greetings[2];
-    setGreeting(g[1]);
-
     const parts: string[] = [];
     if (weightLogs[0]) parts.push(`${weightLogs[0].value} KG`);
     parts.push('10,2K');
@@ -133,13 +120,6 @@ export default function MobileHome({
   const todaySNM = latestWeight
     ? SNM_KEYS.map(k => ({ icon: SNM_ICONS[SNM_KEYS.indexOf(k)], on: !!latestWeight[k] }))
     : SNM_KEYS.map((_, i) => ({ icon: SNM_ICONS[i], on: false }));
-
-  const taskBorderColor = (t: Task) => {
-    const p = t.prioFinal ?? 0;
-    if (p >= 8) return 'var(--red)';
-    if (p >= 7) return 'var(--amber)';
-    return 'var(--purple)';
-  };
 
   const wPath = weightTrendPath(weightLogs);
 
@@ -197,7 +177,7 @@ export default function MobileHome({
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 30, lineHeight: 1.15, color: 'var(--text)', letterSpacing: '-.01em' }}>
             {'g. '}
-            <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>{greeting.split(' ').slice(-1)[0]}</em>
+            <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>{getGreeting()}</em>
             {', '}
             <a
               href={personaSearchUrl(persona)}
@@ -226,7 +206,7 @@ export default function MobileHome({
             {urgentTasks.map(t => (
               <div key={t.id} style={{
                 background: 'var(--bg2)', border: `.5px solid var(--bg4)`,
-                borderLeft: `2px solid ${taskBorderColor(t)}`,
+                borderLeft: `2px solid ${taskBorderColor(t.prioFinal ?? 0, t.lastActionAt)}`,
                 borderRadius: 14, padding: '13px 13px 13px 14px', marginBottom: 7,
                 display: 'flex', alignItems: 'flex-start', gap: 10,
               }}>

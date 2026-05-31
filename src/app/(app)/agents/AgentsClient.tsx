@@ -3,17 +3,9 @@
 import { useState, useEffect } from 'react';
 import DesktopShell from '@/components/layout/DesktopShell';
 import MobilePageHeader from '@/components/layout/MobilePageHeader';
+import { urlB64ToUint8Array } from '@/lib/utils';
 
 type AgentId = 'prio' | 'alert' | 'search' | 'executor' | 'solution';
-
-function urlB64ToUint8Array(b64: string): ArrayBuffer {
-  const padding = '='.repeat((4 - (b64.length % 4)) % 4);
-  const base64 = (b64 + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const raw = atob(base64);
-  const arr = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-  return arr.buffer;
-}
 
 const BTN: React.CSSProperties = {
   width: '100%', padding: '14px 16px', borderRadius: 12,

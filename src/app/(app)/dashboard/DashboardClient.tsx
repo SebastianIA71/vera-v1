@@ -6,6 +6,7 @@ import AgentPanel from '@/components/command/AgentPanel';
 import DesktopNav from '@/components/layout/DesktopNav';
 import { QUOTES } from '@/lib/quotes';
 import { getRandomPersona } from '@/lib/personas';
+import { getGreeting, personaSearchUrl, taskBorderColor } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 const CaptureSheet     = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const NewEventSheet    = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
@@ -52,17 +53,6 @@ function AgentIcon({ icon }: { icon: string }) {
     case 'search': return <svg viewBox="0 0 24 24" width={20} height={20} {...s}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
     default:       return null;
   }
-}
-
-/* ─── Task border color ─────────────────────────────── */
-function taskBorderColor(task: Task, now: Date): string {
-  const prio = task.prioFinal ?? 0;
-  if (prio >= 7) return 'var(--red)';
-  if (task.lastActionAt) {
-    const days = Math.floor((now.getTime() - new Date(task.lastActionAt).getTime()) / 86400000);
-    if (days >= 14 && prio >= 4) return 'var(--amber)';
-  }
-  return 'transparent';
 }
 
 /* ─── Right Panel ───────────────────────────────────── */
@@ -223,11 +213,6 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
       </div>
     </div>
   );
-}
-
-/* ─── Persona search URL ────────────────────────────── */
-function personaSearchUrl(name: string): string {
-  return `https://www.google.com/search?q=${encodeURIComponent(`"${name}" fictional character`)}`;
 }
 
 /* ─── Main Client Component ─────────────────────────── */
@@ -404,7 +389,7 @@ export default function DashboardClient({
                 Command <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Centre</em>
               </div>
               <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: '13px', color: 'var(--text3)', letterSpacing: '.01em', marginTop: 2 }}>
-                good {(() => { const h = new Date().getHours(); return h < 12 ? 'morning' : h < 19 ? 'afternoon' : 'evening'; })()},{' '}
+                good {getGreeting()},{' '}
                 <a
                   href={personaSearchUrl(persona)}
                   target="_blank"
