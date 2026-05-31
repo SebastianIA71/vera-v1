@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const maxDuration = 20;
 import { rateLimit } from '@/lib/rateLimit';
 import { db } from '@/lib/db';
 import { tasks, events, weightLog, inbox, memory } from '@/lib/db/schema';

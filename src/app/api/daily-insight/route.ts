@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+
+export const maxDuration = 20;
 import { db } from '@/lib/db';
 import { tasks, memory } from '@/lib/db/schema';
 import { ne, and, eq } from 'drizzle-orm';
