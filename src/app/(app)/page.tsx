@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
 import { tasks, events, weightLog, inbox, properties } from '@/lib/db/schema';
 import { ne, desc, eq } from 'drizzle-orm';
-import MobileHome from './MobileHome';
+import HomeRouter from './HomeRouter';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,7 +43,7 @@ export default async function AppRootPage() {
   }).filter(Boolean) as { prop: typeof allProperties[0]; task: typeof allTasks[0] }[];
 
   return (
-    <MobileHome
+    <HomeRouter
       urgentTasks={urgentTasks}
       nextTrip={nextTrip && daysToNextTrip ? { title: nextTrip.title, daysTo: daysToNextTrip, startDate: nextTrip.startDate?.toISOString() ?? '', who: nextTrip.who ?? '' } : null}
       nextEvent={nextEvent && daysToNextEvent ? { title: nextEvent.title, daysTo: daysToNextEvent, startDate: nextEvent.startDate?.toISOString() ?? '', who: nextEvent.who ?? '' } : null}
@@ -57,3 +57,4 @@ export default async function AppRootPage() {
     />
   );
 }
+
