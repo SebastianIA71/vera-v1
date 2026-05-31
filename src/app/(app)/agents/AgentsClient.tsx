@@ -7,6 +7,18 @@ import { urlB64ToUint8Array } from '@/lib/utils';
 
 type AgentId = 'prio' | 'alert' | 'search' | 'executor' | 'solution';
 
+function formatLastRun(iso: string): string {
+  const d = new Date(iso);
+  const diffMs = Date.now() - d.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffMins < 2) return 'AHORA MISMO';
+  if (diffMins < 60) return `HACE ${diffMins} MIN`;
+  if (diffHours < 24) return `HACE ${diffHours}H`;
+  return `HACE ${diffDays}D`;
+}
+
 const BTN: React.CSSProperties = {
   width: '100%', padding: '14px 16px', borderRadius: 12,
   background: 'transparent', cursor: 'pointer',
@@ -31,6 +43,14 @@ export default function AgentsClient({
 }) {
   const [active, setActive] = useState<AgentId | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [agentStatus, setAgentStatus] = useState<Record<string, { status: string; lastRun?: string; message?: string }>>({});
+
+  useEffect(() => {
+    fetch('/api/agents/status')
+      .then(r => r.json())
+      .then(d => setAgentStatus(d))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 769);
@@ -85,6 +105,11 @@ export default function AgentsClient({
               <div style={{ flex: 1, textAlign: 'left' }}>
                 <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18 }}>{sec.label}</div>
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 12, letterSpacing: '.12em', color: 'var(--text3)', marginTop: 3 }}>{sec.desc}</div>
+                {agentStatus[sec.id]?.lastRun && (
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text3)', marginTop: 4 }}>
+                    ÚLTIMA EJECUCIÓN · {formatLastRun(agentStatus[sec.id].lastRun!)}
+                  </div>
+                )}
               </div>
               <span style={{ color: 'var(--text3)', fontSize: 16 }}>{active === sec.id ? '▲' : '▼'}</span>
             </button>

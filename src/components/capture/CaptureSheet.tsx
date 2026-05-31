@@ -115,6 +115,11 @@ export default function CaptureSheet({ onClose }: Props) {
           tags: result.chips?.join(',') ?? null,
         }),
       });
+      await fetch(`/api/inbox/${result.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ processed: true }),
+      });
       setSaved(true);
       setTimeout(onClose, 300);
     } catch {

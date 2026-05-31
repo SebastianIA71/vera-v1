@@ -10,7 +10,7 @@ import { callClaude } from '@/lib/claude';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
   const key = `daily_insight_${today}`;
 
   // Devolver cached si ya existe hoy

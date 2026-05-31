@@ -21,6 +21,17 @@ type InboxItem = { id: number; content: string; source?: string | null; suggeste
 const SNM_ICONS = ['💧', '🚶', '💪', '🧘', '🍴'];
 const SNM_KEYS = ['snmAgua', 'snmCaminar', 'snmEntreno', 'snmEscucha', 'snmDisfruta'] as const;
 
+function transportIcon(t: string): string {
+  const v = t.toLowerCase();
+  if (v.includes('avi') || v.includes('vuelo') || v.includes('fly') || v.includes('avion')) return '✈';
+  if (v.includes('tren') || v.includes('train') || v.includes('ave') || v.includes('renfe')) return '🚄';
+  if (v.includes('coche') || v.includes('car') || v.includes('auto')) return '🚗';
+  if (v.includes('barco') || v.includes('ferry') || v.includes('boat')) return '⛵';
+  if (v.includes('bus') || v.includes('coach')) return '🚌';
+  if (v.includes('moto')) return '🏍';
+  return '🧳';
+}
+
 function SectionLabel({ label, color, meta, link, onLinkClick }: { label: string; color?: string; meta?: string; link?: string; onLinkClick?: () => void }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
@@ -62,7 +73,7 @@ export default function MobileHome({
   allEvents = [],
 }: {
   urgentTasks: Task[];
-  nextTrip: { title: string; daysTo: number; startDate: string; who: string } | null;
+  nextTrip: { title: string; daysTo: number; startDate: string; who: string; transport?: string } | null;
   nextEvent: { title: string; daysTo: number; startDate: string; who: string } | null;
   weightLogs: WeightLog[];
   inboxCount: number;
@@ -202,7 +213,7 @@ export default function MobileHome({
         {/* Now section */}
         {urgentTasks.length > 0 && (
           <div style={{ marginBottom: 28 }}>
-            <SectionLabel label="Now" meta={`${urgentTasks.length} ACTIVAS`} link="→" onLinkClick={() => router.push('/tasks')} />
+            <SectionLabel label="Now" meta={`${urgentTasks.length} URGENTES`} link="→" onLinkClick={() => router.push('/tasks')} />
             {urgentTasks.map(t => (
               <div key={t.id} style={{
                 background: 'var(--bg2)', border: `.5px solid var(--bg4)`,
@@ -286,7 +297,7 @@ export default function MobileHome({
 
         {/* Upcoming events (social) */}
         <div style={{ marginBottom: 28 }}>
-          <SectionLabel label="Upcoming Events" link="→" onLinkClick={() => router.push('/trips')} />
+          <SectionLabel label="Upcoming Events" link="→" onLinkClick={() => router.push('/trips?type=social')} />
         {nextEvent ? (
           <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
@@ -322,6 +333,11 @@ export default function MobileHome({
                   {nextTrip.who && (
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 2 }}>
                       {nextTrip.who.toUpperCase()}
+                    </div>
+                  )}
+                  {nextTrip.transport && (
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>
+                      {transportIcon(nextTrip.transport)}
                     </div>
                   )}
                 </div>

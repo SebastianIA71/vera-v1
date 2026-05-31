@@ -20,6 +20,7 @@ type Filters = {
   prioRange: '8-9' | '6-7' | '0-5' | null;
   status: string | null;
   context: 'now' | 'stale' | null;
+  search: string;
 };
 
 
@@ -37,6 +38,13 @@ function matchFilters(t: Task, f: Filters): boolean {
     if (!t.lastActionAt) return false;
     const days = Math.floor((Date.now() - new Date(t.lastActionAt).getTime()) / 86400000);
     if (days < 14 || (t.prioFinal ?? 0) < 4) return false;
+  }
+  if (f.search.trim()) {
+    const q = f.search.toLowerCase();
+    const inTitle = t.title?.toLowerCase().includes(q);
+    const inTags = t.tags?.toLowerCase().includes(q);
+    const inDetail = t.detail?.toLowerCase().includes(q);
+    if (!inTitle && !inTags && !inDetail) return false;
   }
   return true;
 }
@@ -70,7 +78,7 @@ export default function TasksClient({
   const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [selected, setSelected] = useState<Task | null>(null);
-  const [filters, setFilters] = useState<Filters>({ propertyId: null, prioRange: null, status: null, context: null });
+  const [filters, setFilters] = useState<Filters>({ propertyId: null, prioRange: null, status: null, context: null, search: '' });
   const [showNewTask, setShowNewTask] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -82,14 +90,14 @@ export default function TasksClient({
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  const hasFilters = Object.values(filters).some(Boolean);
+  const hasFilters = Object.values(filters).some(v => v !== null && v !== '');
 
   const filtered = useMemo(() => tasks.filter(t => matchFilters(t, filters)), [tasks, filters]);
   const nowTasks = filtered.filter(t => t.inNow && t.status !== 'done');
   const restTasks = filtered.filter(t => !t.inNow && t.status !== 'done');
   const doneTasks = filtered.filter(t => t.status === 'done');
 
-  const clearFilters = () => setFilters({ propertyId: null, prioRange: null, status: null, context: null });
+  const clearFilters = () => setFilters({ propertyId: null, prioRange: null, status: null, context: null, search: '' });
 
   const markDone = (id: number) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t));
@@ -145,12 +153,24 @@ export default function TasksClient({
               Tareas <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>activas</em>
             </div>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text4)' }}>
-              {filtered.length} TAREAS · {nowTasks.length} NOW
+              {filtered.filter(t => t.status !== 'done').length} TAREAS · {nowTasks.length} NOW
             </div>
           </div>
 
           {/* Filtros */}
           <div style={{ paddingBottom: 12, borderBottom: '.5px solid var(--bg4)' }}>
+          <input
+            type="text"
+            placeholder="Buscar tarea, etiqueta..."
+            value={filters.search}
+            onChange={e => setFilters(f => ({ ...f, search: e.target.value }))}
+            style={{
+              background: 'var(--bg3)', border: '.5px solid var(--bg4)',
+              borderRadius: 8, padding: '8px 12px', color: 'var(--text)',
+              fontFamily: 'var(--font-dm-sans)', fontSize: 13, outline: 'none',
+              width: '100%', marginBottom: 8,
+            }}
+          />
           <div className="mobile-filter-toggle" onClick={() => setShowFilters(p => !p)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', marginBottom: showFilters ? 10 : 0 }}>
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em', color: hasFilters ? 'var(--gold2)' : 'var(--text3)' }}>{hasFilters ? 'FILTROS ACTIVOS' : 'FILTRAR'}</span>
             <span style={{ color: 'var(--text3)', fontSize: 12 }}>{showFilters ? '↑' : '↓'}</span>
