@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import DesktopShell from '@/components/layout/DesktopShell';
 import dynamic from 'next/dynamic';
 const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
@@ -35,6 +36,8 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
   const [selected, setSelected] = useState<Trip | null>(trips[0] ?? null);
   const [isMobile, setIsMobile] = useState(false);
   const [showNewEvent, setShowNewEvent] = useState(false);
+  const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 769);
@@ -164,7 +167,7 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
 
       {/* Detalle */}
       {selected ? (
-        <TripDetail trip={selected} />
+        <TripDetail trip={selected} onEdit={() => setEditingTrip(selected)} />
       ) : (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8 }}>
           <div style={{ fontFamily: 'var(--font-syne)', fontSize: 32, color: 'var(--gold)' }}>✦</div>
@@ -172,11 +175,18 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
         </div>
       )}
       {showNewEvent && <NewEventSheet type="viaje" onClose={() => setShowNewEvent(false)} onCreated={() => setShowNewEvent(false)} />}
+      {editingTrip && (
+        <NewEventSheet
+          event={editingTrip}
+          onClose={() => setEditingTrip(null)}
+          onUpdated={() => { setEditingTrip(null); router.refresh(); }}
+        />
+      )}
     </DesktopShell>
   );
 }
 
-function TripDetail({ trip }: { trip: Trip }) {
+function TripDetail({ trip, onEdit }: { trip: Trip; onEdit?: () => void }) {
   const days = daysUntil(trip.startDate);
   const st = STATUS_LABELS[trip.status ?? 'planning'] ?? STATUS_LABELS.planning;
 
@@ -185,6 +195,11 @@ function TripDetail({ trip }: { trip: Trip }) {
       <div style={{ padding: '14px 20px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)' }}>DETALLE</span>
+          {onEdit && (
+            <button onClick={onEdit} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', color: 'var(--text3)', background: 'none', border: '.5px solid var(--bg4)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+              EDITAR
+            </button>
+          )}
           <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', padding: '3px 9px', borderRadius: 999, border: `.5px solid ${st.border}`, color: st.color }}>{st.label}</span>
         </div>
         <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 20, color: 'var(--text)', letterSpacing: '-.01em', marginBottom: 8 }}>{trip.title}</div>

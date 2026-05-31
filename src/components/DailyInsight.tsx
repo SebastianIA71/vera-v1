@@ -51,7 +51,7 @@ export default function DailyInsight() {
         alignItems: 'baseline', marginBottom: 10 }}>
         <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 15,
           letterSpacing: '.22em', color: 'var(--gold2)', textTransform: 'uppercase' }}>
-          Daily Find
+          Daily Pick
         </span>
         <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em' }}>
           {data?.date ?? ''}
@@ -83,11 +83,17 @@ export default function DailyInsight() {
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6,
               marginBottom: 12, paddingBottom: 10, borderBottom: '.5px solid var(--bg4)' }}>
-              <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12,
-                color: 'var(--text)', flex: 1, overflow: 'hidden',
-                textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {data.taskTitle}
-              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12,
+                  color: 'var(--text)', overflow: 'hidden',
+                  textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                  {data.taskTitle}
+                </span>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em',
+                  color: 'var(--text3)', marginTop: 2 }}>
+                  PERSPECTIVAS PARA DECIDIR
+                </div>
+              </div>
               <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10,
                 color: 'var(--text3)', flexShrink: 0 }}>p{data.taskPrio}</span>
             </div>

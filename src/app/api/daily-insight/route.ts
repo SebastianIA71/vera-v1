@@ -34,7 +34,7 @@ export async function GET() {
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
   const task = candidates[dayOfYear % candidates.length];
 
-  const searchResult = await runSearchAgent(`alternativa "${task.title}" DIY low cost`);
+  const searchResult = await runSearchAgent(`"${task.title}" opciones comparativa guía`);
 
   let ideas: { title: string; url?: string; description: string }[] = [];
   let mode = 'search';
@@ -46,7 +46,7 @@ export async function GET() {
   } else {
     mode = 'ai';
     const claudeResult = await callClaude(
-      `Tarea: "${task.title}". Dame 3 alternativas concretas DIY o low cost. Solo JSON array: [{"title":"...","description":"..."}]. Sin markdown.`,
+      `Tarea pendiente de Sebastián: "${task.title}". Necesita información para tomar una mejor decisión al respecto. Dame 3 perspectivas o enfoques distintos para abordarla, con pros/contras concretos. Solo JSON array: [{"title":"...","description":"..."}]. Sin markdown.`,
       'Eres Vera. Responde solo JSON.',
       400,
     );

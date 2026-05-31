@@ -55,6 +55,30 @@ export default function SettingsPage() {
           VERA · CONFIGURACIÓN
         </div>
 
+        {/* Captura por email */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.22em', color: 'var(--text3)', marginBottom: 14 }}>
+            CAPTURA POR EMAIL
+          </div>
+          <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 12, padding: '16px 18px' }}>
+            <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text)', marginBottom: 4 }}>
+              Enviar email → crear tarea
+            </div>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em', marginBottom: 16, lineHeight: 1.5 }}>
+              Envía un email desde tu cuenta a esta dirección. VERA lo procesa y crea la tarea automáticamente.
+            </div>
+            {process.env.NEXT_PUBLIC_INBOUND_EMAIL ? (
+              <div style={{ background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '10px 14px', fontFamily: 'var(--font-dm-mono)', fontSize: 12, color: 'var(--gold2)', letterSpacing: '.06em', userSelect: 'all' }}>
+                {process.env.NEXT_PUBLIC_INBOUND_EMAIL}
+              </div>
+            ) : (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em' }}>
+                Configura NEXT_PUBLIC_INBOUND_EMAIL en Vercel.
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Seguridad */}
         <div style={{ marginBottom: 28 }}>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.22em', color: 'var(--text3)', marginBottom: 14 }}>

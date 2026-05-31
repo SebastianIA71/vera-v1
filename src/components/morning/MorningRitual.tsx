@@ -18,6 +18,17 @@ const SNM = [
 
 const WEIGHT_DELTAS = [-0.5, -0.2, 0, +0.2, +0.5];
 
+function getTimeGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Buenos días';
+  if (h < 19) return 'Buenas tardes';
+  return 'Buenas noches';
+}
+
+function taskColor(prio: number): string {
+  return prio >= 8 ? 'var(--red)' : prio >= 6 ? 'var(--amber)' : 'var(--purple)';
+}
+
 function ProgressBar({ step }: { step: number }) {
   return (
     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--bg4)', zIndex: 9 }}>
@@ -28,6 +39,36 @@ function ProgressBar({ step }: { step: number }) {
         transition: 'width .4s ease',
         zIndex: 10,
       }} />
+    </div>
+  );
+}
+
+function FocusTaskCard({ task, isFocus }: { task: Task; isFocus: boolean }) {
+  const prio = task.prioFinal ?? 0;
+  const color = taskColor(prio);
+  return (
+    <div style={{
+      background: isFocus ? 'var(--bg2)' : 'transparent',
+      border: `.5px solid ${isFocus ? color : 'var(--bg4)'}`,
+      borderLeft: isFocus ? `2px solid ${color}` : '.5px solid var(--bg4)',
+      borderRadius: 11, padding: '10px 12px', marginBottom: 6,
+      opacity: isFocus ? 1 : 0.45,
+      display: 'flex', gap: 8, alignItems: 'flex-start',
+    }}>
+      <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 12, color: isFocus ? color : 'var(--text3)', minWidth: 16 }}>
+        {task.prioFinal}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {isFocus && (
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.18em', color, marginBottom: 3 }}>FOCO</div>
+        )}
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, lineHeight: 1.3, color: 'var(--text)' }}>{task.title}</div>
+        {task.propertyId && (
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 3 }}>
+            {task.propertyId.toUpperCase()}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -59,8 +100,6 @@ export default function MorningRitual({
     }
   }, []);
   const [weightSaved, setWeightSaved] = useState(false);
-
-  // Step 3 — focus (tasks already passed as props)
 
   // Step 4 — briefing
   const [briefing, setBriefing] = useState<string | null>(null);
@@ -120,31 +159,19 @@ export default function MorningRitual({
 
       <div style={{ flex: 1, padding: '42px 18px 24px', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
 
-        {/* ── PASO 1: Saludo + notificaciones ── */}
+        {/* ── PASO 1: Saludo + urgentes ── */}
         {step === 1 && (
           <>
             <div style={metaStyle}>
               <span style={stepIdStyle}>RITUAL · 1 DE 5</span>
               <button style={skipStyle} onClick={next}>SALTAR →</button>
             </div>
-            <h1 style={h1Style}>Good morning,<br /><em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Sebastián.</em></h1>
+            <h1 style={h1Style}>{getTimeGreeting()},<br /><em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Sebastián.</em></h1>
             <p style={subStyle}>{timeStr} · {urgentTasks.length} URGENTES</p>
 
-            {urgentTasks.slice(0, 3).map((t, i) => {
-              const prio = t.prioFinal ?? 0;
-              const color = prio >= 8 ? 'var(--red)' : prio >= 6 ? 'var(--amber)' : 'var(--purple)';
-              return (
-                <div key={t.id} style={{ background: 'var(--bg2)', border: `.5px solid var(--bg4)`, borderLeft: `2px solid ${color}`, borderRadius: 11, padding: '10px 12px', marginBottom: 6, display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: color, flexShrink: 0, marginTop: 3, display: 'inline-block' }} />
-                  <div>
-                    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, color: 'var(--text)', lineHeight: 1.3 }}>{t.title}</div>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.12em', color: 'var(--text2)', marginTop: 3 }}>
-                      PRIO {t.prioFinal}{t.propertyId ? ` · ${t.propertyId.toUpperCase()}` : ''}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {urgentTasks.map((t, i) => (
+              <FocusTaskCard key={t.id} task={t} isFocus={i < 3} />
+            ))}
 
             <div style={{ marginTop: 'auto', textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--text3)', paddingTop: 16 }}>DESLIZA →</div>
           </>
@@ -160,7 +187,6 @@ export default function MorningRitual({
             <h1 style={h1Style}>¿Cuánto pesas<br /><em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>hoy?</em></h1>
             <p style={subStyle}>ÚLTIMO · {lastWeightEntry ? `${lastWeightEntry.value} KG · ${lastWeightEntry.date}` : 'sin registro'}</p>
 
-            {/* Quick weight buttons */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, marginBottom: 12 }}>
               {WEIGHT_DELTAS.map(d => {
                 const base = lastWeightEntry?.value ?? 75;
@@ -215,31 +241,11 @@ export default function MorningRitual({
               <button style={skipStyle} onClick={next}>SALTAR →</button>
             </div>
             <h1 style={h1Style}>Foco de<br /><em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>hoy.</em></h1>
-            <p style={subStyle}>{Math.min(urgentTasks.length, 3)} URGENTES</p>
+            <p style={subStyle}>{urgentTasks.length} URGENTES · FOCO EN LAS 3 PRIMERAS</p>
 
-            {urgentTasks.slice(0, 5).map(t => {
-              const isVera = (t.prioFinal ?? 0) < 7;
-              return (
-                <div key={t.id} style={{
-                  background: isVera ? 'transparent' : 'var(--bg2)',
-                  border: `.5px solid ${isVera ? '#2d2640' : 'var(--bg4)'}`,
-                  borderRadius: 11, padding: '11px 12px', marginBottom: 6,
-                  display: 'flex', gap: 8, alignItems: 'flex-start',
-                }}>
-                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 12, color: isVera ? 'var(--purple)' : 'var(--gold)', minWidth: 16 }}>
-                    {isVera ? '✦' : t.prioFinal}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    {isVera && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.18em', color: 'var(--purple)', marginBottom: 3 }}>VERA SUGIERE</div>}
-                    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, lineHeight: 1.3, color: 'var(--text)' }}>{t.title}</div>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 3 }}>
-                      {t.propertyId?.toUpperCase()}
-                    </div>
-                  </div>
-                  <div style={{ width: 17, height: 17, borderRadius: '50%', border: '.5px solid var(--text3)', flexShrink: 0, marginTop: 1 }} />
-                </div>
-              );
-            })}
+            {urgentTasks.map((t, i) => (
+              <FocusTaskCard key={t.id} task={t} isFocus={i < 3} />
+            ))}
           </>
         )}
 
@@ -285,7 +291,6 @@ export default function MorningRitual({
             </div>
             <div style={{ height: 8 }} />
 
-            {/* Gold ring */}
             <div style={{ width: 68, height: 68, margin: '4px auto 14px', position: 'relative' }}>
               <svg width={68} height={68} viewBox="0 0 68 68" style={{ transform: 'rotate(-90deg)' }}>
                 <circle cx={34} cy={34} r={28} fill="none" stroke="var(--bg4)" strokeWidth={2} />
@@ -331,7 +336,6 @@ export default function MorningRitual({
         )}
       </div>
 
-      {/* Next button (pasos 1-4) */}
       {step < 5 && (
         <div style={{ padding: '0 18px 24px', flexShrink: 0 }}>
           <button onClick={next} style={{ width: '100%', padding: 12, borderRadius: 11, background: 'transparent', border: '.5px solid var(--gold2)', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', cursor: 'pointer' }}>

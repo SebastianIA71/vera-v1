@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { tasks, events, weightLog } from '@/lib/db/schema';
-import { ne, desc } from 'drizzle-orm';
+import { ne, desc, asc } from 'drizzle-orm';
 import MorningRitual from '@/components/morning/MorningRitual';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,7 @@ export default async function MorningPage() {
 
   const [allTasks, allEvents, weights] = await Promise.all([
     db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)).limit(20),
-    db.select().from(events).orderBy(desc(events.startDate)).limit(10),
+    db.select().from(events).orderBy(asc(events.startDate)).limit(20),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(1),
   ]);
 
