@@ -96,6 +96,9 @@ Lee este fichero completo antes de escribir una sola línea de código.
 
 ---
 
+## Importante
+** Para cada vez que actualicemos la mas minima cosa. Quiero que se actualice el numero de version que aparece en todas las paginas al lado de VERA. Ahora estamos en la v.35. Vamos a seguir con la v.1.01 e incrementando. No lo olvides que si no no hay quien siga actualizaciones
+
 ## STACK TÉCNICO
 
 ```bash
