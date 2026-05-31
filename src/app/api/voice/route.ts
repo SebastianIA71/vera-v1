@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { inbox } from '@/lib/db/schema';
 import { callClaude } from '@/lib/claude';
+import { rateLimit } from '@/lib/rateLimit';
 
 const CLASSIFY_PROMPT = `Eres Vera. El usuario acaba de dictar una captura de voz.
 
@@ -20,6 +21,10 @@ Reglas:
 - Solo JSON, sin texto adicional.`;
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
+  if (!rateLimit(ip, 20, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
   const { transcript } = await req.json();
   if (!transcript?.trim()) {
     return NextResponse.json({ error: 'transcript required' }, { status: 400 });

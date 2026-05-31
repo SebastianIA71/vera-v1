@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit } from '@/lib/rateLimit';
 import { db } from '@/lib/db';
 import { tasks, events, weightLog, inbox, memory } from '@/lib/db/schema';
 import { ne, desc, eq } from 'drizzle-orm';
@@ -6,7 +7,11 @@ import { buildSystemPrompt, callClaude } from '@/lib/claude';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
+  if (!rateLimit(ip, 5, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
   const key = `morning_briefing_${today}`;
