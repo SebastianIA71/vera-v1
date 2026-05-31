@@ -1,5 +1,7 @@
 import { capabilities } from '@/lib/capabilities';
 import { callClaude } from '@/lib/claude';
+import { db } from '@/lib/db';
+import { agentLog } from '@/lib/db/schema';
 
 export type SolutionOption = {
   type: 'diy' | 'mixed' | 'pro';
@@ -16,7 +18,15 @@ export type SolutionResult =
   | { mode: 'no_ai'; notice: string };
 
 export async function runSolutionAgent(problem: string): Promise<SolutionResult> {
+  const startTime = Date.now();
+
   if (!capabilities.ai.available) {
+    await db.insert(agentLog).values({
+      agentId: 'solution', action: 'solution',
+      input: problem.slice(0, 200),
+      output: 'Sin IA disponible',
+      status: 'error', durationMs: Date.now() - startTime,
+    }).catch(() => {});
     return { mode: 'no_ai', notice: 'Sin IA disponible. Inténtalo más tarde.' };
   }
 
@@ -34,12 +44,32 @@ Solo JSON. Pasos concretos. Coste realista en euros. Siempre las 3 opciones.`;
 
   const result = await callClaude(problem, SYSTEM, 800);
 
-  if (!result.ok) return { mode: 'no_ai', notice: 'No se pudo generar respuesta. Reintenta.' };
+  if (!result.ok) {
+    await db.insert(agentLog).values({
+      agentId: 'solution', action: 'solution',
+      input: problem.slice(0, 200),
+      output: 'No se pudo generar respuesta',
+      status: 'error', durationMs: Date.now() - startTime,
+    }).catch(() => {});
+    return { mode: 'no_ai', notice: 'No se pudo generar respuesta. Reintenta.' };
+  }
 
   try {
     const parsed: SolutionOption[] = JSON.parse(result.text.replace(/```json\n?|\n?```/g, '').trim());
+    await db.insert(agentLog).values({
+      agentId: 'solution', action: 'solution',
+      input: problem.slice(0, 200),
+      output: `${parsed.length} opciones`,
+      status: 'ok', durationMs: Date.now() - startTime,
+    }).catch(() => {});
     return { mode: 'solutions', options: parsed, problem };
   } catch {
+    await db.insert(agentLog).values({
+      agentId: 'solution', action: 'solution',
+      input: problem.slice(0, 200),
+      output: 'Error procesando respuesta',
+      status: 'error', durationMs: Date.now() - startTime,
+    }).catch(() => {});
     return { mode: 'no_ai', notice: 'Error procesando la respuesta. Reintenta.' };
   }
 }

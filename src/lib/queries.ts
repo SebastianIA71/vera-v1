@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { tasks, events, inbox } from '@/lib/db/schema';
-import { ne, desc, eq } from 'drizzle-orm';
+import { ne, desc, eq, and } from 'drizzle-orm';
 
 export async function getUrgentAndStaleCounts() {
   const [allTasks, inboxItems] = await Promise.all([
@@ -18,6 +18,7 @@ export async function getUrgentAndStaleCounts() {
 
   const staleCount = allTasks.filter(t => {
     if (!t.lastActionAt || (t.prioFinal ?? 0) < 4) return false;
+    if (t.status === 'done') return false;
     return Math.floor((Date.now() - new Date(t.lastActionAt).getTime()) / 86400000) >= 14;
   }).length;
 

@@ -1,5 +1,7 @@
 import { capabilities } from '@/lib/capabilities';
 import { callClaude } from '@/lib/claude';
+import { db } from '@/lib/db';
+import { agentLog } from '@/lib/db/schema';
 
 export type SearchResult = {
   title: string;
@@ -14,6 +16,8 @@ export type SearchAgentResult =
   | { mode: 'no_ai'; results: SearchResult[]; query: string };
 
 export async function runSearchAgent(query: string): Promise<SearchAgentResult> {
+  const startTime = Date.now();
+
   if (!capabilities.search) {
     return { mode: 'no_search', notice: 'Configura BRAVE_SEARCH_API_KEY para activar búsquedas.' };
   }
@@ -45,6 +49,12 @@ export async function runSearchAgent(query: string): Promise<SearchAgentResult> 
   }
 
   if (!capabilities.ai.available) {
+    await db.insert(agentLog).values({
+      agentId: 'search', action: 'search',
+      input: query.slice(0, 200),
+      output: JSON.stringify(rawResults).slice(0, 300),
+      status: 'ok', durationMs: Date.now() - startTime,
+    }).catch(() => {});
     return { mode: 'no_ai', results: rawResults, query };
   }
 
@@ -59,12 +69,32 @@ Devuelve JSON array: [{ "title", "url", "description", "summary" }]. Solo JSON.`
     400,
   );
 
-  if (!result.ok) return { mode: 'results', results: rawResults, query };
+  if (!result.ok) {
+    await db.insert(agentLog).values({
+      agentId: 'search', action: 'search',
+      input: query.slice(0, 200),
+      output: JSON.stringify(rawResults).slice(0, 300),
+      status: 'ok', durationMs: Date.now() - startTime,
+    }).catch(() => {});
+    return { mode: 'results', results: rawResults, query };
+  }
 
   try {
     const parsed = JSON.parse(result.text.replace(/```json\n?|\n?```/g, '').trim());
+    await db.insert(agentLog).values({
+      agentId: 'search', action: 'search',
+      input: query.slice(0, 200),
+      output: JSON.stringify(parsed).slice(0, 300),
+      status: 'ok', durationMs: Date.now() - startTime,
+    }).catch(() => {});
     return { mode: 'results', results: parsed, query };
   } catch {
+    await db.insert(agentLog).values({
+      agentId: 'search', action: 'search',
+      input: query.slice(0, 200),
+      output: JSON.stringify(rawResults).slice(0, 300),
+      status: 'ok', durationMs: Date.now() - startTime,
+    }).catch(() => {});
     return { mode: 'results', results: rawResults, query };
   }
 }

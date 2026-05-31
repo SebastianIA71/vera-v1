@@ -4,7 +4,7 @@ export const maxDuration = 20;
 import { rateLimit } from '@/lib/rateLimit';
 import { db } from '@/lib/db';
 import { tasks, events, weightLog, inbox, memory } from '@/lib/db/schema';
-import { ne, desc, eq } from 'drizzle-orm';
+import { ne, desc, eq, and } from 'drizzle-orm';
 import { buildSystemPrompt, callClaude } from '@/lib/claude';
 
 export const dynamic = 'force-dynamic';
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
   const MONTHS_ES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
   const [allTasks, allEvents, weights, inboxItems] = await Promise.all([
-    db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)).limit(30),
+    db.select().from(tasks).where(and(ne(tasks.status, 'archived'), ne(tasks.status, 'done'))).orderBy(desc(tasks.prioFinal)).limit(30),
     db.select().from(events).orderBy(desc(events.startDate)).limit(10),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(2),
     db.select({ id: inbox.id }).from(inbox).limit(100),

@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { tasks, events, weightLog, notifications, pushSubscriptions } from '@/lib/db/schema';
+import { tasks, events, weightLog, notifications, pushSubscriptions, agentLog } from '@/lib/db/schema';
 import { ne, desc, eq } from 'drizzle-orm';
 import { capabilities } from '@/lib/capabilities';
 import webpush from 'web-push';
@@ -57,6 +57,7 @@ async function sendPush(title: string, body: string, cooldownKey: string): Promi
 }
 
 export async function runAlertAgent(): Promise<{ alerts: number }> {
+  const startTime = Date.now();
   const now = new Date();
   let alertCount = 0;
 
@@ -109,6 +110,13 @@ export async function runAlertAgent(): Promise<{ alerts: number }> {
     );
     if (sent) alertCount++;
   }
+
+  await db.insert(agentLog).values({
+    agentId: 'alert', action: 'check',
+    input: `${allTasks.length} tareas`,
+    output: `${alertCount} alertas enviadas`,
+    status: 'ok', durationMs: Date.now() - startTime,
+  }).catch(() => {});
 
   return { alerts: alertCount };
 }

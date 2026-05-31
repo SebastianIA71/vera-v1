@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
-import { tasks, events } from '@/lib/db/schema';
-import { ne, eq } from 'drizzle-orm';
+import { tasks, events, agentLog } from '@/lib/db/schema';
+import { ne, eq, and } from 'drizzle-orm';
 
 type Task = typeof tasks.$inferSelect;
 type Event = typeof events.$inferSelect;
@@ -37,8 +37,10 @@ function calcPrioFinal(task: Task, allEvents: Event[]): number {
 }
 
 export async function runPrioAgent(): Promise<{ updated: number }> {
+  const startTime = Date.now();
+
   const [allTasks, allEvents] = await Promise.all([
-    db.select().from(tasks).where(ne(tasks.status, 'archived')),
+    db.select().from(tasks).where(and(ne(tasks.status, 'archived'), ne(tasks.status, 'done'))),
     db.select().from(events),
   ]);
 
@@ -50,6 +52,13 @@ export async function runPrioAgent(): Promise<{ updated: number }> {
       updated++;
     }
   }
+
+  await db.insert(agentLog).values({
+    agentId: 'prio', action: 'recalculate',
+    input: `${allTasks.length} tareas`,
+    output: `${updated} actualizadas`,
+    status: 'ok', durationMs: Date.now() - startTime,
+  }).catch(() => {});
 
   return { updated };
 }

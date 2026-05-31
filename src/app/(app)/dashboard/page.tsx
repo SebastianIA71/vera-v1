@@ -19,6 +19,7 @@ export default async function DashboardPage() {
   const urgentTasks = allTasks.filter(t => (t.prioFinal ?? 0) >= 7).slice(0, 5);
   const staleTasks = allTasks.filter(t => {
     if (!t.lastActionAt || (t.prioFinal ?? 0) < 4) return false;
+    if (t.status === 'done') return false;
     const days = Math.floor((now.getTime() - t.lastActionAt.getTime()) / 86400000);
     return days >= 14;
   });
