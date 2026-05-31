@@ -1,6 +1,5 @@
 import { capabilities } from '@/lib/capabilities';
 import { callClaude } from '@/lib/claude';
-import axios from 'axios';
 
 export type SearchResult = {
   title: string;
@@ -22,11 +21,21 @@ export async function runSearchAgent(query: string): Promise<SearchAgentResult> 
   // Brave Search
   let rawResults: SearchResult[] = [];
   try {
-    const res = await axios.get('https://api.search.brave.com/res/v1/web/search', {
-      params: { q: query, count: 5, search_lang: 'es', country: 'ES' },
-      headers: { 'Accept': 'application/json', 'X-Subscription-Token': process.env.BRAVE_SEARCH_API_KEY },
+    const url = new URL('https://api.search.brave.com/res/v1/web/search');
+    url.searchParams.set('q', query);
+    url.searchParams.set('count', '5');
+    url.searchParams.set('search_lang', 'es');
+    url.searchParams.set('country', 'ES');
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        'Accept': 'application/json',
+        'X-Subscription-Token': process.env.BRAVE_SEARCH_API_KEY ?? '',
+      },
     });
-    rawResults = (res.data.web?.results ?? []).slice(0, 3).map((r: { title: string; url: string; description: string }) => ({
+    if (!res.ok) throw new Error(`Brave ${res.status}`);
+    const data = await res.json();
+    rawResults = (data.web?.results ?? []).slice(0, 3).map((r: { title: string; url: string; description: string }) => ({
       title: r.title,
       url: r.url,
       description: r.description,
