@@ -53,14 +53,11 @@ export default function DailyInsight() {
           letterSpacing: '.22em', color: 'var(--gold2)', textTransform: 'uppercase' }}>
           Daily Find
         </span>
-        {data?.mode === 'ai' && (
-          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8,
-            color: 'var(--purple)', letterSpacing: '.1em' }}>VERA</span>
-        )}
-        {data?.mode === 'search' && (
-          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8,
-            color: 'var(--text3)', letterSpacing: '.1em' }}>WEB</span>
-        )}
+        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em' }}>
+          {data?.date ?? ''}
+          {data?.mode === 'ai' && ' · VERA'}
+          {data?.mode === 'search' && ' · WEB'}
+        </span>
       </div>
 
       <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)',
@@ -86,15 +83,13 @@ export default function DailyInsight() {
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6,
               marginBottom: 12, paddingBottom: 10, borderBottom: '.5px solid var(--bg4)' }}>
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8,
-                letterSpacing: '.1em', color: 'var(--text3)', flexShrink: 0 }}>ALT.</span>
               <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12,
                 color: 'var(--text)', flex: 1, overflow: 'hidden',
                 textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {data.taskTitle}
               </span>
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11,
-                color: 'var(--text3)', flexShrink: 0 }}>{data.taskPrio}</span>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10,
+                color: 'var(--text3)', flexShrink: 0 }}>p{data.taskPrio}</span>
             </div>
 
             {(data.ideas ?? []).length === 0 ? (

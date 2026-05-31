@@ -82,8 +82,25 @@ export default function MobileHome({
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const [persona] = useState(() => getRandomPersona());
   const [snmActive, setSnmActive] = useState<string[]>([]);
+  const [clockStr, setClockStr] = useState('');
 
   useEffect(() => { setSnmActive(getTodaySnm()); }, []);
+
+  useEffect(() => {
+    const DAY_NAMES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const update = () => {
+      const now = new Date();
+      const day = DAY_NAMES[now.getDay()];
+      const date = now.getDate().toString().padStart(2,'0');
+      const month = (now.getMonth()+1).toString().padStart(2,'0');
+      const h = now.getHours().toString().padStart(2,'0');
+      const m = now.getMinutes().toString().padStart(2,'0');
+      setClockStr(`${day} ${date}/${month} · ${h}:${m}`);
+    };
+    update();
+    const interval = setInterval(update, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const renderQuote = (raw: string) => raw.split(/\*([^*]+)\*/).map((part, i) =>
     i % 2 === 1 ? <em key={i} style={{ fontStyle: 'italic', color: 'var(--gold)' }}>{part}</em> : part
@@ -137,7 +154,10 @@ export default function MobileHome({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" /></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.1.01</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>v.1.02</span>
+            {clockStr && (
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.08em', color: 'var(--text3)', fontWeight: 400 }}>{clockStr}</span>
+            )}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
@@ -391,12 +411,12 @@ export default function MobileHome({
                     const isToday = isCurrentMonth && displayDay === now.getDate();
                     const evs = isCurrentMonth ? (eventDays.get(displayDay) ?? []) : (nextMonthEventDays.get(displayDay) ?? []);
                     return (
-                      <div key={`cell-${i}`} style={{ position: 'relative', fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: isToday ? 'var(--gold2)' : isCurrentMonth ? 'var(--text2)' : 'rgba(255,255,255,0.25)', textAlign: 'center', padding: '5px 2px 8px', lineHeight: 1, borderRadius: 4, background: isToday ? 'rgba(196,168,106,0.10)' : 'transparent', fontWeight: isToday ? 500 : 400 }}>
+                      <div key={`cell-${i}`} style={{ position: 'relative', fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: isToday ? 'var(--gold2)' : isCurrentMonth ? 'rgba(255,255,255,0.70)' : 'rgba(255,255,255,0.28)', textAlign: 'center', padding: '5px 2px 8px', lineHeight: 1, borderRadius: 4, background: isToday ? 'rgba(196,168,106,0.10)' : 'transparent', fontWeight: isToday ? 500 : 400 }}>
                         {displayDay}
                         {evs.length > 0 && (
                           <div style={{ position: 'absolute', bottom: 2, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 2 }}>
                             {evs.slice(0, 3).map((ev, j) => (
-                              <span key={j} style={{ width: 3, height: 3, borderRadius: '50%', background: dotColor(ev.type), display: 'inline-block' }} />
+                              <span key={j} style={{ width: 5, height: 5, borderRadius: '50%', background: dotColor(ev.type), display: 'inline-block', boxShadow: `0 0 4px ${dotColor(ev.type)}` }} />
                             ))}
                           </div>
                         )}

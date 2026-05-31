@@ -201,15 +201,15 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
               const hasEvent = isCurrentMonth ? eventDays.has(displayDay) : nextMonthEventDays.has(displayDay);
               return (
                 <div key={`cell-${i}`} style={{
-                  fontFamily: 'var(--font-dm-mono)', fontSize: 9, padding: '4px 2px', lineHeight: 1,
+                  fontFamily: 'var(--font-dm-mono)', fontSize: 9, padding: '4px 2px 8px', lineHeight: 1,
                   borderRadius: 2, position: 'relative',
                   background: isToday ? 'rgba(196,168,106,0.12)' : 'transparent',
-                  color: isToday ? 'var(--gold2)' : isCurrentMonth ? 'var(--text2)' : 'rgba(255,255,255,0.25)',
+                  color: isToday ? 'var(--gold2)' : isCurrentMonth ? 'rgba(255,255,255,0.70)' : 'rgba(255,255,255,0.28)',
                   fontWeight: isToday ? 500 : 400,
                   textAlign: 'center',
                 }}>
                   {displayDay}
-                  {hasEvent && <span style={{ position: 'absolute', bottom: 1, left: '50%', transform: 'translateX(-50%)', width: 3, height: 3, borderRadius: '50%', background: isToday ? 'var(--gold2)' : 'var(--blue)', display: 'block' }} />}
+                  {hasEvent && <span style={{ position: 'absolute', bottom: 1, left: '50%', transform: 'translateX(-50%)', width: 5, height: 5, borderRadius: '50%', background: isToday ? 'var(--gold2)' : 'var(--blue)', display: 'block', boxShadow: `0 0 4px ${isToday ? 'var(--gold2)' : 'var(--blue)'}` }} />}
                 </div>
               );
             })}
@@ -356,7 +356,7 @@ export default function DashboardClient({
               <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" />
             </svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.1.01</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>v.1.02</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
         </div>
