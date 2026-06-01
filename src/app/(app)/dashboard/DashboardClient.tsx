@@ -245,6 +245,7 @@ export default function DashboardClient({
   nextEvent,
   allEvents,
   kpis,
+  todaySnm = [],
 }: {
   initialTasks: Task[];
   urgentCount: number;
@@ -253,6 +254,7 @@ export default function DashboardClient({
   nextEvent: { title: string; daysTo: number; startDate: string } | null;
   allEvents: { startDate: Date | null; type: string }[];
   kpis: Kpis;
+  todaySnm?: string[];
 }) {
   const router = useRouter();
   const [time, setTime] = useState('');
@@ -274,7 +276,7 @@ export default function DashboardClient({
   const [showCapture, setShowCapture] = useState(false);
   const [inboxCount, setInboxCount] = useState(initialInboxCount);
   const [isMobile, setIsMobile] = useState(false);
-  const [snmActive, setSnmActive] = useState<string[]>([]);
+  const [snmActive, setSnmActive] = useState<string[]>(todaySnm);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 900);
@@ -284,11 +286,16 @@ export default function DashboardClient({
   }, []);
 
   useEffect(() => {
-    const refresh = () => setSnmActive(getTodaySnm());
+    // localStorage tiene prioridad si existe (el mismo device hizo el ritual hoy)
+    // Si no hay localStorage, usamos el todaySnm del servidor (DB)
+    const refresh = () => {
+      const local = getTodaySnm();
+      setSnmActive(local.length > 0 ? local : todaySnm);
+    };
     refresh();
     document.addEventListener('visibilitychange', refresh);
     return () => document.removeEventListener('visibilitychange', refresh);
-  }, []);
+  }, [todaySnm]);
 
   // Clock
   useEffect(() => {
@@ -422,19 +429,19 @@ export default function DashboardClient({
           </div>
 
           {/* Orbital map */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', gap: 0 }}>
-            {/* KPI columna izquierda */}
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, paddingRight: 24, flexShrink: 0 }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+            {/* KPI columna izquierda — anclada al borde izquierdo */}
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 9, paddingLeft: 28, paddingRight: 14, flexShrink: 0 }}>
               {getKpiNodes(kpis).map(kpi => (
                 <div key={kpi.id} style={{ display: 'flex', alignItems: 'center' }}>
-                  {/* Zona fija izquierda: vacía para todos salvo KG */}
-                  <div style={{ width: 78, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', paddingRight: 8, gap: 2, flexShrink: 0 }}>
+                  {/* Zona fija: iconos SNM para KG, vacía para el resto */}
+                  <div style={{ width: 124, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', paddingRight: 8, gap: 3, flexShrink: 0 }}>
                     {kpi.id === 'weight' &&
                       (['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const).map((key, i) => {
                         const icons = ['💧','🚶','💪','🧘','🍴'];
                         const on = snmActive.includes(key);
                         return (
-                          <span key={key} style={{ fontSize: 13, opacity: on ? 1 : 0.18, filter: on ? 'none' : 'grayscale(1)', lineHeight: 1 }}>
+                          <span key={key} style={{ fontSize: 22, opacity: on ? 1 : 0.15, filter: on ? 'none' : 'grayscale(1)', lineHeight: 1 }}>
                             {icons[i]}
                           </span>
                         );
@@ -443,17 +450,17 @@ export default function DashboardClient({
                   </div>
                   {/* KPI card */}
                   <div style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '9px 14px', background: 'var(--bg)',
+                    display: 'flex', alignItems: 'center',
+                    padding: '11px 18px', background: 'var(--bg)',
                     border: `.5px solid ${kpi.color}33`,
                     borderLeft: `2px solid ${kpi.color}`,
-                    borderRadius: '0 8px 8px 0', minWidth: 90,
+                    borderRadius: '0 8px 8px 0', minWidth: 104,
                   }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 20, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                    <div>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 26, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
                         {kpi.value}
                       </div>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, letterSpacing: '.1em', color: 'var(--text3)', marginTop: 3 }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.12em', color: 'var(--text3)', marginTop: 4 }}>
                         {kpi.label}
                       </div>
                     </div>
@@ -461,7 +468,8 @@ export default function DashboardClient({
                 </div>
               ))}
             </div>
-            {/* Orbital */}
+            {/* Orbital — centrado en el espacio restante */}
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 0 }}>
             <div style={{ position: 'relative', width: '480px', height: '480px', flexShrink: 0 }}>
               {/* Rings */}
               {[140, 260, 380, 440].map((size, i) => (
@@ -537,6 +545,7 @@ export default function DashboardClient({
               })}
             </div>
             {/* fin orbital */}
+            </div>
           </div>
 
           {/* Botones de creación */}

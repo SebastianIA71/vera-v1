@@ -25,3 +25,10 @@ export function toggleSnm(key: string): string[] {
   localStorage.setItem(KEY, JSON.stringify({ date: today, active: next }));
   return next;
 }
+
+export function setSnmActiveForToday(keys: string[]): void {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.setItem(KEY, JSON.stringify({ date: today, active: keys }));
+  } catch {}
+}

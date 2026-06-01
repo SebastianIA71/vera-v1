@@ -77,6 +77,7 @@ export default function MobileHome({
   inboxItems = [],
   topTaskByProperty = [],
   allEvents = [],
+  todaySnm = [],
 }: {
   urgentTasks: Task[];
   nextTrip: { title: string; daysTo: number; startDate: string; who: string; transport?: string } | null;
@@ -86,6 +87,7 @@ export default function MobileHome({
   inboxItems?: InboxItem[];
   topTaskByProperty?: PropTask[];
   allEvents?: { startDate: string; type: string; title: string }[];
+  todaySnm?: string[];
 }) {
   const router = useRouter();
   const [showCapture, setShowCapture] = useState(false);
@@ -95,15 +97,18 @@ export default function MobileHome({
   const [statusLine, setStatusLine] = useState('');
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const [persona] = useState(() => getRandomPersona());
-  const [snmActive, setSnmActive] = useState<string[]>([]);
+  const [snmActive, setSnmActive] = useState<string[]>(todaySnm);
   const [clockStr, setClockStr] = useState('');
 
   useEffect(() => {
-    const refresh = () => setSnmActive(getTodaySnm());
+    const refresh = () => {
+      const local = getTodaySnm();
+      setSnmActive(local.length > 0 ? local : todaySnm);
+    };
     refresh();
     document.addEventListener('visibilitychange', refresh);
     return () => document.removeEventListener('visibilitychange', refresh);
-  }, []);
+  }, [todaySnm]);
 
   useEffect(() => {
     const DAY_NAMES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
@@ -129,7 +134,10 @@ export default function MobileHome({
     const parts: string[] = [];
     if (weightLogs[0]) parts.push(`${weightLogs[0].value} KG`);
     parts.push('10,2K');
-    if (nextTrip) parts.push(`${nextTrip.title.toUpperCase()} · ${nextTrip.daysTo} D`);
+    if (nextTrip) {
+      const transport = nextTrip.transport ? ` ${transportIcons(nextTrip.transport)}` : '';
+      parts.push(`${nextTrip.title.toUpperCase()}${transport} · ${nextTrip.daysTo} D`);
+    }
     setStatusLine(parts.join(' · '));
   }, [weightLogs, nextTrip]);
 

@@ -153,8 +153,21 @@ export default function PropertiesClient({
                   })}
                 </div>
 
-                <div style={{ padding: '9px 16px', borderTop: '.5px solid var(--bg4)', flexShrink: 0 }}>
+                <div style={{ padding: '9px 16px', borderTop: '.5px solid var(--bg4)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.2em', color: 'var(--text3)', cursor: 'pointer' }}>VER TODAS →</span>
+                  <button
+                    onClick={() => setNewTaskPropId(prop.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      padding: '5px 12px', borderRadius: 7,
+                      background: 'transparent', border: `.5px solid ${color}55`,
+                      color, fontFamily: 'var(--font-dm-mono)', fontSize: 9,
+                      letterSpacing: '.14em', cursor: 'pointer',
+                    }}
+                  >
+                    <svg viewBox="0 0 24 24" width={9} height={9} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    NUEVA TAREA
+                  </button>
                 </div>
               </div>
             );

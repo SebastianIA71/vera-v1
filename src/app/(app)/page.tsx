@@ -36,6 +36,18 @@ export default async function AppRootPage() {
     ? Math.ceil((nextEvent.startDate.getTime() - now.getTime()) / 86400000)
     : null;
 
+  const todayDate = now.toISOString().slice(0, 10);
+  const todayWeight = weights[0];
+  const todaySnm: string[] = [];
+  if (todayWeight && todayWeight.date === todayDate) {
+    const snmMap: Record<string, boolean | null | undefined> = {
+      snmAgua: todayWeight.snmAgua, snmCaminar: todayWeight.snmCaminar,
+      snmEntreno: todayWeight.snmEntreno, snmEscucha: todayWeight.snmEscucha,
+      snmDisfruta: todayWeight.snmDisfruta,
+    };
+    Object.entries(snmMap).forEach(([k, v]) => { if (v) todaySnm.push(k); });
+  }
+
   // Top tarea por propiedad
   const topTaskByProperty = allProperties.map(prop => {
     const t = allTasks.find(t => t.propertyId === prop.id && t.status !== 'done');
@@ -50,6 +62,7 @@ export default async function AppRootPage() {
       weightLogs={weights}
       inboxCount={inboxItems.length}
       inboxItems={inboxItems}
+      todaySnm={todaySnm}
       topTaskByProperty={topTaskByProperty}
       allEvents={allEvents
         .filter(e => e.startDate && e.startDate >= new Date(now.getFullYear(), now.getMonth(), 1))

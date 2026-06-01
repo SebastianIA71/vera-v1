@@ -2,11 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getTodaySnm, toggleSnm } from '@/lib/snm';
+import { getTodaySnm, toggleSnm, setSnmActiveForToday } from '@/lib/snm';
 
 type Task = { id: number; title: string; detail?: string | null; propertyId?: string | null; prioFinal?: number | null; tags?: string | null };
 type Event = { id: number; title: string; startDate?: Date | null };
-type WeightLog = { id: number; date: string; value: number };
+type WeightLog = {
+  id: number; date: string; value: number;
+  snmAgua?: boolean | null; snmCaminar?: boolean | null;
+  snmEntreno?: boolean | null; snmEscucha?: boolean | null; snmDisfruta?: boolean | null;
+};
 
 const SNM = [
   { key: 'snmAgua',     icon: '💧', label: 'Agua' },
@@ -90,15 +94,28 @@ export default function MorningRitual({
   const [snm, setSnm] = useState<Record<string, boolean>>({ snmAgua: false, snmCaminar: false, snmEntreno: false, snmEscucha: false, snmDisfruta: false });
 
   useEffect(() => {
-    const active = getTodaySnm();
-    if (active.length > 0) {
+    const today = new Date().toISOString().slice(0, 10);
+    const localActive = getTodaySnm();
+    if (localActive.length > 0) {
       setSnm(prev => {
         const next = { ...prev };
-        active.forEach(k => { if (k in next) next[k] = true; });
+        localActive.forEach(k => { if (k in next) next[k] = true; });
         return next;
       });
+    } else if (lastWeightEntry?.date === today) {
+      // Otro dispositivo registró SNM hoy — leer de DB y sincronizar localStorage
+      const dbSnm = {
+        snmAgua:     !!lastWeightEntry.snmAgua,
+        snmCaminar:  !!lastWeightEntry.snmCaminar,
+        snmEntreno:  !!lastWeightEntry.snmEntreno,
+        snmEscucha:  !!lastWeightEntry.snmEscucha,
+        snmDisfruta: !!lastWeightEntry.snmDisfruta,
+      };
+      setSnm(dbSnm);
+      const activeKeys = Object.entries(dbSnm).filter(([, v]) => v).map(([k]) => k);
+      setSnmActiveForToday(activeKeys);
     }
-  }, []);
+  }, [lastWeightEntry]);
   const [weightSaved, setWeightSaved] = useState(false);
 
   // Step 4 — briefing

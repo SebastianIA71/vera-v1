@@ -38,6 +38,18 @@ export default async function DashboardPage() {
   const propsCount   = allProperties.length;
   const currentWeight = weightLogs[0]?.value ?? null;
 
+  const todayDate = now.toISOString().slice(0, 10);
+  const todayWeight = weightLogs[0];
+  const todaySnm: string[] = [];
+  if (todayWeight && todayWeight.date === todayDate) {
+    const snmMap: Record<string, boolean | null | undefined> = {
+      snmAgua: todayWeight.snmAgua, snmCaminar: todayWeight.snmCaminar,
+      snmEntreno: todayWeight.snmEntreno, snmEscucha: todayWeight.snmEscucha,
+      snmDisfruta: todayWeight.snmDisfruta,
+    };
+    Object.entries(snmMap).forEach(([k, v]) => { if (v) todaySnm.push(k); });
+  }
+
   const nextEventItem = allEvents
     .filter(e => e.type !== 'viaje' && e.startDate && e.startDate > now)
     .sort((a, b) => (a.startDate?.getTime() ?? 0) - (b.startDate?.getTime() ?? 0))[0] ?? null;
@@ -53,6 +65,7 @@ export default async function DashboardPage() {
       nextTrip={nextTrip ? { title: nextTrip.title, daysTo: daysToNextTrip ?? 0 } : null}
       nextEvent={nextEventItem && daysToNextEvent ? { title: nextEventItem.title, daysTo: daysToNextEvent, startDate: nextEventItem.startDate!.toISOString() } : null}
       allEvents={allEvents.map(e => ({ startDate: e.startDate, type: e.type ?? '' }))}
+      todaySnm={todaySnm}
       kpis={{ tasksActive, tasksDone, inboxPending: inboxCount, tripsCount, eventsCount, propsCount, currentWeight }}
     />
   );
