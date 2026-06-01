@@ -90,6 +90,7 @@ export const events = sqliteTable('events', {
   status: text('status').default('planning'),
   notes: text('notes'),
   approx: integer('approx', { mode: 'boolean' }).default(false),
+  meta: text('meta'),
 }, (t) => ({
   startDateIdx: index('events_start_date').on(t.startDate),
   typeIdx:      index('events_type').on(t.type),
@@ -182,3 +183,13 @@ export const pushSubscriptions = sqliteTable('push_subscriptions', {
   auth: text('auth').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow(),
 });
+
+export type EventMeta = {
+  destination?: string;
+  budget?: { total: number; currency: string; spent: number };
+  documents?: { name: string; url?: string; notes?: string }[];
+  schedule?: { day: string; description: string }[];
+  companions?: { name: string; relation?: string }[];
+};
+
+export type EventRow = typeof events.$inferSelect;
