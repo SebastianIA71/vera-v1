@@ -68,11 +68,11 @@ function FilterChip({ label, active, color, onClick }: { label: string; active: 
 }
 
 export default function TasksClient({
-  initialTasks, urgentCount, staleCount, inboxCount,
+  initialTasks, urgentCount, waitingCount, inboxCount,
 }: {
   initialTasks: Task[];
   urgentCount: number;
-  staleCount: number;
+  waitingCount: number;
   inboxCount: number;
 }) {
   const router = useRouter();
@@ -133,7 +133,7 @@ export default function TasksClient({
   }
 
   return (
-    <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount} pageActions={pageActions}
+    <DesktopShell urgentCount={urgentCount} staleCount={0} inboxCount={inboxCount} pageActions={pageActions}
       rightSlot={selected && (
         <TaskDetailPanel
           key={selected.id}
@@ -153,7 +153,7 @@ export default function TasksClient({
               Tareas <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>activas</em>
             </div>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text4)' }}>
-              {filtered.filter(t => t.status !== 'done').length} TAREAS · {nowTasks.length} NOW
+              {filtered.filter(t => t.status !== 'done' && t.status !== 'archived').length} ACTIVAS
             </div>
           </div>
 
@@ -206,7 +206,6 @@ export default function TasksClient({
             <div style={{ width: .5, height: 16, background: 'var(--bg4)', margin: '0 3px', flexShrink: 0 }} />
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', flexShrink: 0 }}>CONTEXTO</span>
             <FilterChip label="NoW" active={filters.context === 'now'} onClick={() => setFilters(f => ({ ...f, context: f.context === 'now' ? null : 'now' }))} />
-            <FilterChip label="Sin mover" color="var(--purple)" active={filters.context === 'stale'} onClick={() => setFilters(f => ({ ...f, context: f.context === 'stale' ? null : 'stale' }))} />
 
             {hasFilters && (
               <button onClick={clearFilters} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', cursor: 'pointer', padding: '4px 5px', background: 'none', border: 'none' }}>

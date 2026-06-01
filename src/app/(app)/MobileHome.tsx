@@ -92,7 +92,12 @@ export default function MobileHome({
   const [snmActive, setSnmActive] = useState<string[]>([]);
   const [clockStr, setClockStr] = useState('');
 
-  useEffect(() => { setSnmActive(getTodaySnm()); }, []);
+  useEffect(() => {
+    const refresh = () => setSnmActive(getTodaySnm());
+    refresh();
+    document.addEventListener('visibilitychange', refresh);
+    return () => document.removeEventListener('visibilitychange', refresh);
+  }, []);
 
   useEffect(() => {
     const DAY_NAMES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];

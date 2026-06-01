@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DesktopShell from '@/components/layout/DesktopShell';
 import dynamic from 'next/dynamic';
 const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
 
-type Trip = { id: number; title: string; startDate?: Date | null; endDate?: Date | null; who?: string | null; status?: string | null; notes?: string | null; transport?: string | null; accommodation?: string | null };
+type Trip = { id: number; title: string; type?: string | null; startDate?: Date | null; endDate?: Date | null; who?: string | null; status?: string | null; notes?: string | null; transport?: string | null; accommodation?: string | null };
 type Task = { id: number; title: string; status?: string | null; prioFinal?: number | null; relatedTaskId?: number | null };
 
 function daysUntil(d: Date | null | undefined): number | null {
@@ -33,11 +33,18 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
   staleCount: number;
   inboxCount: number;
 }) {
-  const [selected, setSelected] = useState<Trip | null>(trips[0] ?? null);
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('type') === 'social' ? 'event' : 'viaje';
+  const [tab, setTab] = useState<'viaje' | 'event'>(initialTab);
+  const [selected, setSelected] = useState<Trip | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [showNewEvent, setShowNewEvent] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
   const router = useRouter();
+
+  const filteredTrips = trips.filter(t =>
+    tab === 'viaje' ? (t.type === 'viaje' || t.type == null) : t.type !== 'viaje'
+  );
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 769);
@@ -115,12 +122,27 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
             <button onClick={() => setShowNewEvent(true)} style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--bg3)', border: '.5px solid var(--bg4)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>+</button>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text4)', marginTop: 4 }}>
-            {trips.length} VIAJES PLANIFICADOS
+            {filteredTrips.length} {tab === 'viaje' ? 'VIAJES' : 'EVENTOS'}
           </div>
         </div>
 
+        {/* Tab selector */}
+        <div style={{ display: 'flex', borderBottom: '.5px solid var(--bg4)' }}>
+          {(['viaje', 'event'] as const).map(t => (
+            <button key={t} onClick={() => { setTab(t); setSelected(null); }} style={{
+              flex: 1, padding: '10px', background: 'none', border: 'none',
+              borderBottom: tab === t ? '2px solid var(--gold2)' : '2px solid transparent',
+              color: tab === t ? 'var(--gold2)' : 'var(--text3)',
+              fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em',
+              cursor: 'pointer',
+            }}>
+              {t === 'viaje' ? 'VIAJES' : 'EVENTOS'}
+            </button>
+          ))}
+        </div>
+
         <div style={{ flex: 1, overflowY: 'auto' }}>
-          {trips.map(trip => {
+          {filteredTrips.map(trip => {
             const days = daysUntil(trip.startDate);
             const isNext = trip.id === nextTrip?.id;
             const isSel = selected?.id === trip.id;

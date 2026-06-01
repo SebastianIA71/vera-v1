@@ -8,6 +8,7 @@ import { QUOTES } from '@/lib/quotes';
 import { getRandomPersona } from '@/lib/personas';
 import { getGreeting, personaSearchUrl, taskBorderColor } from '@/lib/utils';
 import { APP_VERSION } from '@/lib/version';
+import { getTodaySnm } from '@/lib/snm';
 import dynamic from 'next/dynamic';
 const CaptureSheet     = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const NewEventSheet    = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
@@ -239,7 +240,6 @@ const getKpiNodes = (kpis: Kpis) => [
 export default function DashboardClient({
   initialTasks,
   urgentCount,
-  staleCount,
   inboxCount: initialInboxCount,
   nextTrip,
   nextEvent,
@@ -248,7 +248,6 @@ export default function DashboardClient({
 }: {
   initialTasks: Task[];
   urgentCount: number;
-  staleCount: number;
   inboxCount: number;
   nextTrip: { title: string; daysTo: number } | null;
   nextEvent: { title: string; daysTo: number; startDate: string } | null;
@@ -275,12 +274,20 @@ export default function DashboardClient({
   const [showCapture, setShowCapture] = useState(false);
   const [inboxCount, setInboxCount] = useState(initialInboxCount);
   const [isMobile, setIsMobile] = useState(false);
+  const [snmActive, setSnmActive] = useState<string[]>([]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 900);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => setSnmActive(getTodaySnm());
+    refresh();
+    document.addEventListener('visibilitychange', refresh);
+    return () => document.removeEventListener('visibilitychange', refresh);
   }, []);
 
   // Clock
@@ -329,7 +336,9 @@ export default function DashboardClient({
   const nodeBorderColor = (s: string) => s === 'running' ? 'var(--gold2)' : s === 'active' ? 'var(--green)' : 'rgba(255,255,255,0.15)';
   const nodeIconColor = (s: string) => s === 'running' ? 'var(--gold2)' : s === 'active' ? 'var(--green)' : 'var(--text2)';
 
-  const urgentNow = tasks.filter(t => (t.prioFinal ?? 0) >= 7 && t.status !== 'done' && t.status !== 'archived').length;
+  const urgentNow  = tasks.filter(t => (t.prioFinal ?? 0) >= 8 && t.status !== 'done' && t.status !== 'archived').length;
+  const waitingNow = tasks.filter(t => { const p = t.prioFinal ?? 0; return p >= 5 && p <= 7 && t.status !== 'done' && t.status !== 'archived'; }).length;
+  const calmNow    = tasks.filter(t => (t.prioFinal ?? 0) < 5 && t.status !== 'done' && t.status !== 'archived').length;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)', overflow: 'hidden' }}>
@@ -348,8 +357,9 @@ export default function DashboardClient({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Pill dot="red" label={`${urgentNow} URGENTES`} />
-          <Pill dot="amber" label={`${staleCount} STALE`} />
+          <Pill dot="red"   label={`${urgentNow} URGENTES`} />
+          <Pill dot="amber" label={`${waitingNow} EN ESPERA`} />
+          <Pill dot="green" label={`${calmNow} TRANQUILAS`} />
           <Pill dot="green" label={`${inboxCount} INBOX`} />
         </div>
 
@@ -416,21 +426,34 @@ export default function DashboardClient({
             {/* KPI columna izquierda */}
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, paddingRight: 24, flexShrink: 0 }}>
               {getKpiNodes(kpis).map(kpi => (
-                <div key={kpi.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '5px 10px',
-                  background: 'var(--bg)',
-                  border: `.5px solid ${kpi.color}33`,
-                  borderLeft: `2px solid ${kpi.color}`,
-                  borderRadius: '0 6px 6px 0',
-                  minWidth: 72,
-                }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
-                      {kpi.value}
+                <div key={kpi.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {kpi.id === 'weight' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      {(['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const).map((key, i) => {
+                        const icons = ['💧','🚶','💪','🧘','🍴'];
+                        const on = snmActive.includes(key);
+                        return (
+                          <span key={key} style={{ fontSize: 10, opacity: on ? 1 : 0.18, filter: on ? 'none' : 'grayscale(1)', lineHeight: 1 }}>
+                            {icons[i]}
+                          </span>
+                        );
+                      })}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, letterSpacing: '.1em', color: 'var(--text3)', marginTop: 2 }}>
-                      {kpi.label}
+                  )}
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '5px 10px', background: 'var(--bg)',
+                    border: `.5px solid ${kpi.color}33`,
+                    borderLeft: `2px solid ${kpi.color}`,
+                    borderRadius: '0 6px 6px 0', minWidth: 72,
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                        {kpi.value}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, letterSpacing: '.1em', color: 'var(--text3)', marginTop: 2 }}>
+                        {kpi.label}
+                      </div>
                     </div>
                   </div>
                 </div>

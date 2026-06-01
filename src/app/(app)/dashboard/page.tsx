@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { tasks, events, inbox, properties, weightLog } from '@/lib/db/schema';
-import { ne, desc, gte, and, eq } from 'drizzle-orm';
+import { ne, desc, eq } from 'drizzle-orm';
 import DashboardClient from './DashboardClient';
 
 export const dynamic = 'force-dynamic';
@@ -8,21 +8,16 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage() {
   const now = new Date();
 
-  const [allTasks, allEvents, inboxItems, allProperties, weightLogs] = await Promise.all([
+  const [allTasks, allEvents, allProperties, weightLogs] = await Promise.all([
     db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)).limit(50),
     db.select().from(events).orderBy(desc(events.startDate)).limit(20),
-    db.select({ id: inbox.id }).from(inbox).limit(1),
     db.select().from(properties),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(1),
   ]);
 
-  const urgentTasks = allTasks.filter(t => (t.prioFinal ?? 0) >= 7).slice(0, 5);
-  const staleTasks = allTasks.filter(t => {
-    if (!t.lastActionAt || (t.prioFinal ?? 0) < 4) return false;
-    if (t.status === 'done') return false;
-    const days = Math.floor((now.getTime() - t.lastActionAt.getTime()) / 86400000);
-    return days >= 14;
-  });
+  const urgentTasks = allTasks.filter(t =>
+    (t.prioFinal ?? 0) >= 8 && t.status !== 'done' && t.status !== 'archived'
+  );
 
   const upcomingTrips = allEvents
     .filter(e => e.type === 'viaje' && e.startDate && e.startDate > now)
@@ -54,7 +49,6 @@ export default async function DashboardPage() {
     <DashboardClient
       initialTasks={allTasks}
       urgentCount={urgentTasks.length}
-      staleCount={staleTasks.length}
       inboxCount={inboxCount}
       nextTrip={nextTrip ? { title: nextTrip.title, daysTo: daysToNextTrip ?? 0 } : null}
       nextEvent={nextEventItem && daysToNextEvent ? { title: nextEventItem.title, daysTo: daysToNextEvent, startDate: nextEventItem.startDate!.toISOString() } : null}
