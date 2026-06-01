@@ -23,14 +23,21 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
+
   const [row] = await db.insert(events).values({
-    title:     body.title,
-    startDate: body.startDate ? new Date(body.startDate) : null,
-    endDate:   body.endDate   ? new Date(body.endDate)   : null,
-    type:      body.type      ?? 'social',
-    who:       body.who       ?? null,
-    status:    body.status    ?? 'planning',
-    notes:     body.notes     ?? null,
+    title:         String(body.title ?? ''),
+    type:          body.type          ?? 'social',
+    startDate:     body.startDate     ? new Date(body.startDate) : null,
+    endDate:       body.endDate       ? new Date(body.endDate)   : null,
+    who:           body.who           ?? null,
+    propertyId:    body.propertyId    ?? null,
+    transport:     body.transport     ?? null,
+    accommodation: body.accommodation ?? null,
+    status:        body.status        ?? 'planning',
+    notes:         body.notes         ?? null,
+    approx:        body.approx        ?? false,
+    meta:          body.meta          ?? null,
   }).returning();
+
   return NextResponse.json(row);
 }

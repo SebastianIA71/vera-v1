@@ -13,11 +13,9 @@ export default async function TripsPage() {
     getUrgentAndStaleCounts(),
   ]);
 
-  const trips = allEvents.filter(e => e.type === 'viaje');
-
   return (
     <TripsClient
-      trips={trips}
+      trips={allEvents}
       allTasks={allTasks}
       urgentCount={urgentCount}
       staleCount={staleCount}

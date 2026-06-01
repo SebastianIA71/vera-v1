@@ -4,10 +4,18 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DesktopShell from '@/components/layout/DesktopShell';
 import dynamic from 'next/dynamic';
-const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
+const TripSheet       = dynamic(() => import('@/components/events/TripSheet'),      { ssr: false });
+const TripDetailPanel = dynamic(() => import('@/components/events/TripDetail'),     { ssr: false });
+const NewEventSheet   = dynamic(() => import('@/components/events/NewEventSheet'),  { ssr: false });
 
-type Trip = { id: number; title: string; type?: string | null; startDate?: Date | null; endDate?: Date | null; who?: string | null; status?: string | null; notes?: string | null; transport?: string | null; accommodation?: string | null };
-type Task = { id: number; title: string; status?: string | null; prioFinal?: number | null; relatedTaskId?: number | null };
+type Trip = {
+  id: number; title: string; type?: string | null;
+  startDate?: Date | null; endDate?: Date | null;
+  who?: string | null; status?: string | null; notes?: string | null;
+  transport?: string | null; accommodation?: string | null;
+  approx?: boolean | null; meta?: string | null;
+};
+type Task = { id: number; title: string; status?: string | null; prioFinal?: number | null };
 
 function daysUntil(d: Date | null | undefined): number | null {
   if (!d) return null;
@@ -35,11 +43,12 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
 }) {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('type') === 'social' ? 'event' : 'viaje';
-  const [tab, setTab] = useState<'viaje' | 'event'>(initialTab);
-  const [selected, setSelected] = useState<Trip | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const [tab,          setTab]          = useState<'viaje' | 'event'>(initialTab);
+  const [selected,     setSelected]     = useState<Trip | null>(null);
+  const [isMobile,     setIsMobile]     = useState(false);
+  const [showNewTrip,  setShowNewTrip]  = useState(false);
   const [showNewEvent, setShowNewEvent] = useState(false);
-  const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
+  const [editingTrip,  setEditingTrip]  = useState<Trip | null>(null);
   const router = useRouter();
 
   const filteredTrips = trips.filter(t =>
@@ -54,33 +63,55 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
   }, []);
 
   const now = new Date();
-  const nextTrip = trips.find(t => t.startDate && new Date(t.startDate) > now);
+  const nextTrip = filteredTrips.find(t => t.startDate && new Date(t.startDate) > now);
 
+  // ── Móvil: detalle ──
   if (isMobile && selected) {
     return (
       <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingBottom: 80 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '.5px solid var(--bg4)' }}>
           <button onClick={() => setSelected(null)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', padding: 0 }}>
             <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-            VIAJES
+            {tab === 'viaje' ? 'VIAJES' : 'EVENTOS'}
           </button>
         </div>
-        <TripDetail trip={selected} />
+        {selected.type === 'viaje' || !selected.type
+          ? <TripDetailPanel trip={selected} />
+          : <EventDetailSimple trip={selected} onEdit={() => setEditingTrip(selected)} />
+        }
+        {editingTrip && (
+          editingTrip.type === 'viaje' || !editingTrip.type
+            ? <TripSheet trip={editingTrip} onClose={() => setEditingTrip(null)} onSaved={() => { setEditingTrip(null); router.refresh(); }} />
+            : <NewEventSheet event={editingTrip} onClose={() => setEditingTrip(null)} onUpdated={() => { setEditingTrip(null); router.refresh(); }} />
+        )}
       </div>
     );
   }
 
+  // ── Móvil: lista ──
   if (isMobile) {
     return (
       <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingBottom: 80 }}>
-        <div style={{ padding: '14px 18px 12px', borderBottom: '.5px solid var(--bg4)' }}>
-          <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em' }}>
-            Viajes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>2026</em>
+        <div style={{ padding: '14px 18px 0', borderBottom: '.5px solid var(--bg4)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)' }}>
+              {tab === 'viaje' ? 'Viajes' : 'Eventos'} <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>2026</em>
+            </div>
+            <button onClick={() => tab === 'viaje' ? setShowNewTrip(true) : setShowNewEvent(true)}
+              style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--bg3)', border: '.5px solid var(--bg4)', color: 'var(--gold2)', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+
+            </button>
           </div>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text4)', marginTop: 4 }}>{trips.length} VIAJES PLANIFICADOS</div>
+          <div style={{ display: 'flex' }}>
+            {(['viaje', 'event'] as const).map(t => (
+              <button key={t} onClick={() => { setTab(t); setSelected(null); }}
+                style={{ flex: 1, padding: '8px', background: 'none', border: 'none', borderBottom: tab === t ? '2px solid var(--gold2)' : '2px solid transparent', color: tab === t ? 'var(--gold2)' : 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', cursor: 'pointer' }}>
+                {t === 'viaje' ? 'VIAJES' : 'EVENTOS'}
+              </button>
+            ))}
+          </div>
         </div>
         <div>
-          {trips.map(trip => {
+          {filteredTrips.map(trip => {
             const days = daysUntil(trip.startDate);
             const isNext = trip.id === nextTrip?.id;
             const st = STATUS_LABELS[trip.status ?? 'planning'] ?? STATUS_LABELS.planning;
@@ -106,10 +137,13 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
             );
           })}
         </div>
+        {showNewTrip  && <TripSheet onClose={() => setShowNewTrip(false)} onSaved={() => { setShowNewTrip(false); router.refresh(); }} />}
+        {showNewEvent && <NewEventSheet onClose={() => setShowNewEvent(false)} onCreated={() => setShowNewEvent(false)} />}
       </div>
     );
   }
 
+  // ── Desktop ──
   return (
     <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}>
       {/* Lista */}
@@ -117,24 +151,24 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
         <div style={{ padding: '14px 18px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em' }}>
-              Viajes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>2026</em>
+              {tab === 'viaje' ? 'Viajes' : 'Eventos'} <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>2026</em>
             </div>
-            <button onClick={() => setShowNewEvent(true)} style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--bg3)', border: '.5px solid var(--bg4)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>+</button>
+            <button onClick={() => tab === 'viaje' ? setShowNewTrip(true) : setShowNewEvent(true)}
+              style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--bg3)', border: '.5px solid var(--bg4)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>+
+            </button>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text4)', marginTop: 4 }}>
             {filteredTrips.length} {tab === 'viaje' ? 'VIAJES' : 'EVENTOS'}
           </div>
         </div>
 
-        {/* Tab selector */}
         <div style={{ display: 'flex', borderBottom: '.5px solid var(--bg4)' }}>
           {(['viaje', 'event'] as const).map(t => (
             <button key={t} onClick={() => { setTab(t); setSelected(null); }} style={{
               flex: 1, padding: '10px', background: 'none', border: 'none',
               borderBottom: tab === t ? '2px solid var(--gold2)' : '2px solid transparent',
               color: tab === t ? 'var(--gold2)' : 'var(--text3)',
-              fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em',
-              cursor: 'pointer',
+              fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', cursor: 'pointer',
             }}>
               {t === 'viaje' ? 'VIAJES' : 'EVENTOS'}
             </button>
@@ -147,7 +181,6 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
             const isNext = trip.id === nextTrip?.id;
             const isSel = selected?.id === trip.id;
             const st = STATUS_LABELS[trip.status ?? 'planning'] ?? STATUS_LABELS.planning;
-
             return (
               <div key={trip.id} onClick={() => setSelected(trip)} style={{
                 padding: '14px 18px', borderBottom: '.5px solid var(--bg2)',
@@ -173,13 +206,9 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
                   <span>{fmtDate(trip.startDate)}–{fmtDate(trip.endDate)}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                  {trip.transport && (
-                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', padding: '2px 6px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--green)' }}>✈ TRANSPORTE</span>
-                  )}
-                  {trip.accommodation && (
-                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', padding: '2px 6px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--green)' }}>🏨 ALOJAMIENTO</span>
-                  )}
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', padding: '2px 6px', borderRadius: 999, border: `.5px solid ${st.border}`, color: st.color }}>{st.label}</span>
+                  {trip.transport && <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, padding: '2px 6px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--green)' }}>✈ TRANSPORTE</span>}
+                  {trip.accommodation && <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, padding: '2px 6px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--green)' }}>🏨 ALOJAMIENTO</span>}
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, padding: '2px 6px', borderRadius: 999, border: `.5px solid ${st.border}`, color: st.color }}>{st.label}</span>
                 </div>
               </div>
             );
@@ -189,97 +218,53 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
 
       {/* Detalle */}
       {selected ? (
-        <TripDetail trip={selected} onEdit={() => setEditingTrip(selected)} />
+        selected.type === 'viaje' || !selected.type
+          ? <TripDetailPanel trip={selected} />
+          : <EventDetailSimple trip={selected} onEdit={() => setEditingTrip(selected)} />
       ) : (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8 }}>
           <div style={{ fontFamily: 'var(--font-syne)', fontSize: 32, color: 'var(--gold)' }}>✦</div>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text3)' }}>SELECCIONA UN VIAJE</div>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text3)' }}>
+            {tab === 'viaje' ? 'SELECCIONA UN VIAJE' : 'SELECCIONA UN EVENTO'}
+          </div>
         </div>
       )}
-      {showNewEvent && <NewEventSheet type="viaje" onClose={() => setShowNewEvent(false)} onCreated={() => setShowNewEvent(false)} />}
-      {editingTrip && (
-        <NewEventSheet
-          event={editingTrip}
-          onClose={() => setEditingTrip(null)}
-          onUpdated={() => { setEditingTrip(null); router.refresh(); }}
-        />
+
+      {showNewTrip  && <TripSheet onClose={() => setShowNewTrip(false)} onSaved={() => { setShowNewTrip(false); router.refresh(); }} />}
+      {showNewEvent && <NewEventSheet onClose={() => setShowNewEvent(false)} onCreated={() => setShowNewEvent(false)} />}
+      {editingTrip  && (
+        editingTrip.type === 'viaje' || !editingTrip.type
+          ? <TripSheet trip={editingTrip} onClose={() => setEditingTrip(null)} onSaved={() => { setEditingTrip(null); router.refresh(); }} />
+          : <NewEventSheet event={editingTrip} onClose={() => setEditingTrip(null)} onUpdated={() => { setEditingTrip(null); router.refresh(); }} />
       )}
     </DesktopShell>
   );
 }
 
-function TripDetail({ trip, onEdit }: { trip: Trip; onEdit?: () => void }) {
-  const days = daysUntil(trip.startDate);
+// Detalle simple para eventos (no viajes)
+function EventDetailSimple({ trip, onEdit }: { trip: Trip; onEdit?: () => void }) {
   const st = STATUS_LABELS[trip.status ?? 'planning'] ?? STATUS_LABELS.planning;
-
   return (
     <div style={{ flex: 1, maxWidth: 680, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ padding: '14px 20px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)' }}>DETALLE</span>
-          {onEdit && (
-            <button onClick={onEdit} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', color: 'var(--text3)', background: 'none', border: '.5px solid var(--bg4)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
-              EDITAR
-            </button>
-          )}
-          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', padding: '3px 9px', borderRadius: 999, border: `.5px solid ${st.border}`, color: st.color }}>{st.label}</span>
+          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)' }}>EVENTO</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, padding: '3px 9px', borderRadius: 999, border: `.5px solid ${st.border}`, color: st.color }}>{st.label}</span>
+            {onEdit && <button onClick={onEdit} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', color: 'var(--text3)', background: 'none', border: '.5px solid var(--bg4)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>EDITAR</button>}
+          </div>
         </div>
-        <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 20, color: 'var(--text)', letterSpacing: '-.01em', marginBottom: 8 }}>{trip.title}</div>
+        <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 20, color: 'var(--text)', marginBottom: 8 }}>{trip.title}</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {trip.who && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em', padding: '4px 9px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--gold2)' }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--purple)', display: 'inline-block' }} />
-              {trip.who.toUpperCase()}
-            </span>
-          )}
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em', padding: '4px 9px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--gold2)' }}>
-            <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--blue)', display: 'inline-block' }} />
-            {fmtDate(trip.startDate)} – {fmtDate(trip.endDate)}
+          {trip.who && <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, padding: '4px 9px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--purple)' }}>👥 {trip.who.toUpperCase()}</span>}
+          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, padding: '4px 9px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--blue)' }}>
+            📅 {fmtDate(trip.startDate)}{trip.endDate ? ` – ${fmtDate(trip.endDate)}` : ''}
           </span>
-          {days !== null && days > 0 && (
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em', padding: '4px 9px', borderRadius: 999, border: '.5px solid #1a2a3a', color: 'var(--blue)' }}>
-              {days} DÍAS
-            </span>
-          )}
         </div>
       </div>
-
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 20px' }}>
-        {/* Logística */}
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.26em', color: 'var(--text3)', marginBottom: 10 }}>LOGÍSTICA</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-          {[
-            { icon: '✈', label: 'TRANSPORTE', data: trip.transport },
-            { icon: '🏨', label: 'ALOJAMIENTO', data: trip.accommodation },
-            { icon: '📋', label: 'DOCUMENTACIÓN', data: null },
-            { icon: '💰', label: 'PRESUPUESTO', data: null },
-          ].map(item => (
-            <div key={item.label} style={{
-              background: item.data ? 'var(--bg2)' : 'transparent',
-              border: `.5px solid ${item.data ? 'var(--bg4)' : 'var(--bg4)'}`,
-              borderRadius: 10, padding: '11px 12px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                <span style={{ fontSize: 14 }}>{item.icon}</span>
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.18em', color: item.data ? 'var(--green)' : 'var(--amber)' }}>
-                  {item.label}
-                </span>
-              </div>
-              <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, color: '#c8c6be', lineHeight: 1.4 }}>
-                {item.data ?? <span style={{ color: 'var(--text3)' }}>Pendiente</span>}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {trip.notes && (
-          <>
-            <div style={{ height: .5, background: 'var(--bg4)', margin: '14px 0' }} />
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.26em', color: 'var(--text3)', marginBottom: 10 }}>NOTAS</div>
-            <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, lineHeight: 1.6, color: '#c8c6be' }}>{trip.notes}</div>
-          </>
-        )}
-      </div>
+      {trip.notes && (
+        <div style={{ padding: '16px 20px', fontFamily: 'var(--font-dm-sans)', fontSize: 12, lineHeight: 1.6, color: 'var(--text2)' }}>{trip.notes}</div>
+      )}
     </div>
   );
 }

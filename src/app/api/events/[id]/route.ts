@@ -7,15 +7,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const body = await req.json();
 
-  const allowed = ['title','startDate','endDate','type','who','transport','accommodation','status','notes','approx'];
+  const allowed = [
+    'title','startDate','endDate','type','who','transport',
+    'accommodation','status','notes','approx','meta',
+  ];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in body) {
-      if (key === 'startDate' || key === 'endDate') {
-        updates[key] = body[key] ? new Date(body[key]) : null;
-      } else {
-        updates[key] = body[key];
-      }
+      updates[key] = (key === 'startDate' || key === 'endDate')
+        ? (body[key] ? new Date(body[key]) : null)
+        : body[key];
     }
   }
 
