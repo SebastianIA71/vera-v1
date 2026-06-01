@@ -11,6 +11,7 @@ type CaptureResult = {
   type?: string | null;
   chips: string[];
   classified: boolean;
+  amivera?: boolean;
 };
 
 type Props = { onClose: () => void };
@@ -73,6 +74,11 @@ export default function CaptureSheet({ onClose }: Props) {
   // Auto-save countdown when result appears
   useEffect(() => {
     if (!result) return;
+    if (result.amivera) {
+      // Amivera: no countdown, cerrar automáticamente en 2.5s
+      const t = setTimeout(() => { setSaved(true); setTimeout(onClose, 300); }, 2500);
+      return () => clearTimeout(t);
+    }
     setCountdown(3);
     countdownRef.current = setInterval(() => {
       setCountdown(c => {
@@ -263,60 +269,83 @@ export default function CaptureSheet({ onClose }: Props) {
 
           {/* === ESTADO 3: CONFIRMACIÓN === */}
           {result && (
-            <>
-              <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 16, padding: '18px 16px', marginTop: 18 }}>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: 'var(--text4)', marginBottom: 10 }}>VERA UNDERSTOOD</div>
-                <div style={{ fontFamily: 'var(--font-syne)', fontSize: 15, lineHeight: 1.45, color: 'var(--text)' }}>{result.title}</div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTop: '.5px solid var(--bg4)' }}>
-                  {result.chips.map((chip, i) => (
-                    <span key={i} style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 5,
-                      fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em',
-                      padding: '4px 9px', borderRadius: 999, border: '.5px solid var(--bg4)',
-                      color: 'var(--gold2)',
-                    }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: chipColor(chip), display: 'inline-block' }} />
-                      {chip}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* Countdown ring */}
-              <div style={{ textAlign: 'center', marginTop: 18 }}>
-                <div style={{ width: 48, height: 48, position: 'relative', margin: '0 auto' }}>
-                  <svg width={48} height={48} viewBox="0 0 48 48" style={{ transform: 'rotate(-90deg)' }}>
-                    <circle cx={24} cy={24} r={20} fill="none" stroke="var(--bg4)" strokeWidth={1.5} />
-                    <circle cx={24} cy={24} r={20} fill="none" stroke="var(--gold2)" strokeWidth={1.5}
-                      strokeDasharray={circumference} strokeDashoffset={circumference - progress}
-                      strokeLinecap="round"
-                      style={{ transition: 'stroke-dashoffset 1s linear' }}
-                    />
-                  </svg>
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 15, color: 'var(--gold2)' }}>
-                    {saved ? '✓' : countdown}
+            result.amivera ? (
+              /* Amivera: confirmación especial */
+              <div style={{ marginTop: 18, textAlign: 'center' }}>
+                <div style={{
+                  background: 'rgba(196,168,106,0.07)', border: '.5px solid var(--gold2)',
+                  borderRadius: 16, padding: '24px 18px',
+                }}>
+                  <div style={{ fontSize: 36, marginBottom: 10 }}>✦</div>
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.26em', color: 'var(--gold2)', marginBottom: 12 }}>
+                    AMIVERA ACTIVADO
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text2)', lineHeight: 1.55 }}>
+                    Vera está investigando.
+                    <br />Te notificará cuando esté listo.
                   </div>
                 </div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: 'var(--text4)', marginTop: 8 }}>SAVING TO INBOX</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--text3)', marginTop: 14 }}>
+                  {saved ? 'LISTO ✓' : 'CERRANDO···'}
+                </div>
               </div>
+            ) : (
+              /* Normal capture confirmation */
+              <>
+                <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 16, padding: '18px 16px', marginTop: 18 }}>
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: 'var(--text4)', marginBottom: 10 }}>VERA UNDERSTOOD</div>
+                  <div style={{ fontFamily: 'var(--font-syne)', fontSize: 15, lineHeight: 1.45, color: 'var(--text)' }}>{result.title}</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTop: '.5px solid var(--bg4)' }}>
+                    {result.chips.map((chip, i) => (
+                      <span key={i} style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 5,
+                        fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em',
+                        padding: '4px 9px', borderRadius: 999, border: '.5px solid var(--bg4)',
+                        color: 'var(--gold2)',
+                      }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: chipColor(chip), display: 'inline-block' }} />
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+                </div>
 
-              {/* 2 botones directos */}
-              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-                <button
-                  onClick={saveNow}
-                  style={{ flex: 1, padding: '12px 8px', borderRadius: 12, border: '.5px solid var(--gold2)', background: 'transparent', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', cursor: 'pointer' }}
-                >
-                  INBOX →
-                </button>
-                <button
-                  onClick={createAsTask}
-                  disabled={taskSaving}
-                  style={{ flex: 1, padding: '12px 8px', borderRadius: 12, border: '.5px solid var(--blue)', background: 'transparent', color: 'var(--blue)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', cursor: 'pointer', opacity: taskSaving ? 0.5 : 1 }}
-                >
-                  {taskSaving ? '···' : 'TAREA →'}
-                </button>
-              </div>
-            </>
+                {/* Countdown ring */}
+                <div style={{ textAlign: 'center', marginTop: 18 }}>
+                  <div style={{ width: 48, height: 48, position: 'relative', margin: '0 auto' }}>
+                    <svg width={48} height={48} viewBox="0 0 48 48" style={{ transform: 'rotate(-90deg)' }}>
+                      <circle cx={24} cy={24} r={20} fill="none" stroke="var(--bg4)" strokeWidth={1.5} />
+                      <circle cx={24} cy={24} r={20} fill="none" stroke="var(--gold2)" strokeWidth={1.5}
+                        strokeDasharray={circumference} strokeDashoffset={circumference - progress}
+                        strokeLinecap="round"
+                        style={{ transition: 'stroke-dashoffset 1s linear' }}
+                      />
+                    </svg>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 15, color: 'var(--gold2)' }}>
+                      {saved ? '✓' : countdown}
+                    </div>
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: 'var(--text4)', marginTop: 8 }}>SAVING TO INBOX</div>
+                </div>
+
+                {/* 2 botones directos */}
+                <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                  <button
+                    onClick={saveNow}
+                    style={{ flex: 1, padding: '12px 8px', borderRadius: 12, border: '.5px solid var(--gold2)', background: 'transparent', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', cursor: 'pointer' }}
+                  >
+                    INBOX →
+                  </button>
+                  <button
+                    onClick={createAsTask}
+                    disabled={taskSaving}
+                    style={{ flex: 1, padding: '12px 8px', borderRadius: 12, border: '.5px solid var(--blue)', background: 'transparent', color: 'var(--blue)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', cursor: 'pointer', opacity: taskSaving ? 0.5 : 1 }}
+                  >
+                    {taskSaving ? '···' : 'TAREA →'}
+                  </button>
+                </div>
+              </>
+            )
           )}
         </div>
       </div>

@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { tasks, events, inbox, weightLog } from '@/lib/db/schema';
 import { callClaude } from '@/lib/claude';
 import { sendPush } from '@/lib/push';
+import { extractAmiVeraQuery, runAmiVeraPipeline } from '@/lib/amivera';
 
 // ─── Verificación firma Resend (svix) ──────────────────────────────────────
 async function verifyResend(req: NextRequest, body: string): Promise<boolean> {
@@ -236,6 +237,18 @@ export async function POST(req: NextRequest) {
   const { intent: prefixIntent, cleanSubject } = detectPrefix(rawSubject);
   const body = await fetchEmailBody(emailId);
   const fullText = `Asunto: ${cleanSubject}\n\nCuerpo: ${body}`;
+
+  // --- Amivera fast path (nunca va al inbox) ---
+  const amiQuery = extractAmiVeraQuery(`${rawSubject} ${body}`);
+  if (amiQuery) {
+    await runAmiVeraPipeline(amiQuery);
+    await sendReply(
+      fromEmail,
+      'VERA · amivera activado',
+      `Pipeline iniciado para: "${amiQuery.slice(0, 80)}"\nVera investigará y te notificará cuando esté listo.\n\nVERA · ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}`,
+    );
+    return NextResponse.json({ ok: true, amivera: true });
+  }
 
   // 2. Clasificar intención
   let intent: Intent = 'inbox';

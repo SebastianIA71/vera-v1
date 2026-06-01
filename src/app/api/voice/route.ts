@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { db } from '@/lib/db';
 import { inbox } from '@/lib/db/schema';
 import { callClaude } from '@/lib/claude';
 import { rateLimit } from '@/lib/rateLimit';
+import { extractAmiVeraQuery, runAmiVeraPipeline } from '@/lib/amivera';
 
 const CLASSIFY_PROMPT = `Eres Vera. El usuario acaba de dictar una captura de voz.
 
@@ -28,6 +29,21 @@ export async function POST(req: NextRequest) {
   const { transcript } = await req.json();
   if (!transcript?.trim()) {
     return NextResponse.json({ error: 'transcript required' }, { status: 400 });
+  }
+
+  // --- Amivera fast path ---
+  const amiQuery = extractAmiVeraQuery(transcript.trim());
+  if (amiQuery) {
+    after(() => runAmiVeraPipeline(amiQuery).catch(() => {}));
+    return NextResponse.json({
+      amivera:    true,
+      id:         0,
+      title:      'Pipeline amivera activado',
+      propertyId: null,
+      prio:       null,
+      chips:      ['AMIVERA ✦'],
+      classified: true,
+    });
   }
 
   let parsed: {
