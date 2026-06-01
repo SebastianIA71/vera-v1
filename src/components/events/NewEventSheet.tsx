@@ -28,12 +28,12 @@ const EVENT_TYPES = [
 ];
 
 const TRANSPORT_OPTIONS = [
-  { id: '',       icon: '🧳' },
-  { id: 'avion',  icon: '✈'  },
-  { id: 'tren',   icon: '🚄' },
-  { id: 'coche',  icon: '🚗' },
-  { id: 'barco',  icon: '⛵' },
-  { id: 'bus',    icon: '🚌' },
+  { id: 'avion',  icon: '✈',  label: 'Avión'  },
+  { id: 'tren',   icon: '🚄', label: 'Tren'   },
+  { id: 'coche',  icon: '🚗', label: 'Coche'  },
+  { id: 'barco',  icon: '⛵', label: 'Barco'  },
+  { id: 'bus',    icon: '🚌', label: 'Bus'    },
+  { id: 'moto',   icon: '🏍', label: 'Moto'   },
 ];
 
 const STATUS_OPTIONS = [
@@ -65,7 +65,7 @@ export default function NewEventSheet({ onClose, onCreated, onUpdated, type: def
     startDate:     event?.startDate ? new Date(event.startDate).toISOString().slice(0, 10) : '',
     endDate:       event?.endDate   ? new Date(event.endDate).toISOString().slice(0, 10)   : '',
     who:           event?.who           ?? '',
-    transport:     event?.transport     ?? '',
+    transport:     event?.transport ? event.transport.split(',').filter(Boolean) : [] as string[],
     accommodation: event?.accommodation ?? '',
     status:        event?.status        ?? 'planning',
     notes:         event?.notes         ?? '',
@@ -74,6 +74,14 @@ export default function NewEventSheet({ onClose, onCreated, onUpdated, type: def
 
   const set = (k: keyof typeof form, v: string | boolean) =>
     setForm(prev => ({ ...prev, [k]: v }));
+
+  const toggleTransport = (id: string) =>
+    setForm(prev => ({
+      ...prev,
+      transport: prev.transport.includes(id)
+        ? prev.transport.filter(x => x !== id)
+        : [...prev.transport, id],
+    }));
 
   const canSave = form.title.trim().length > 0 && form.startDate.length > 0;
 
@@ -92,7 +100,7 @@ export default function NewEventSheet({ onClose, onCreated, onUpdated, type: def
           startDate:     form.startDate || null,
           endDate:       form.endDate   || null,
           who:           form.who.trim()           || null,
-          transport:     form.transport            || null,
+          transport:     form.transport.join(',')     || null,
           accommodation: form.accommodation.trim() || null,
           status:        form.status,
           notes:         form.notes.trim()         || null,
@@ -175,18 +183,24 @@ export default function NewEventSheet({ onClose, onCreated, onUpdated, type: def
               placeholder="Marta, Jordi..." style={INPUT} />
           </div>
 
-          {/* Transporte */}
+          {/* Transporte — selección múltiple */}
           <div>
-            <label style={LABEL}>TRANSPORTE</label>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {TRANSPORT_OPTIONS.map(opt => (
-                <button key={opt.id} onClick={() => set('transport', opt.id)} style={{
-                  flex: 1, padding: '8px 4px', borderRadius: 8, textAlign: 'center',
-                  background: form.transport === opt.id ? 'rgba(196,168,106,.1)' : 'var(--bg3)',
-                  border: `.5px solid ${form.transport === opt.id ? 'var(--gold2)' : 'var(--bg4)'}`,
-                  fontSize: 16, cursor: 'pointer',
-                }}>{opt.icon}</button>
-              ))}
+            <label style={LABEL}>TRANSPORTE <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(selección múltiple)</span></label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {TRANSPORT_OPTIONS.map(opt => {
+                const active = form.transport.includes(opt.id);
+                return (
+                  <button key={opt.id} onClick={() => toggleTransport(opt.id)} style={{
+                    padding: '8px 12px', borderRadius: 8, textAlign: 'center',
+                    background: active ? 'rgba(196,168,106,.12)' : 'var(--bg3)',
+                    border: `.5px solid ${active ? 'var(--gold2)' : 'var(--bg4)'}`,
+                    display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer',
+                  }}>
+                    <span style={{ fontSize: 16 }}>{opt.icon}</span>
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: active ? 'var(--gold2)' : 'var(--text3)' }}>{opt.label.toUpperCase()}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

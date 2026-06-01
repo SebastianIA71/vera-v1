@@ -116,7 +116,7 @@ export default function TripDetailPanel({ trip }: { trip: Trip }) {
           <Section title="LOGÍSTICA">
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {[
-                { icon: trip.transport ? TRANSPORT_ICONS[trip.transport] ?? '🧳' : '✈', label: 'TRANSPORTE', data: trip.transport ?? null, ok: !!trip.transport },
+                { icon: trip.transport ? (trip.transport.split(',').filter(Boolean).map(t => TRANSPORT_ICONS[t] ?? '🧳').join(' ') || '✈') : '✈', label: 'TRANSPORTE', data: trip.transport ? trip.transport.split(',').filter(Boolean).map(t => TRANSPORT_ICONS[t] ?? t).join('  ') : null, ok: !!trip.transport },
                 { icon: '🏨', label: 'ALOJAMIENTO', data: trip.accommodation ?? null, ok: !!trip.accommodation },
                 { icon: '💰', label: 'PRESUPUESTO', data: meta.budget ? `${meta.budget.total} ${meta.budget.currency}` : null, ok: !!meta.budget },
                 { icon: '📋', label: 'DOCUMENTOS', data: meta.documents?.length ? `${meta.documents.length} docs` : null, ok: !!(meta.documents?.length) },

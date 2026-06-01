@@ -424,34 +424,36 @@ export default function DashboardClient({
           {/* Orbital map */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', gap: 0 }}>
             {/* KPI columna izquierda */}
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 10, paddingRight: 24, flexShrink: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, paddingRight: 24, flexShrink: 0 }}>
               {getKpiNodes(kpis).map(kpi => (
-                <div key={kpi.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {kpi.id === 'weight' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      {(['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const).map((key, i) => {
+                <div key={kpi.id} style={{ display: 'flex', alignItems: 'center' }}>
+                  {/* Zona fija izquierda: vacía para todos salvo KG */}
+                  <div style={{ width: 78, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', paddingRight: 8, gap: 2, flexShrink: 0 }}>
+                    {kpi.id === 'weight' &&
+                      (['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const).map((key, i) => {
                         const icons = ['💧','🚶','💪','🧘','🍴'];
                         const on = snmActive.includes(key);
                         return (
-                          <span key={key} style={{ fontSize: 10, opacity: on ? 1 : 0.18, filter: on ? 'none' : 'grayscale(1)', lineHeight: 1 }}>
+                          <span key={key} style={{ fontSize: 13, opacity: on ? 1 : 0.18, filter: on ? 'none' : 'grayscale(1)', lineHeight: 1 }}>
                             {icons[i]}
                           </span>
                         );
-                      })}
-                    </div>
-                  )}
+                      })
+                    }
+                  </div>
+                  {/* KPI card */}
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '5px 10px', background: 'var(--bg)',
+                    padding: '9px 14px', background: 'var(--bg)',
                     border: `.5px solid ${kpi.color}33`,
                     borderLeft: `2px solid ${kpi.color}`,
-                    borderRadius: '0 6px 6px 0', minWidth: 72,
+                    borderRadius: '0 8px 8px 0', minWidth: 90,
                   }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 20, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
                         {kpi.value}
                       </div>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, letterSpacing: '.1em', color: 'var(--text3)', marginTop: 2 }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, letterSpacing: '.1em', color: 'var(--text3)', marginTop: 3 }}>
                         {kpi.label}
                       </div>
                     </div>

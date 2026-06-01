@@ -12,6 +12,7 @@ import { APP_VERSION } from '@/lib/version';
 const CaptureSheet  = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const InboxMobile   = dynamic(() => import('@/components/inbox/InboxMobile'), { ssr: false });
 const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
+const NewTaskModal  = dynamic(() => import('@/components/tasks/NewTaskModal'), { ssr: false });
 const DailyInsight   = dynamic(() => import('@/components/DailyInsight'), { ssr: false });
 const DailyBriefing  = dynamic(() => import('@/components/DailyBriefing'), { ssr: false });
 
@@ -23,7 +24,7 @@ const SNM_ICONS = ['💧', '🚶', '💪', '🧘', '🍴'];
 const SNM_KEYS = ['snmAgua', 'snmCaminar', 'snmEntreno', 'snmEscucha', 'snmDisfruta'] as const;
 
 function transportIcon(t: string): string {
-  const v = t.toLowerCase();
+  const v = t.toLowerCase().trim();
   if (v.includes('avi') || v.includes('vuelo') || v.includes('fly') || v.includes('avion')) return '✈';
   if (v.includes('tren') || v.includes('train') || v.includes('ave') || v.includes('renfe')) return '🚄';
   if (v.includes('coche') || v.includes('car') || v.includes('auto')) return '🚗';
@@ -31,6 +32,10 @@ function transportIcon(t: string): string {
   if (v.includes('bus') || v.includes('coach')) return '🚌';
   if (v.includes('moto')) return '🏍';
   return '🧳';
+}
+
+function transportIcons(t: string): string {
+  return t.split(',').filter(Boolean).map(v => transportIcon(v)).join(' ');
 }
 
 function SectionLabel({ label, color, meta, link, onLinkClick }: { label: string; color?: string; meta?: string; link?: string; onLinkClick?: () => void }) {
@@ -86,6 +91,7 @@ export default function MobileHome({
   const [showCapture, setShowCapture] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
   const [showNewEvent, setShowNewEvent] = useState(false);
+  const [newTaskPropId, setNewTaskPropId] = useState<string | null>(null);
   const [statusLine, setStatusLine] = useState('');
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const [persona] = useState(() => getRandomPersona());
@@ -342,8 +348,8 @@ export default function MobileHome({
                     </div>
                   )}
                   {nextTrip.transport && (
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text2)', marginTop: 4 }}>
-                      {transportIcon(nextTrip.transport)}
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 14, color: 'var(--text2)', marginTop: 4, letterSpacing: '.12em' }}>
+                      {transportIcons(nextTrip.transport)}
                     </div>
                   )}
                 </div>
@@ -452,6 +458,13 @@ export default function MobileHome({
                     <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
                   </div>
                   <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: 'var(--text3)', flexShrink: 0 }}>{task.prioFinal ?? 0}</span>
+                  <button
+                    onClick={() => setNewTaskPropId(prop.id)}
+                    style={{ width: 26, height: 26, borderRadius: 8, background: 'transparent', border: `.5px solid ${prop.color ?? 'var(--bg4)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: prop.color ?? 'var(--text3)', cursor: 'pointer', flexShrink: 0 }}
+                    title={`Nueva tarea en ${prop.name}`}
+                  >
+                    <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  </button>
                 </div>
               ))}
             </div>
@@ -496,6 +509,7 @@ export default function MobileHome({
       {showCapture && <CaptureSheet onClose={() => setShowCapture(false)} />}
       {showInbox && <InboxMobile items={inboxItems} onClose={() => { setShowInbox(false); router.refresh(); }} />}
       {showNewEvent && <NewEventSheet onClose={() => setShowNewEvent(false)} onCreated={() => setShowNewEvent(false)} />}
+      {newTaskPropId && <NewTaskModal defaultPropertyId={newTaskPropId} onClose={() => setNewTaskPropId(null)} onCreated={() => { setNewTaskPropId(null); router.refresh(); }} />}
     </div>
   );
 }
