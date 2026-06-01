@@ -8,12 +8,8 @@ import TaskDetailPanel, { TaskDetail } from '@/components/tasks/TaskDetailPanel'
 import { taskBorderColor } from '@/lib/utils';
 
 type Task = TaskDetail & { inNow?: boolean | null };
+type Property = { id: string; name: string; color: string | null; icon: string | null };
 
-const PROPERTIES = [
-  { id: 'flat',     label: '🏙 Flat',     color: 'var(--blue)'   },
-  { id: 'sarapita', label: '🌿 Sarapita', color: 'var(--purple)' },
-  { id: 'willys',   label: "🎪 Willy's",  color: 'var(--green)'  },
-];
 
 type Filters = {
   propertyId: string | null;
@@ -68,12 +64,13 @@ function FilterChip({ label, active, color, onClick }: { label: string; active: 
 }
 
 export default function TasksClient({
-  initialTasks, urgentCount, waitingCount, inboxCount,
+  initialTasks, urgentCount, waitingCount, inboxCount, properties = [],
 }: {
   initialTasks: Task[];
   urgentCount: number;
   waitingCount: number;
   inboxCount: number;
+  properties?: Property[];
 }) {
   const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -177,8 +174,8 @@ export default function TasksClient({
           </div>
           <div className={showFilters ? 'filters-visible' : 'filters-mobile-hidden'} style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', flexShrink: 0 }}>DÓNDE</span>
-            {PROPERTIES.map(p => (
-              <FilterChip key={p.id} label={p.label} color={p.color}
+            {properties.map(p => (
+              <FilterChip key={p.id} label={`${p.icon ? p.icon + ' ' : ''}${p.name}`} color={p.color ?? undefined}
                 active={filters.propertyId === p.id}
                 onClick={() => setFilters(f => ({ ...f, propertyId: f.propertyId === p.id ? null : p.id }))}
               />

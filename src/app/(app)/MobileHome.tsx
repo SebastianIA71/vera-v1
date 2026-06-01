@@ -80,7 +80,7 @@ export default function MobileHome({
   todaySnm = [],
 }: {
   urgentTasks: Task[];
-  nextTrip: { title: string; daysTo: number; startDate: string; who: string; transport?: string } | null;
+  nextTrip: { title: string; daysTo: number; startDate: string; endDate?: string; who: string; transport?: string } | null;
   nextEvent: { title: string; daysTo: number; startDate: string; who: string } | null;
   weightLogs: WeightLog[];
   inboxCount: number;
@@ -135,8 +135,12 @@ export default function MobileHome({
     if (weightLogs[0]) parts.push(`${weightLogs[0].value} KG`);
     parts.push('10,2K');
     if (nextTrip) {
-      const transport = nextTrip.transport ? ` ${transportIcons(nextTrip.transport)}` : '';
-      parts.push(`${nextTrip.title.toUpperCase()}${transport} · ${nextTrip.daysTo} D`);
+      const transportStr = nextTrip.transport ? `${transportIcons(nextTrip.transport)} ` : '';
+      const duration = nextTrip.endDate && nextTrip.startDate
+        ? Math.ceil((new Date(nextTrip.endDate).getTime() - new Date(nextTrip.startDate).getTime()) / 86400000)
+        : null;
+      const durationStr = duration ? ` · ${duration}D` : '';
+      parts.push(`${transportStr}${nextTrip.title.toUpperCase()} · ${nextTrip.daysTo}D${durationStr}`);
     }
     setStatusLine(parts.join(' · '));
   }, [weightLogs, nextTrip]);
@@ -347,17 +351,24 @@ export default function MobileHome({
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div>
                   <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 16, color: 'var(--text)', letterSpacing: '-.01em' }}>{nextTrip.title}</div>
-                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text2)', letterSpacing: '.12em', marginTop: 5 }}>
-                    {new Date(nextTrip.startDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase()}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
+                    {nextTrip.transport && (
+                      <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 15, lineHeight: 1 }}>
+                        {transportIcons(nextTrip.transport)}
+                      </span>
+                    )}
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text2)', letterSpacing: '.12em' }}>
+                      {new Date(nextTrip.startDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase()}
+                    </span>
+                    {nextTrip.endDate && (
+                      <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.08em' }}>
+                        · {Math.ceil((new Date(nextTrip.endDate).getTime() - new Date(nextTrip.startDate).getTime()) / 86400000)}D
+                      </span>
+                    )}
                   </div>
                   {nextTrip.who && (
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 2 }}>
                       {nextTrip.who.toUpperCase()}
-                    </div>
-                  )}
-                  {nextTrip.transport && (
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 14, color: 'var(--text2)', marginTop: 4, letterSpacing: '.12em' }}>
-                      {transportIcons(nextTrip.transport)}
                     </div>
                   )}
                 </div>

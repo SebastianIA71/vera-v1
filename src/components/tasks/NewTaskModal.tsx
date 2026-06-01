@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 type Task = { id: number; title: string; propertyId?: string | null; prio?: number | null; prioFinal?: number | null; status?: string | null };
+type Property = { id: string; name: string; color: string | null; icon: string | null };
 
 const INPUT: React.CSSProperties = {
   width: '100%', background: 'var(--bg3)', border: '.5px solid var(--bg4)',
@@ -27,6 +28,14 @@ export default function NewTaskModal({
   const [prio, setPrio]             = useState(5);
   const [propertyId, setPropertyId] = useState(defaultPropertyId ?? '');
   const [saving, setSaving]         = useState(false);
+  const [propList, setPropList]     = useState<Property[]>([]);
+
+  useEffect(() => {
+    fetch('/api/properties')
+      .then(r => r.json())
+      .then((data: Property[]) => setPropList(data))
+      .catch(() => {});
+  }, []);
 
   const canSave = title.trim().length > 0;
 
@@ -76,15 +85,26 @@ export default function NewTaskModal({
           <div>
             <label style={LABEL}>PROPIEDAD (opcional)</label>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {[{id:'',label:'Ninguna'},{id:'flat',label:'Flat'},{id:'sarapita',label:'Sarapita'},{id:'willys',label:"Willy's"}].map(p => (
-                <button key={p.id} onClick={() => setPropertyId(p.id)} style={{
-                  padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
-                  border: `.5px solid ${propertyId === p.id ? 'var(--gold2)' : 'var(--bg4)'}`,
-                  background: propertyId === p.id ? 'rgba(196,168,106,0.12)' : 'transparent',
-                  color: propertyId === p.id ? 'var(--gold2)' : 'var(--text3)',
-                  fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em',
-                }}>{p.label.toUpperCase()}</button>
-              ))}
+              <button onClick={() => setPropertyId('')} style={{
+                padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
+                border: `.5px solid ${propertyId === '' ? 'var(--gold2)' : 'var(--bg4)'}`,
+                background: propertyId === '' ? 'rgba(196,168,106,0.12)' : 'transparent',
+                color: propertyId === '' ? 'var(--gold2)' : 'var(--text3)',
+                fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em',
+              }}>NINGUNA</button>
+              {propList.map(p => {
+                const active = propertyId === p.id;
+                const col = p.color ?? 'var(--gold2)';
+                return (
+                  <button key={p.id} onClick={() => setPropertyId(p.id)} style={{
+                    padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
+                    border: `.5px solid ${active ? col : 'var(--bg4)'}`,
+                    background: active ? `${col}1e` : 'transparent',
+                    color: active ? col : 'var(--text3)',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em',
+                  }}>{p.icon ? `${p.icon} ` : ''}{p.name.toUpperCase()}</button>
+                );
+              })}
             </div>
           </div>
 

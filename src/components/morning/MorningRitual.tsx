@@ -132,12 +132,16 @@ export default function MorningRitual({
   }, []);
 
   const next = useCallback(() => {
-    if (step === 2 && weightVal !== null && !weightSaved) {
-      fetch('/api/weight', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value: weightVal, ...snm }),
-      }).then(() => setWeightSaved(true)).catch(() => {});
+    if (step === 2 && !weightSaved) {
+      // Guarda SNM aunque el usuario salte; usa el último peso como fallback
+      const saveVal = weightVal ?? lastWeightEntry?.value;
+      if (saveVal !== null && saveVal !== undefined) {
+        fetch('/api/weight', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value: saveVal, ...snm }),
+        }).then(() => setWeightSaved(true)).catch(() => {});
+      }
     }
     if (step === 3) {
       setBriefingLoading(true);

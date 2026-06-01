@@ -18,11 +18,12 @@ function NavIcon({ icon }: { icon: string }) {
   return <>{icons[icon] ?? null}</>;
 }
 
-function NavItem({ icon, label, active, badge, onClick }: {
+function NavItem({ icon, label, active, badge, badgeColor = 'var(--red)', onClick }: {
   icon: string;
   label: string;
   active?: boolean;
   badge?: number;
+  badgeColor?: string;
   onClick?: () => void;
 }) {
   return (
@@ -54,7 +55,7 @@ function NavItem({ icon, label, active, badge, onClick }: {
       </span>
       {badge !== undefined && badge > 0 && (
         <span style={{
-          marginLeft: 'auto', background: 'var(--red)', color: '#fff',
+          marginLeft: 'auto', background: badgeColor, color: '#fff',
           fontFamily: 'var(--font-dm-mono)', fontSize: '9px',
           padding: '2px 6px', borderRadius: '999px',
         }}>
@@ -102,15 +103,15 @@ export default function DesktopNav({
       }}
     >
       <NavItem icon="command"  label="COMMAND"    active={isActive('/dashboard')} onClick={() => router.push('/dashboard')} />
-      <NavItem icon="tasks"    label="TAREAS"      active={isActive('/tasks')}     badge={counts.tasks}      onClick={() => router.push('/tasks')} />
-      <NavItem icon="inbox"    label="INBOX"       active={isActive('/inbox')}     badge={inboxCount}        onClick={() => router.push('/inbox')} />
-      <NavItem icon="trips"    label="EVENTOS"     active={isActive('/trips')}     badge={counts.trips}      onClick={() => router.push('/trips')} />
-      <NavItem icon="props"    label="PROPIEDADES" active={isActive('/properties')} badge={counts.properties} onClick={() => router.push('/properties')} />
+      <NavItem icon="tasks"    label="TAREAS"      active={isActive('/tasks')}      badge={counts.tasks}       badgeColor="var(--red)"   onClick={() => router.push('/tasks')} />
+      <NavItem icon="inbox"    label="INBOX"       active={isActive('/inbox')}      badge={inboxCount}         badgeColor="var(--red)"   onClick={() => router.push('/inbox')} />
+      <NavItem icon="trips"    label="EVENTOS"     active={isActive('/trips')}      badge={counts.trips}       badgeColor="var(--green)" onClick={() => router.push('/trips')} />
+      <NavItem icon="props"    label="PROPIEDADES" active={isActive('/properties')} badge={counts.properties}  badgeColor="var(--green)" onClick={() => router.push('/properties')} />
 
       <div style={{ height: .5, background: 'var(--bg4)', margin: '6px 14px' }} />
 
       <NavItem icon="finance"  label="FINANZAS"    active={isActive('/finance')}   onClick={() => router.push('/finance')} />
-      <NavItem icon="agents"   label="AGENTES"     active={isActive('/agents')}    badge={counts.agents}     onClick={() => router.push('/agents')} />
+      <NavItem icon="agents"   label="AGENTES"     active={isActive('/agents')}    badge={counts.agents}      badgeColor="var(--green)" onClick={() => router.push('/agents')} />
 
       <div style={{ marginTop: 'auto' }}>
         <div style={{ height: .5, background: 'var(--bg4)', margin: '6px 14px' }} />

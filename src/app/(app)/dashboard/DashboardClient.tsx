@@ -430,8 +430,8 @@ export default function DashboardClient({
 
           {/* Orbital map */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-            {/* KPI columna izquierda — anclada al borde izquierdo */}
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 9, paddingLeft: 28, paddingRight: 14, flexShrink: 0 }}>
+            {/* KPI zone — centrada entre panel izquierdo y orbital */}
+            <div style={{ flex: '0 0 260px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 9, padding: '0 16px' }}>
               {getKpiNodes(kpis).map(kpi => (
                 <div key={kpi.id} style={{ display: 'flex', alignItems: 'center' }}>
                   {/* Zona fija: iconos SNM para KG, vacía para el resto */}
