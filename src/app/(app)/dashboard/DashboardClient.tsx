@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AgentPanel from '@/components/command/AgentPanel';
 import DesktopNav from '@/components/layout/DesktopNav';
+const MapWidget = dynamic(() => import('@/components/command/MapWidget'), { ssr: false });
 import { QUOTES } from '@/lib/quotes';
 import { getRandomPersona } from '@/lib/personas';
 import { getGreeting, personaSearchUrl, taskBorderColor } from '@/lib/utils';
@@ -254,7 +255,7 @@ export default function DashboardClient({
   inboxCount: number;
   nextTrip: { title: string; daysTo: number } | null;
   nextEvent: { title: string; daysTo: number; startDate: string } | null;
-  allEvents: { startDate: Date | null; type: string }[];
+  allEvents: { startDate: Date | null; type: string; title: string }[];
   kpis: Kpis;
   todaySnm?: string[];
 }) {
@@ -431,44 +432,68 @@ export default function DashboardClient({
           </div>
 
           {/* Orbital map */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-            {/* KPI zone — centrada entre panel izquierdo y orbital */}
-            <div style={{ flex: '0 0 260px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 9, padding: '0 16px' }}>
-              {getKpiNodes(kpis).map(kpi => (
-                <div key={kpi.id} style={{ display: 'flex', alignItems: 'center' }}>
-                  {/* Zona fija: iconos SNM para KG, vacía para el resto */}
-                  <div style={{ width: 124, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', paddingRight: 8, gap: 3, flexShrink: 0 }}>
-                    {kpi.id === 'weight' &&
-                      (['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const).map((key, i) => {
-                        const icons = ['💧','🚶','💪','🧘','🍴'];
-                        const on = snmActive.includes(key);
-                        return (
-                          <span key={key} style={{ fontSize: 22, opacity: on ? 1 : 0.15, filter: on ? 'none' : 'grayscale(1)', lineHeight: 1 }}>
-                            {icons[i]}
-                          </span>
-                        );
-                      })
-                    }
-                  </div>
-                  {/* KPI card */}
-                  <div style={{
-                    display: 'flex', alignItems: 'center',
-                    padding: '11px 18px', background: 'var(--bg)',
+          <div style={{ flex: 1, display: 'flex', alignItems: 'stretch', overflow: 'hidden' }}>
+            {/* KPI zone + mapa: arriba KPIs en 2 columnas, abajo mapa de destinos */}
+            <div style={{ flex: '0 0 260px', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 14px', overflow: 'hidden' }}>
+              {/* Grid 2 columnas — KPIs compactos */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, flexShrink: 0 }}>
+                {getKpiNodes(kpis).filter(k => k.id !== 'weight').map(kpi => (
+                  <div key={kpi.id} style={{
+                    padding: '7px 10px', background: 'var(--bg)',
                     border: `.5px solid ${kpi.color}33`,
                     borderLeft: `2px solid ${kpi.color}`,
-                    borderRadius: '0 8px 8px 0', minWidth: 104,
+                    borderRadius: '0 7px 7px 0',
                   }}>
-                    <div>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 26, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
-                        {kpi.value}
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.12em', color: 'var(--text3)', marginTop: 4 }}>
-                        {kpi.label}
-                      </div>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                      {kpi.value}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, letterSpacing: '.1em', color: 'var(--text3)', marginTop: 3 }}>
+                      {kpi.label}
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+                {/* KG — span 2 cols con iconos SNM inline */}
+                {(() => {
+                  const kpi = getKpiNodes(kpis).find(k => k.id === 'weight')!;
+                  const SNM_KEYS = ['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const;
+                  const SNM_ICONS = ['💧','🚶','💪','🧘','🍴'];
+                  return (
+                    <div style={{
+                      gridColumn: 'span 2',
+                      padding: '7px 10px', background: 'var(--bg)',
+                      border: `.5px solid ${kpi.color}33`,
+                      borderLeft: `2px solid ${kpi.color}`,
+                      borderRadius: '0 7px 7px 0',
+                      display: 'flex', alignItems: 'center', gap: 10,
+                    }}>
+                      <div>
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                          {kpi.value}
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, letterSpacing: '.1em', color: 'var(--text3)', marginTop: 3 }}>
+                          KG
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 4, marginLeft: 4 }}>
+                        {SNM_KEYS.map((key, i) => (
+                          <span key={key} style={{ fontSize: 14, opacity: snmActive.includes(key) ? 1 : 0.15, filter: snmActive.includes(key) ? 'none' : 'grayscale(1)', lineHeight: 1 }}>
+                            {SNM_ICONS[i]}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Mapa de destinos */}
+              <div style={{ flex: 1, minHeight: 160, borderRadius: 8, overflow: 'hidden' }}>
+                <MapWidget
+                  trips={allEvents
+                    .filter(e => e.type === 'viaje' && e.startDate)
+                    .map(e => ({ id: 0, title: e.title, startDate: e.startDate ? new Date(e.startDate).toISOString() : null, type: e.type }))}
+                />
+              </div>
             </div>
             {/* Orbital — centrado en el espacio restante */}
             <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 0 }}>

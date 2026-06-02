@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { tasks, events, weightLog, inbox, properties } from '@/lib/db/schema';
-import { ne, desc, eq } from 'drizzle-orm';
+import { ne, desc, eq, and, isNotNull } from 'drizzle-orm';
 import HomeRouter from './HomeRouter';
 
 export const dynamic = 'force-dynamic';
@@ -8,12 +8,17 @@ export const dynamic = 'force-dynamic';
 export default async function AppRootPage() {
   const now = new Date();
 
-  const [allTasks, allEvents, weights, inboxItems, allProperties] = await Promise.all([
+  const [allTasks, allEvents, weights, inboxItems, allProperties, propTasks] = await Promise.all([
     db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)).limit(30),
     db.select().from(events).orderBy(desc(events.startDate)).limit(20),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(14),
     db.select().from(inbox).where(eq(inbox.processed, false)).orderBy(desc(inbox.createdAt)).limit(50),
     db.select().from(properties),
+    // Query dedicada para tareas de propiedades — evita que limit(30) las excluya
+    db.select().from(tasks)
+      .where(and(ne(tasks.status, 'archived'), ne(tasks.status, 'done'), isNotNull(tasks.propertyId)))
+      .orderBy(desc(tasks.prioFinal))
+      .limit(50),
   ]);
 
   const urgentTasks = allTasks.filter(t => (t.prioFinal ?? 0) >= 7 && t.status !== 'done').slice(0, 3);
@@ -48,11 +53,11 @@ export default async function AppRootPage() {
     Object.entries(snmMap).forEach(([k, v]) => { if (v) todaySnm.push(k); });
   }
 
-  // Top tarea por propiedad — la más prioritaria activa de cada una
+  // Top tarea por propiedad — usa query dedicada que incluye TODAS las tareas con propertyId
   const topTaskByProperty = allProperties.map(prop => {
-    const t = allTasks.find(t => t.propertyId === prop.id && t.status !== 'done');
+    const t = propTasks.find(t => t.propertyId === prop.id);
     return t ? { prop, task: t } : null;
-  }).filter(Boolean) as { prop: typeof allProperties[0]; task: typeof allTasks[0] }[];
+  }).filter(Boolean) as { prop: typeof allProperties[0]; task: typeof propTasks[0] }[];
 
   return (
     <HomeRouter

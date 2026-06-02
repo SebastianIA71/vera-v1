@@ -66,7 +66,7 @@ export default async function DashboardPage() {
       inboxCount={inboxCount}
       nextTrip={nextTrip ? { title: nextTrip.title, daysTo: daysToNextTrip ?? 0 } : null}
       nextEvent={nextEventItem && daysToNextEvent ? { title: nextEventItem.title, daysTo: daysToNextEvent, startDate: nextEventItem.startDate!.toISOString() } : null}
-      allEvents={allEvents.map(e => ({ startDate: e.startDate, type: e.type ?? '' }))}
+      allEvents={allEvents.map(e => ({ startDate: e.startDate, type: e.type ?? '', title: e.title }))}
       todaySnm={todaySnm}
       kpis={{ tasksActive, tasksDone, inboxPending: inboxCount, tripsCount, eventsCount, propsCount, projectsCount, currentWeight }}
     />
