@@ -22,6 +22,33 @@ function daysUntil(d: Date | null | undefined): number | null {
   return Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
 }
 
+function mapsUrl(title: string, accommodation?: string | null): string {
+  const q = accommodation?.trim() || title.trim();
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+}
+
+function MapsBtn({ title, accommodation }: { title: string; accommodation?: string | null }) {
+  return (
+    <a
+      href={mapsUrl(title, accommodation)}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={e => e.stopPropagation()}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em',
+        padding: '2px 7px', borderRadius: 999,
+        border: '.5px solid #4285F433', color: '#4285F4',
+        background: '#4285F408', textDecoration: 'none',
+        flexShrink: 0,
+      }}
+    >
+      <svg viewBox="0 0 24 24" width={8} height={8} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      MAPS
+    </a>
+  );
+}
+
 function fmtDate(d: Date | null | undefined): string {
   if (!d) return '—';
   return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase();
@@ -132,7 +159,10 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
                   <span>·</span>
                   <span>{fmtDate(trip.startDate)}–{fmtDate(trip.endDate)}</span>
                 </div>
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', padding: '2px 6px', borderRadius: 999, border: `.5px solid ${st.border}`, color: st.color }}>{st.label}</span>
+                <div style={{ display: 'flex', gap: 5, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', padding: '2px 6px', borderRadius: 999, border: `.5px solid ${st.border}`, color: st.color }}>{st.label}</span>
+                  <MapsBtn title={trip.title} accommodation={trip.accommodation} />
+                </div>
               </div>
             );
           })}
@@ -205,10 +235,11 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
                   <span>·</span>
                   <span>{fmtDate(trip.startDate)}–{fmtDate(trip.endDate)}</span>
                 </div>
-                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', alignItems: 'center' }}>
                   {trip.transport && <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, padding: '2px 6px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--green)' }}>✈ TRANSPORTE</span>}
                   {trip.accommodation && <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, padding: '2px 6px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--green)' }}>🏨 ALOJAMIENTO</span>}
                   <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, padding: '2px 6px', borderRadius: 999, border: `.5px solid ${st.border}`, color: st.color }}>{st.label}</span>
+                  <MapsBtn title={trip.title} accommodation={trip.accommodation} />
                 </div>
               </div>
             );
@@ -249,8 +280,9 @@ function EventDetailSimple({ trip, onEdit }: { trip: Trip; onEdit?: () => void }
       <div style={{ padding: '14px 20px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)' }}>EVENTO</span>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, padding: '3px 9px', borderRadius: 999, border: `.5px solid ${st.border}`, color: st.color }}>{st.label}</span>
+            <MapsBtn title={trip.title} />
             {onEdit && <button onClick={onEdit} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', color: 'var(--text3)', background: 'none', border: '.5px solid var(--bg4)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>EDITAR</button>}
           </div>
         </div>

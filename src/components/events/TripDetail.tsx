@@ -76,6 +76,14 @@ export default function TripDetailPanel({ trip }: { trip: Trip }) {
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)' }}>VIAJE</span>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', padding: '3px 9px', borderRadius: 999, border: `.5px solid ${st.border}`, color: st.color }}>{st.label}</span>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(trip.accommodation?.trim() || trip.title)}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', padding: '3px 9px', borderRadius: 999, border: '.5px solid #4285F433', color: '#4285F4', textDecoration: 'none', background: '#4285F408' }}
+              >
+                <svg viewBox="0 0 24 24" width={10} height={10} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                MAPS
+              </a>
               <button onClick={() => setEditing(true)} style={{
                 fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em',
                 color: 'var(--text3)', background: 'none', border: '.5px solid var(--bg4)',
