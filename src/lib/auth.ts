@@ -27,16 +27,39 @@ export async function verifySession(_req?: Request): Promise<boolean> {
 
 type RequestLike = { headers: { get(name: string): string | null } };
 
-const PRODUCTION_DOMAIN = 'vera-v1-bhxy.vercel.app';
-
-export function getRpIdFromReq(_req: RequestLike): string {
-  if (process.env.WEBAUTHN_RP_ID) return process.env.WEBAUTHN_RP_ID;
-  return PRODUCTION_DOMAIN;
+function hostFromReq(req: RequestLike): string {
+  // `x-forwarded-host` lo añade Vercel cuando hay alias/edge; si no, `host` directo.
+  const raw =
+    req.headers.get('x-forwarded-host') ||
+    req.headers.get('host') ||
+    '';
+  // strip de puerto (RP ID no admite puerto)
+  return raw.split(':')[0].toLowerCase();
 }
 
-export function getOriginFromReq(_req: RequestLike): string {
+function protoFromReq(req: RequestLike): string {
+  return (req.headers.get('x-forwarded-proto') || 'https').split(',')[0].trim();
+}
+
+export function getRpIdFromReq(req: RequestLike): string {
+  // El env var sólo se usa si está configurado adrede para fijar un dominio canónico.
+  // En su ausencia, derivamos del host real de la request — así el sistema funciona
+  // en cualquier URL de Vercel (vera-v1.vercel.app, vera-v1-xxx.vercel.app, dominio
+  // personalizado, localhost) sin tener que tocar código ni env vars.
+  if (process.env.WEBAUTHN_RP_ID) return process.env.WEBAUTHN_RP_ID;
+  return hostFromReq(req) || 'localhost';
+}
+
+export function getOriginFromReq(req: RequestLike): string {
   if (process.env.WEBAUTHN_EXPECTED_ORIGIN) return process.env.WEBAUTHN_EXPECTED_ORIGIN;
-  return `https://${PRODUCTION_DOMAIN}`;
+  const host = hostFromReq(req);
+  if (!host) return 'http://localhost:3000';
+  // localhost siempre http; resto https (Vercel siempre sirve sobre TLS)
+  if (host === 'localhost' || host.startsWith('127.')) {
+    const port = (req.headers.get('host') || '').split(':')[1];
+    return `http://${host}${port ? ':' + port : ':3000'}`;
+  }
+  return `${protoFromReq(req)}://${host}`;
 }
 
 // Mantener estas funciones para compatibilidad con código existente fuera de WebAuthn
