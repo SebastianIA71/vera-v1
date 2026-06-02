@@ -9,7 +9,7 @@ export default async function DashboardPage() {
   const now = new Date();
 
   const [allTasks, allEvents, allProperties, weightLogs, allProjects] = await Promise.all([
-    db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)).limit(50),
+    db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal), desc(tasks.prio)).limit(100),
     db.select().from(events).orderBy(desc(events.startDate)).limit(20),
     db.select().from(properties),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(1),

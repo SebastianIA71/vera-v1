@@ -369,6 +369,13 @@ export default function DashboardClient({
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>{APP_VERSION}</span>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '14px', color: 'var(--text2)', letterSpacing: '.12em' }}>{time}</div>
+          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+            {(['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const).map((key, i) => (
+              <span key={key} style={{ fontSize: 14, lineHeight: 1, opacity: snmActive.includes(key) ? 1 : 0.15, filter: snmActive.includes(key) ? 'none' : 'grayscale(1)', userSelect: 'none' }}>
+                {['💧','🚶','💪','🧘','🍴'][i]}
+              </span>
+            ))}
+          </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -441,42 +448,29 @@ export default function DashboardClient({
 
             {/* ── LEFT: KPI zone ── */}
             <div style={{ flex: '0 0 22%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'stretch', gap: 3, padding: '0 14px 0 18px' }}>
-              {getKpiNodes(kpis).map(kpi => {
-                const isWeight = kpi.id === 'weight';
-                return (
-                  <div key={kpi.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    background: 'var(--bg)', border: `.5px solid ${kpi.color}22`,
-                    borderRadius: 7, padding: '5px 8px', overflow: 'hidden',
-                  }}>
-                    {/* icon */}
-                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: kpi.color, opacity: 0.8, lineHeight: 1, flexShrink: 0 }}>
-                      {KPI_ICONS[kpi.id] ?? '·'}
-                    </span>
-                    {/* accent line */}
-                    <div style={{ width: 1.5, height: 24, background: kpi.color, flexShrink: 0 }} />
-                    {/* value + label */}
-                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
-                        {kpi.value}
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {kpi.label}
-                      </div>
+              {getKpiNodes(kpis).map(kpi => (
+                <div key={kpi.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  background: 'var(--bg)', border: `.5px solid ${kpi.color}22`,
+                  borderRadius: 7, padding: '5px 8px', overflow: 'hidden',
+                }}>
+                  {/* icon */}
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: kpi.color, opacity: 0.8, lineHeight: 1, flexShrink: 0 }}>
+                    {KPI_ICONS[kpi.id] ?? '·'}
+                  </span>
+                  {/* accent line */}
+                  <div style={{ width: 1.5, height: 26, background: kpi.color, flexShrink: 0 }} />
+                  {/* value + label */}
+                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                      {kpi.value}
                     </div>
-                    {/* SNM badges inline junto al KG */}
-                    {isWeight && (
-                      <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
-                        {(['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const).map((key, i) => (
-                          <span key={key} style={{ fontSize: 11, lineHeight: 1, opacity: snmActive.includes(key) ? 1 : 0.15, filter: snmActive.includes(key) ? 'none' : 'grayscale(1)' }}>
-                            {['💧','🚶','💪','🧘','🍴'][i]}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {kpi.label}
+                    </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
 
             {/* ── CENTER: Orbital ── */}
@@ -569,18 +563,17 @@ export default function DashboardClient({
               borderLeft: '.5px solid var(--bg4)',
             }}>
               {[
-                { value: '2,7',   label: 'PATRIMONIO', color: 'var(--gold)',  borderPos: 'top',    points: '0,26 25,23 50,21 75,18 100,15 125,11 150,7'  },
-                { value: '145,1', label: 'ANUAL',      color: 'var(--text)', borderPos: 'bottom', points: '0,28 25,25 50,23 75,20 100,16 125,12 150,8'  },
-                { value: '10,2',  label: 'MENSUAL',    color: 'var(--green)', borderPos: 'bottom', points: '0,30 25,27 50,24 75,20 100,15 125,9  150,4'  },
+                { value: '2,7',   color: 'var(--gold)',  borderPos: 'top',    points: '0,26 25,23 50,21 75,18 100,15 125,11 150,7'  },
+                { value: '145,1', color: 'var(--text)', borderPos: 'bottom', points: '0,28 25,25 50,23 75,20 100,16 125,12 150,8'  },
+                { value: '10,2',  color: 'var(--green)', borderPos: 'bottom', points: '0,30 25,27 50,24 75,20 100,15 125,9  150,4'  },
               ].map(stat => (
-                <div key={stat.label} style={{
+                <div key={stat.value} style={{
                   paddingTop:    stat.borderPos === 'top'    ? 8 : 0,
                   paddingBottom: stat.borderPos === 'bottom' ? 8 : 0,
-                  borderTop:    stat.borderPos === 'top'    ? `1px solid ${stat.color}` : 'none',
-                  borderBottom: stat.borderPos === 'bottom' ? `1px solid ${stat.color}60` : 'none',
+                  borderTop:    stat.borderPos === 'top'    ? `2.5px solid ${stat.color}` : 'none',
+                  borderBottom: stat.borderPos === 'bottom' ? `2.5px solid ${stat.color}` : 'none',
                 }}>
-                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 48, color: stat.color, lineHeight: 1, letterSpacing: '-.03em' }}>{stat.value}</div>
-                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.22em', marginTop: 3 }}>{stat.label}</div>
+                  <div style={{ fontFamily: '"Arial Black", Arial, sans-serif', fontWeight: 900, fontSize: 50, color: stat.color, lineHeight: 1, letterSpacing: '-.03em' }}>{stat.value}</div>
                   <svg width="100%" height="28" viewBox="0 0 150 32" preserveAspectRatio="none" style={{ display: 'block', marginTop: 5 }}>
                     <polyline points={stat.points} fill="none" stroke={stat.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.45" />
                   </svg>
