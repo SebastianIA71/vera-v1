@@ -437,55 +437,42 @@ export default function DashboardClient({
 
           {/* Orbital map */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-            {/* KPI zone — centrado en su módulo */}
-            <div style={{ flex: '0 0 22%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4, padding: '0 18px' }}>
-              {getKpiNodes(kpis).map(kpi => {
-                const SNM_KEYS_LOCAL = ['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const;
-                const SNM_ICONS_LOCAL = ['💧','🚶','💪','🧘','🍴'];
-                const isWeight = kpi.id === 'weight';
-                return (
-                  <div key={kpi.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 0,
-                    background: 'var(--bg)', border: `.5px solid ${kpi.color}22`,
-                    borderRadius: 7, overflow: 'hidden',
-                  }}>
-                    {/* Icono a la izquierda de la barra */}
-                    <div style={{
-                      width: 34, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      padding: '5px 3px', background: `${kpi.color}0a`, flexShrink: 0,
-                    }}>
-                      <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, color: kpi.color, opacity: 0.8, lineHeight: 1 }}>
-                        {KPI_ICONS[kpi.id] ?? '·'}
-                      </span>
+
+            {/* ── LEFT: KPI zone ── */}
+            <div style={{ flex: '0 0 22%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'stretch', gap: 4, padding: '0 14px 0 18px' }}>
+              {getKpiNodes(kpis).map(kpi => (
+                <div key={kpi.id} style={{
+                  display: 'flex', alignItems: 'center', gap: 0,
+                  background: 'var(--bg)', border: `.5px solid ${kpi.color}22`,
+                  borderRadius: 7, overflow: 'hidden',
+                }}>
+                  <div style={{ width: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px 3px', background: `${kpi.color}0a`, flexShrink: 0 }}>
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, color: kpi.color, opacity: 0.8, lineHeight: 1 }}>
+                      {KPI_ICONS[kpi.id] ?? '·'}
+                    </span>
+                  </div>
+                  <div style={{ width: 2, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
+                  <div style={{ padding: '6px 8px', flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                      {kpi.value}
                     </div>
-                    {/* Barra coloreada */}
-                    <div style={{ width: 2, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
-                    {/* Valor + label + SNM (para weight) a la derecha */}
-                    <div style={{ padding: '6px 8px', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
-                          {kpi.value}
-                        </div>
-                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {kpi.label}
-                        </div>
-                      </div>
-                      {/* Healthy icons — a la derecha del valor, solo weight */}
-                      {isWeight && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 1, flexShrink: 0 }}>
-                          {SNM_KEYS_LOCAL.map((key, i) => (
-                            <span key={key} style={{ fontSize: 12, lineHeight: 1, opacity: snmActive.includes(key) ? 1 : 0.12, filter: snmActive.includes(key) ? 'none' : 'grayscale(1)' }}>
-                              {SNM_ICONS_LOCAL[i]}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {kpi.label}
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
+              {/* Healthy badges — horizontal, grandes */}
+              <div style={{ display: 'flex', gap: 5, justifyContent: 'center', marginTop: 8, padding: '9px 8px', background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 10 }}>
+                {(['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const).map((key, i) => (
+                  <span key={key} style={{ fontSize: 20, lineHeight: 1, opacity: snmActive.includes(key) ? 1 : 0.14, filter: snmActive.includes(key) ? 'none' : 'grayscale(1)' }}>
+                    {['💧','🚶','💪','🧘','🍴'][i]}
+                  </span>
+                ))}
+              </div>
             </div>
-            {/* Orbital — 80% restante, centrado */}
+
+            {/* ── CENTER: Orbital ── */}
             <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 0 }}>
             <div style={{ position: 'relative', width: '480px', height: '480px', flexShrink: 0 }}>
               {/* Rings */}
@@ -561,8 +548,41 @@ export default function DashboardClient({
                 );
               })}
             </div>
-            {/* fin orbital */}
+            {/* fin D (orbital inner) */}
             </div>
+            {/* fin C (CENTER wrapper) — RIGHT stats sigue dentro de A */}
+
+            {/* ── RIGHT: Stats ── */}
+            <div style={{
+              flex: '0 0 185px', flexShrink: 0,
+              display: 'flex', flexDirection: 'column',
+              justifyContent: 'center',
+              gap: 18,
+              padding: '0 24px 0 18px',
+              borderLeft: '.5px solid var(--bg4)',
+            }}>
+              {([
+                { value: '2,7M',   label: 'PATRIMONIO', color: 'var(--text)'  },
+                { value: '145,1K', label: 'ANUAL',      color: 'var(--text2)' },
+                { value: '10,2K',  label: 'MENSUAL',    color: 'var(--green)' },
+              ] as const).map(stat => (
+                <div key={stat.label}>
+                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 44, color: stat.color, lineHeight: 1, letterSpacing: '-.03em' }}>{stat.value}</div>
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.22em', marginTop: 4 }}>{stat.label}</div>
+                </div>
+              ))}
+              <svg width="100%" height="44" viewBox="0 0 150 44" preserveAspectRatio="none" style={{ display: 'block' }}>
+                <defs>
+                  <linearGradient id="statsBg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--green)" stopOpacity=".18" />
+                    <stop offset="100%" stopColor="var(--green)" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path d="M0,40 L18,36 L36,38 L55,28 L75,22 L95,14 L118,7 L150,2 L150,44 L0,44 Z" fill="url(#statsBg)" />
+                <polyline points="0,40 18,36 36,38 55,28 75,22 95,14 118,7 150,2" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+
           </div>
 
           {/* Botones de creación */}

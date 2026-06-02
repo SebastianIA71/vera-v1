@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { tasks, events, weightLog, inbox, properties } from '@/lib/db/schema';
-import { ne, desc, eq, and, isNotNull } from 'drizzle-orm';
+import { ne, desc, eq, and, isNotNull, gte, or } from 'drizzle-orm';
 import HomeRouter from './HomeRouter';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function AppRootPage() {
   const now = new Date();
 
-  const [allTasks, allEvents, weights, inboxItems, allProperties, propTasks] = await Promise.all([
+  const [allTasks, allEvents, weights, inboxItems, allProperties, propTasks, urgentTasksDb] = await Promise.all([
     db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)).limit(30),
     db.select().from(events).orderBy(desc(events.startDate)).limit(20),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(14),
@@ -19,9 +19,26 @@ export default async function AppRootPage() {
       .where(and(ne(tasks.status, 'archived'), ne(tasks.status, 'done'), isNotNull(tasks.propertyId)))
       .orderBy(desc(tasks.prioFinal))
       .limit(50),
+    // Query dedicada para urgentes — usa prio como fallback cuando prioFinal = 0
+    // Necesaria porque el query principal ordena por prioFinal desc y puede cortar
+    // tareas con prio alto pero prioFinal=0 (default antes del PrioAgent)
+    db.select().from(tasks)
+      .where(and(
+        ne(tasks.status, 'archived'),
+        ne(tasks.status, 'done'),
+        or(gte(tasks.prio, 6), gte(tasks.prioFinal, 6)),
+      ))
+      .orderBy(desc(tasks.prioFinal), desc(tasks.prio))
+      .limit(10),
   ]);
 
-  const allUrgent = allTasks.filter(t => Math.max(t.prioFinal ?? 0, t.prio ?? 0) >= 6 && t.status !== 'done');
+  // Merge: urgentTasksDb cubre prio alto aunque prioFinal=0; allTasks cubre prioFinal alto
+  const urgentMap = new Map<number, typeof allTasks[0]>();
+  urgentTasksDb.forEach(t => urgentMap.set(t.id, t));
+  allTasks.filter(t => Math.max(t.prioFinal ?? 0, t.prio ?? 0) >= 6 && t.status !== 'done')
+    .forEach(t => urgentMap.set(t.id, t));
+  const allUrgent = [...urgentMap.values()]
+    .sort((a, b) => Math.max(b.prioFinal ?? 0, b.prio ?? 0) - Math.max(a.prioFinal ?? 0, a.prio ?? 0));
   const urgentTasks = allUrgent.slice(0, 5);
   const urgentTotal = allUrgent.length;
 
