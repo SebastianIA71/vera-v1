@@ -95,8 +95,8 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
   const MONTH_NAMES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
   const DAY_NAMES = ['L','M','X','J','V','S','D'];
 
-  const topTasks = tasks
-    .filter(t => t.status !== 'done' && t.status !== 'archived')
+  const activeTasks = tasks.filter(t => t.status !== 'done' && t.status !== 'archived');
+  const topTasks = activeTasks
     .sort((a, b) => (b.prioFinal ?? 0) - (a.prioFinal ?? 0))
     .slice(0, 5);
 
@@ -112,7 +112,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
           PUNCH LIST · HOY
         </div>
         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', color: 'var(--text3)', marginTop: 2 }}>
-          {topTasks.length} TAREAS · {inboxCount > 0 ? `${inboxCount} INBOX` : 'INBOX OK'}
+          {topTasks.length} TAREAS <span style={{ color: 'var(--text4)', fontSize: 8 }}>({activeTasks.length} en total)</span> · {inboxCount > 0 ? `${inboxCount} INBOX` : 'INBOX OK'}
         </div>
       </div>
 
@@ -156,8 +156,8 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
                   {new Date(nextEvent.startDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase()}
                 </div>
               </div>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, color: 'var(--purple)', lineHeight: 1 }}>
-                {nextEvent.daysTo}<span style={{ fontSize: 8, marginLeft: 2 }}>D</span>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: nextEvent.daysTo <= 0 ? 13 : 18, color: 'var(--purple)', lineHeight: 1 }}>
+                {nextEvent.daysTo <= 0 ? 'HOY' : `${nextEvent.daysTo}D`}
               </div>
             </div>
           </div>
@@ -169,8 +169,8 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--blue)', marginBottom: 6 }}>PRÓXIMO VIAJE</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)' }}>{nextTrip.title}</div>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, color: 'var(--blue)', lineHeight: 1 }}>
-                {nextTrip.daysTo}<span style={{ fontSize: 8, marginLeft: 2 }}>D</span>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: nextTrip.daysTo <= 0 ? 13 : 18, color: 'var(--blue)', lineHeight: 1 }}>
+                {nextTrip.daysTo <= 0 ? 'HOY' : `${nextTrip.daysTo}D`}
               </div>
             </div>
           </div>
@@ -437,47 +437,49 @@ export default function DashboardClient({
 
           {/* Orbital map */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-            {/* KPI zone — 22% del ancho, icon a la izquierda de la barra */}
-            <div style={{ flex: '0 0 22%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4, padding: '0 10px 0 6px' }}>
+            {/* KPI zone — centrado en su módulo */}
+            <div style={{ flex: '0 0 22%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4, padding: '0 18px' }}>
               {getKpiNodes(kpis).map(kpi => {
                 const SNM_KEYS_LOCAL = ['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const;
                 const SNM_ICONS_LOCAL = ['💧','🚶','💪','🧘','🍴'];
+                const isWeight = kpi.id === 'weight';
                 return (
                   <div key={kpi.id} style={{
                     display: 'flex', alignItems: 'center', gap: 0,
                     background: 'var(--bg)', border: `.5px solid ${kpi.color}22`,
                     borderRadius: 7, overflow: 'hidden',
                   }}>
-                    {/* Zona icon — izquierda de la barra */}
+                    {/* Icono a la izquierda de la barra */}
                     <div style={{
-                      width: 34, display: 'flex', flexDirection: 'column',
-                      alignItems: 'center', justifyContent: 'center',
+                      width: 34, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       padding: '5px 3px', background: `${kpi.color}0a`, flexShrink: 0,
                     }}>
-                      {kpi.id === 'weight' ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center' }}>
+                      <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, color: kpi.color, opacity: 0.8, lineHeight: 1 }}>
+                        {KPI_ICONS[kpi.id] ?? '·'}
+                      </span>
+                    </div>
+                    {/* Barra coloreada */}
+                    <div style={{ width: 2, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
+                    {/* Valor + label + SNM (para weight) a la derecha */}
+                    <div style={{ padding: '6px 8px', flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                          {kpi.value}
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {kpi.label}
+                        </div>
+                      </div>
+                      {/* Healthy icons — a la derecha del valor, solo weight */}
+                      {isWeight && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 1, flexShrink: 0 }}>
                           {SNM_KEYS_LOCAL.map((key, i) => (
-                            <span key={key} style={{ fontSize: 17, lineHeight: 1, opacity: snmActive.includes(key) ? 1 : 0.12, filter: snmActive.includes(key) ? 'none' : 'grayscale(1)' }}>
+                            <span key={key} style={{ fontSize: 12, lineHeight: 1, opacity: snmActive.includes(key) ? 1 : 0.12, filter: snmActive.includes(key) ? 'none' : 'grayscale(1)' }}>
                               {SNM_ICONS_LOCAL[i]}
                             </span>
                           ))}
                         </div>
-                      ) : (
-                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, color: kpi.color, opacity: 0.8, lineHeight: 1 }}>
-                          {KPI_ICONS[kpi.id] ?? '·'}
-                        </span>
                       )}
-                    </div>
-                    {/* Barra coloreada */}
-                    <div style={{ width: 2, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
-                    {/* Valor + label */}
-                    <div style={{ padding: '7px 10px', flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
-                        {kpi.value}
-                      </div>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {kpi.label}
-                      </div>
                     </div>
                   </div>
                 );

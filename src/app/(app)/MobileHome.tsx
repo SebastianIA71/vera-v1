@@ -70,6 +70,7 @@ type PropTask = { prop: { id: string; name: string; color: string | null; icon: 
 
 export default function MobileHome({
   urgentTasks,
+  urgentTotal,
   nextTrip,
   nextEvent,
   weightLogs,
@@ -80,6 +81,7 @@ export default function MobileHome({
   todaySnm = [],
 }: {
   urgentTasks: Task[];
+  urgentTotal?: number;
   nextTrip: { title: string; daysTo: number; startDate: string; endDate?: string; who: string; transport?: string } | null;
   nextEvent: { title: string; daysTo: number; startDate: string; who: string } | null;
   weightLogs: WeightLog[];
@@ -237,7 +239,7 @@ export default function MobileHome({
         {/* Now section */}
         {urgentTasks.length > 0 && (
           <div style={{ marginBottom: 28 }}>
-            <SectionLabel label="Now" meta={`${urgentTasks.length} URGENTES`} link="→" onLinkClick={() => router.push('/tasks')} />
+            <SectionLabel label="Now" meta={`${urgentTotal ?? urgentTasks.length} URGENTES`} link="→" onLinkClick={() => router.push('/tasks')} />
             {urgentTasks.map(t => (
               <div key={t.id} style={{
                 background: 'var(--bg2)', border: `.5px solid var(--bg4)`,

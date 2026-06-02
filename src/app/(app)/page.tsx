@@ -21,7 +21,9 @@ export default async function AppRootPage() {
       .limit(50),
   ]);
 
-  const urgentTasks = allTasks.filter(t => (t.prioFinal ?? 0) >= 7 && t.status !== 'done').slice(0, 3);
+  const allUrgent = allTasks.filter(t => Math.max(t.prioFinal ?? 0, t.prio ?? 0) >= 6 && t.status !== 'done');
+  const urgentTasks = allUrgent.slice(0, 5);
+  const urgentTotal = allUrgent.length;
 
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -64,6 +66,7 @@ export default async function AppRootPage() {
   return (
     <HomeRouter
       urgentTasks={urgentTasks}
+      urgentTotal={urgentTotal}
       nextTrip={nextTrip !== null && daysToNextTrip !== null ? { title: nextTrip.title, daysTo: daysToNextTrip, startDate: nextTrip.startDate?.toISOString() ?? '', endDate: nextTrip.endDate?.toISOString() ?? '', who: nextTrip.who ?? '', transport: nextTrip.transport ?? '' } : null}
       nextEvent={nextEvent !== null && daysToNextEvent !== null ? { title: nextEvent.title, daysTo: daysToNextEvent, startDate: nextEvent.startDate?.toISOString() ?? '', who: nextEvent.who ?? '' } : null}
       weightLogs={weights}
