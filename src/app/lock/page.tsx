@@ -134,10 +134,13 @@ export default function LockPage() {
       setLockState('pin');
       if (err instanceof Error && err.name === 'NotAllowedError') {
         setError('Cancelado');
+      } else if (err instanceof Error) {
+        console.error('[FaceID]', err.name, err.message);
+        setError(`Error: ${err.name}`);
       } else {
         setError('Error de Face ID');
       }
-      setTimeout(() => setError(''), 2000);
+      setTimeout(() => setError(''), 4000);
     }
   }, [router]);
 

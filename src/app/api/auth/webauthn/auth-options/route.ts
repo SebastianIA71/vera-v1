@@ -15,13 +15,12 @@ export async function GET(req: NextRequest) {
 
   const rpID = getRpIdFromReq(req);
 
+  // No usamos allowCredentials para evitar problemas de ID matching con iCloud Keychain.
+  // El browser presentará todos los passkeys disponibles para este rpID.
+  // auth-verify busca el credential por ID después de que el browser lo devuelva.
   const options = await generateAuthenticationOptions({
     rpID,
     userVerification: 'required',
-    allowCredentials: credentials.map(c => ({
-      id: c.credentialId,
-      type: 'public-key' as const,
-    })),
   });
 
   const res = NextResponse.json(options);
