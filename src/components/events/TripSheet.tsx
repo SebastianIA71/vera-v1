@@ -20,7 +20,6 @@ type Props = {
 };
 
 const TRANSPORT_OPTIONS = [
-  { id: '',      icon: '—',  label: 'Sin definir' },
   { id: 'avion', icon: '✈',  label: 'Avión' },
   { id: 'tren',  icon: '🚄', label: 'Tren' },
   { id: 'coche', icon: '🚗', label: 'Coche' },
@@ -69,7 +68,9 @@ export default function TripSheet({ onClose, onSaved, trip }: Props) {
   const [who,    setWho]    = useState(trip?.who ?? '');
   const [approx, setApprox] = useState(trip?.approx ?? false);
 
-  const [transport,     setTransport]     = useState(trip?.transport     ?? '');
+  const [transport,     setTransport]     = useState<string[]>(
+    trip?.transport ? trip.transport.split(',').filter(Boolean) : []
+  );
   const [accommodation, setAccommodation] = useState(trip?.accommodation ?? '');
   const [status,        setStatus]        = useState(trip?.status        ?? 'planning');
   const [budgetTotal,   setBudgetTotal]   = useState(String(parsedMeta.budget?.total ?? ''));
@@ -107,7 +108,7 @@ export default function TripSheet({ onClose, onSaved, trip }: Props) {
           startDate:     startDate || null,
           endDate:       endDate   || null,
           who:           who.trim()           || null,
-          transport:     transport            || null,
+          transport:     transport.length > 0 ? transport.join(',') : null,
           accommodation: accommodation.trim() || null,
           status,
           notes:         notes.trim()         || null,
@@ -217,17 +218,20 @@ export default function TripSheet({ onClose, onSaved, trip }: Props) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
               <label style={LABEL}>TRANSPORTE</label>
-              <div style={{ display: 'flex', gap: 6 }}>
-                {TRANSPORT_OPTIONS.map(opt => (
-                  <button key={opt.id} onClick={() => setTransport(opt.id)} style={{
-                    flex: 1, padding: '10px 4px', borderRadius: 8, textAlign: 'center',
-                    background: transport === opt.id ? 'rgba(196,168,106,.1)' : 'var(--bg3)',
-                    border: `.5px solid ${transport === opt.id ? 'var(--gold2)' : 'var(--bg4)'}`,
-                    fontSize: opt.id ? 18 : 12, cursor: 'pointer',
-                    color: opt.id ? 'inherit' : 'var(--text3)',
-                    fontFamily: 'var(--font-dm-mono)',
-                  }}>{opt.icon}</button>
-                ))}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {TRANSPORT_OPTIONS.map(opt => {
+                  const selected = transport.includes(opt.id);
+                  return (
+                    <button key={opt.id} onClick={() => setTransport(prev =>
+                      prev.includes(opt.id) ? prev.filter(x => x !== opt.id) : [...prev, opt.id]
+                    )} style={{
+                      flex: 1, minWidth: 48, padding: '10px 4px', borderRadius: 8, textAlign: 'center',
+                      background: selected ? 'rgba(196,168,106,.1)' : 'var(--bg3)',
+                      border: `.5px solid ${selected ? 'var(--gold2)' : 'var(--bg4)'}`,
+                      fontSize: 18, cursor: 'pointer', fontFamily: 'var(--font-dm-mono)',
+                    }}>{opt.icon}</button>
+                  );
+                })}
               </div>
             </div>
             <div>

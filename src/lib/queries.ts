@@ -26,9 +26,10 @@ export async function getUrgentAndStaleCounts() {
 }
 
 export async function getNextTrip(now: Date) {
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const allEvents = await db.select().from(events).orderBy(desc(events.startDate));
   const upcoming = allEvents
-    .filter(e => e.type === 'viaje' && e.startDate && e.startDate > now)
+    .filter(e => e.type === 'viaje' && e.startDate && e.startDate >= todayStart)
     .sort((a, b) => (a.startDate?.getTime() ?? 0) - (b.startDate?.getTime() ?? 0));
   const next = upcoming[0] ?? null;
   if (!next?.startDate) return null;

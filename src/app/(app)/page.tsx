@@ -23,8 +23,10 @@ export default async function AppRootPage() {
 
   const urgentTasks = allTasks.filter(t => (t.prioFinal ?? 0) >= 7 && t.status !== 'done').slice(0, 3);
 
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
   const upcomingTrips = allEvents
-    .filter(e => e.type === 'viaje' && e.startDate && e.startDate > now)
+    .filter(e => e.type === 'viaje' && e.startDate && e.startDate >= todayStart)
     .sort((a, b) => (a.startDate?.getTime() ?? 0) - (b.startDate?.getTime() ?? 0));
 
   const nextTrip = upcomingTrips[0] ?? null;
@@ -34,7 +36,7 @@ export default async function AppRootPage() {
 
   // Próximo evento social (type != 'viaje')
   const nextEvent = allEvents
-    .filter(e => e.type !== 'viaje' && e.startDate && e.startDate > now)
+    .filter(e => e.type !== 'viaje' && e.startDate && e.startDate >= todayStart)
     .sort((a, b) => (a.startDate?.getTime() ?? 0) - (b.startDate?.getTime() ?? 0))[0] ?? null;
 
   const daysToNextEvent = nextEvent?.startDate

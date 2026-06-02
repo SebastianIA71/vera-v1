@@ -90,7 +90,8 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
   }, []);
 
   const now = new Date();
-  const nextTrip = filteredTrips.find(t => t.startDate && new Date(t.startDate) > now);
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const nextTrip = filteredTrips.find(t => t.startDate && new Date(t.startDate) >= todayStart);
 
   // ── Móvil: detalle ──
   if (isMobile && selected) {

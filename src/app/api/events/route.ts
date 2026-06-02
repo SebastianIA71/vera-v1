@@ -14,8 +14,8 @@ export async function GET(req: NextRequest) {
   if (type) filtered = filtered.filter(e => e.type === type);
   if (upcomingDays) {
     const cutoff = new Date(Date.now() + Number(upcomingDays) * 86400000);
-    const now = new Date();
-    filtered = filtered.filter(e => e.startDate && e.startDate >= now && e.startDate <= cutoff);
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    filtered = filtered.filter(e => e.startDate && e.startDate >= todayStart && e.startDate <= cutoff);
   }
 
   return NextResponse.json(filtered);

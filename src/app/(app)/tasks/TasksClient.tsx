@@ -10,11 +10,13 @@ import { taskBorderColor } from '@/lib/utils';
 type Task     = TaskDetail & { inNow?: boolean | null };
 type Property = { id: string; name: string; color: string | null; icon: string | null };
 type Project  = { id: number; name: string; color: string | null };
+type Trip     = { id: number; title: string };
 
 
 type Filters = {
   propertyId: string | null;
   projectId:  number | null;
+  tripTag:    string | null;
   prioRange: '8-9' | '6-7' | '0-5' | null;
   status: string | null;
   context: 'now' | 'stale' | null;
@@ -25,6 +27,10 @@ type Filters = {
 function matchFilters(t: Task, f: Filters): boolean {
   if (f.propertyId !== null && f.propertyId !== undefined && t.propertyId !== f.propertyId) return false;
   if (f.projectId  !== null && f.projectId  !== undefined && t.projectId  !== f.projectId)  return false;
+  if (f.tripTag !== null && f.tripTag !== undefined) {
+    const taskTags = (t.tags ?? '').split(',').map(s => s.trim()).filter(Boolean);
+    if (!taskTags.includes(f.tripTag)) return false;
+  }
   if (f.prioRange) {
     const p = t.prioFinal ?? 0;
     if (f.prioRange === '8-9' && p < 8) return false;
@@ -67,7 +73,7 @@ function FilterChip({ label, active, color, onClick }: { label: string; active: 
 }
 
 export default function TasksClient({
-  initialTasks, urgentCount, waitingCount, inboxCount, properties = [], projects = [],
+  initialTasks, urgentCount, waitingCount, inboxCount, properties = [], projects = [], trips = [],
 }: {
   initialTasks: Task[];
   urgentCount: number;
@@ -75,11 +81,12 @@ export default function TasksClient({
   inboxCount: number;
   properties?: Property[];
   projects?: Project[];
+  trips?: Trip[];
 }) {
   const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [selected, setSelected] = useState<Task | null>(null);
-  const [filters, setFilters] = useState<Filters>({ propertyId: null, projectId: null, prioRange: null, status: null, context: null, search: '' });
+  const [filters, setFilters] = useState<Filters>({ propertyId: null, projectId: null, tripTag: null, prioRange: null, status: null, context: null, search: '' });
   const [showNewTask, setShowNewTask] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -98,7 +105,7 @@ export default function TasksClient({
   const restTasks = filtered.filter(t => !t.inNow && t.status !== 'done');
   const doneTasks = filtered.filter(t => t.status === 'done');
 
-  const clearFilters = () => setFilters({ propertyId: null, projectId: null, prioRange: null, status: null, context: null, search: '' });
+  const clearFilters = () => setFilters({ propertyId: null, projectId: null, tripTag: null, prioRange: null, status: null, context: null, search: '' });
 
   const markDone = (id: number) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t));
@@ -194,6 +201,19 @@ export default function TasksClient({
                   <FilterChip key={p.id} label={p.name} color={p.color ?? '#9b7fe8'}
                     active={filters.projectId === p.id}
                     onClick={() => setFilters(f => ({ ...f, projectId: f.projectId === p.id ? null : p.id }))}
+                  />
+                ))}
+              </>
+            )}
+
+            {trips.length > 0 && (
+              <>
+                <div style={{ width: .5, height: 16, background: 'var(--bg4)', margin: '0 3px', flexShrink: 0 }} />
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', flexShrink: 0 }}>VIAJE</span>
+                {trips.map(t => (
+                  <FilterChip key={t.id} label={t.title} color="var(--blue)"
+                    active={filters.tripTag === t.title}
+                    onClick={() => setFilters(f => ({ ...f, tripTag: f.tripTag === t.title ? null : t.title }))}
                   />
                 ))}
               </>

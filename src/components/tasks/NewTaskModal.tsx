@@ -30,9 +30,11 @@ export default function NewTaskModal({
   const [prio, setPrio]             = useState(5);
   const [propertyId, setPropertyId] = useState(defaultPropertyId ?? '');
   const [projectId, setProjectId]   = useState<number | null>(defaultProjectId ?? null);
+  const [tripTitle, setTripTitle]   = useState<string | null>(null);
   const [saving, setSaving]         = useState(false);
   const [propList, setPropList]     = useState<Property[]>([]);
   const [projList, setProjList]     = useState<{id: number; name: string; color: string | null}[]>([]);
+  const [tripList, setTripList]     = useState<{id: number; title: string}[]>([]);
 
   useEffect(() => {
     fetch('/api/properties')
@@ -44,6 +46,10 @@ export default function NewTaskModal({
       .then((data: {id: number; name: string; color: string | null; status: string | null}[]) =>
         setProjList(data.filter(p => p.status === 'active' || p.status === 'paused')))
       .catch(() => {});
+    fetch('/api/events?type=viaje')
+      .then(r => r.json())
+      .then((data: {id: number; title: string}[]) => setTripList(data))
+      .catch(() => {});
   }, []);
 
   const canSave = title.trim().length > 0;
@@ -54,7 +60,7 @@ export default function NewTaskModal({
     const res = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, prio, propertyId: propertyId || null, projectId: projectId ?? null }),
+      body: JSON.stringify({ title, prio, propertyId: propertyId || null, projectId: projectId ?? null, tags: tripTitle ?? null }),
     });
     if (res.ok) { const task = await res.json(); onCreated(task); }
     setSaving(false);
@@ -141,6 +147,30 @@ export default function NewTaskModal({
                     }}>{p.name.toUpperCase()}</button>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {tripList.length > 0 && (
+            <div>
+              <label style={LABEL}>VIAJE (opcional)</label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button onClick={() => setTripTitle(null)} style={{
+                  padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
+                  border: `.5px solid ${tripTitle === null ? 'var(--blue)' : 'var(--bg4)'}`,
+                  background: tripTitle === null ? 'rgba(91,168,232,0.12)' : 'transparent',
+                  color: tripTitle === null ? 'var(--blue)' : 'var(--text3)',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em',
+                }}>NINGUNO</button>
+                {tripList.map(t => (
+                  <button key={t.id} onClick={() => setTripTitle(tripTitle === t.title ? null : t.title)} style={{
+                    padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
+                    border: `.5px solid ${tripTitle === t.title ? 'var(--blue)' : 'var(--bg4)'}`,
+                    background: tripTitle === t.title ? 'rgba(91,168,232,0.12)' : 'transparent',
+                    color: tripTitle === t.title ? 'var(--blue)' : 'var(--text3)',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em',
+                  }}>{t.title.toUpperCase()}</button>
+                ))}
               </div>
             </div>
           )}
