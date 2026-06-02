@@ -3,14 +3,14 @@ import { db } from '@/lib/db';
 import { tasks, notifications } from '@/lib/db/schema';
 import { sendPush } from '@/lib/push';
 
-/** Devuelve la query posterior a "amivera", o null si no aparece la keyword */
+/** Devuelve la query posterior a "vera go" (o "primavera"), o null si no aparece el trigger */
 export function extractAmiVeraQuery(text: string): string | null {
-  const m = text.match(/amivera\s+([\s\S]+)/i);
+  const m = text.match(/(?:vera\s+go|primavera)\s+([\s\S]+)/i);
   return m ? m[1].trim() : null;
 }
 
 const AMIVERA_SYSTEM = `Eres Vera, asistente personal de Sebastián.
-Se ha activado el pipeline "amivera". Investiga y responde con total autonomía.
+Se ha activado el pipeline autónomo. Investiga y responde con total autonomía.
 No hay restricciones de formato, longitud ni estructura — decide qué profundidad darle, cómo organizar la información y qué incluir.
 
 Principio de Sebastián: antes de gastar, agotar opciones propias.

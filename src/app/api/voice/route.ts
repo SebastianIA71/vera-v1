@@ -38,10 +38,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       amivera:    true,
       id:         0,
-      title:      'Pipeline amivera activado',
+      title:      'Vera Go — pipeline activado',
       propertyId: null,
       prio:       null,
-      chips:      ['AMIVERA ✦'],
+      chips:      ['VERA GO ✦'],
       classified: true,
     });
   }

@@ -240,7 +240,7 @@ export default function MobileHome({
         {urgentTasks.length > 0 && (
           <div style={{ marginBottom: 28 }}>
             <SectionLabel label="Now" meta={`${urgentTotal ?? urgentTasks.length} URGENTES`} link="→" onLinkClick={() => router.push('/tasks')} />
-            {urgentTasks.map(t => (
+            {urgentTasks.slice(0, 3).map(t => (
               <div key={t.id} style={{
                 background: 'var(--bg2)', border: `.5px solid var(--bg4)`,
                 borderLeft: `2px solid ${taskBorderColor(t.prioFinal ?? 0, t.lastActionAt)}`,

@@ -97,8 +97,9 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
 
   const activeTasks = tasks.filter(t => t.status !== 'done' && t.status !== 'archived');
   const topTasks = activeTasks
-    .sort((a, b) => (b.prioFinal ?? 0) - (a.prioFinal ?? 0))
-    .slice(0, 5);
+    .filter(t => Math.max(t.prioFinal ?? 0, t.prio ?? 0) >= 8)
+    .sort((a, b) => Math.max(b.prioFinal ?? 0, b.prio ?? 0) - Math.max(a.prioFinal ?? 0, a.prio ?? 0))
+    .slice(0, 3);
 
   return (
     <div style={{
@@ -439,37 +440,43 @@ export default function DashboardClient({
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
 
             {/* ── LEFT: KPI zone ── */}
-            <div style={{ flex: '0 0 22%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'stretch', gap: 4, padding: '0 14px 0 18px' }}>
-              {getKpiNodes(kpis).map(kpi => (
-                <div key={kpi.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 0,
-                  background: 'var(--bg)', border: `.5px solid ${kpi.color}22`,
-                  borderRadius: 7, overflow: 'hidden',
-                }}>
-                  <div style={{ width: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '5px 3px', background: `${kpi.color}0a`, flexShrink: 0 }}>
-                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, color: kpi.color, opacity: 0.8, lineHeight: 1 }}>
+            <div style={{ flex: '0 0 22%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'stretch', gap: 3, padding: '0 14px 0 18px' }}>
+              {getKpiNodes(kpis).map(kpi => {
+                const isWeight = kpi.id === 'weight';
+                return (
+                  <div key={kpi.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    background: 'var(--bg)', border: `.5px solid ${kpi.color}22`,
+                    borderRadius: 7, padding: '5px 8px', overflow: 'hidden',
+                  }}>
+                    {/* icon */}
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: kpi.color, opacity: 0.8, lineHeight: 1, flexShrink: 0 }}>
                       {KPI_ICONS[kpi.id] ?? '·'}
                     </span>
-                  </div>
-                  <div style={{ width: 2, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
-                  <div style={{ padding: '6px 8px', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
-                      {kpi.value}
+                    {/* accent line */}
+                    <div style={{ width: 1.5, height: 24, background: kpi.color, flexShrink: 0 }} />
+                    {/* value + label */}
+                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                        {kpi.value}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {kpi.label}
+                      </div>
                     </div>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {kpi.label}
-                    </div>
+                    {/* SNM badges inline junto al KG */}
+                    {isWeight && (
+                      <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
+                        {(['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const).map((key, i) => (
+                          <span key={key} style={{ fontSize: 11, lineHeight: 1, opacity: snmActive.includes(key) ? 1 : 0.15, filter: snmActive.includes(key) ? 'none' : 'grayscale(1)' }}>
+                            {['💧','🚶','💪','🧘','🍴'][i]}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
-              {/* Healthy badges — horizontal, grandes */}
-              <div style={{ display: 'flex', gap: 5, justifyContent: 'center', marginTop: 8, padding: '9px 8px', background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 10 }}>
-                {(['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const).map((key, i) => (
-                  <span key={key} style={{ fontSize: 20, lineHeight: 1, opacity: snmActive.includes(key) ? 1 : 0.14, filter: snmActive.includes(key) ? 'none' : 'grayscale(1)' }}>
-                    {['💧','🚶','💪','🧘','🍴'][i]}
-                  </span>
-                ))}
-              </div>
+                );
+              })}
             </div>
 
             {/* ── CENTER: Orbital ── */}
@@ -562,9 +569,9 @@ export default function DashboardClient({
               borderLeft: '.5px solid var(--bg4)',
             }}>
               {[
-                { value: '2,7M',   label: 'PATRIMONIO', color: 'var(--gold)',  borderPos: 'top',    points: '0,26 25,23 50,21 75,18 100,15 125,11 150,7'  },
-                { value: '145,1K', label: 'ANUAL',      color: 'var(--text)', borderPos: 'bottom', points: '0,28 25,25 50,23 75,20 100,16 125,12 150,8'  },
-                { value: '10,2K',  label: 'MENSUAL',    color: 'var(--green)', borderPos: 'bottom', points: '0,30 25,27 50,24 75,20 100,15 125,9  150,4'  },
+                { value: '2,7',   label: 'PATRIMONIO', color: 'var(--gold)',  borderPos: 'top',    points: '0,26 25,23 50,21 75,18 100,15 125,11 150,7'  },
+                { value: '145,1', label: 'ANUAL',      color: 'var(--text)', borderPos: 'bottom', points: '0,28 25,25 50,23 75,20 100,16 125,12 150,8'  },
+                { value: '10,2',  label: 'MENSUAL',    color: 'var(--green)', borderPos: 'bottom', points: '0,30 25,27 50,24 75,20 100,15 125,9  150,4'  },
               ].map(stat => (
                 <div key={stat.label} style={{
                   paddingTop:    stat.borderPos === 'top'    ? 8 : 0,
@@ -572,7 +579,7 @@ export default function DashboardClient({
                   borderTop:    stat.borderPos === 'top'    ? `1px solid ${stat.color}` : 'none',
                   borderBottom: stat.borderPos === 'bottom' ? `1px solid ${stat.color}60` : 'none',
                 }}>
-                  <div style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontWeight: 700, fontSize: 40, color: stat.color, lineHeight: 1, letterSpacing: '-.02em' }}>{stat.value}</div>
+                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 48, color: stat.color, lineHeight: 1, letterSpacing: '-.03em' }}>{stat.value}</div>
                   <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.22em', marginTop: 3 }}>{stat.label}</div>
                   <svg width="100%" height="28" viewBox="0 0 150 32" preserveAspectRatio="none" style={{ display: 'block', marginTop: 5 }}>
                     <polyline points={stat.points} fill="none" stroke={stat.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.45" />

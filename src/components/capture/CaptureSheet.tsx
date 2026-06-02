@@ -278,7 +278,7 @@ export default function CaptureSheet({ onClose }: Props) {
                 }}>
                   <div style={{ fontSize: 36, marginBottom: 10 }}>✦</div>
                   <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.26em', color: 'var(--gold2)', marginBottom: 12 }}>
-                    AMIVERA ACTIVADO
+                    VERA GO ✦ ACTIVADO
                   </div>
                   <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text2)', lineHeight: 1.55 }}>
                     Vera está investigando.
