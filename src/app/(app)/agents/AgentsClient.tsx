@@ -260,36 +260,83 @@ function PrioPanel() {
 }
 
 /* ── Search ── */
+const BADGE_COLORS: Record<string, string> = {
+  'GOOGLE FLIGHTS': 'var(--blue)', SKYSCANNER: 'var(--blue)',
+  BOOKING: '#4a90d9', RENFE: '#e05c5c', TRAINLINE: '#00a69c',
+  FERRIES: 'var(--cyan)', TRASMEDI: 'var(--cyan)',
+  KAYAK: 'var(--amber)', RENTALCARS: 'var(--amber)', WEB: 'var(--text3)',
+};
+
 function SearchPanel() {
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<{ title: string; url: string; summary?: string }[]>([]);
+  const [results, setResults] = useState<{ title: string; url: string; description?: string; summary?: string; badge?: string; price?: string }[]>([]);
   const [notice, setNotice] = useState('');
+  const [asyncMode, setAsyncMode] = useState(false);
 
   const search = async () => {
     if (!q.trim()) return;
-    setLoading(true); setNotice(''); setResults([]);
-    const res = await fetch('/api/agents/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q }) });
-    const d = await res.json();
-    if (d.mode === 'no_search' || d.mode === 'no_ai') setNotice(d.notice ?? 'Sin resultados');
-    else setResults(d.results ?? []);
+    setLoading(true); setNotice(''); setResults([]); setAsyncMode(false);
+    try {
+      const res = await fetch('/api/agents/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q }) });
+      const d = await res.json();
+      if (d.mode === 'async') {
+        setAsyncMode(true);
+      } else if (d.mode === 'no_search' || d.mode === 'no_ai') {
+        setNotice(d.notice ?? 'Sin resultados');
+      } else {
+        setResults(d.results ?? []);
+      }
+    } catch {
+      setNotice('Error de conexión.');
+    }
     setLoading(false);
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && search()} placeholder="¿Qué buscamos?" style={INPUT} />
+      <input
+        value={q} onChange={e => setQ(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && search()}
+        placeholder="¿Qué buscamos? (ej. vuelo Madrid Barcelona julio)"
+        style={INPUT}
+      />
       <button onClick={search} disabled={loading || !q.trim()} style={{ ...BTN, border: '.5px solid var(--blue)', color: 'var(--blue)' }}>
         {loading ? '···' : 'BUSCAR →'}
       </button>
+
+      {asyncMode && (
+        <div style={{ background: 'rgba(91,168,232,0.07)', border: '.5px solid var(--blue)33', borderRadius: 10, padding: '16px 14px', textAlign: 'center' }}>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.22em', color: 'var(--blue)', marginBottom: 8 }}>BUSCANDO EN BACKGROUND</div>
+          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: '#c8c6be', lineHeight: 1.5 }}>
+            Recibirás una notificación push cuando haya resultados.<br />
+            Los detalles se guardan también como tarea.
+          </div>
+        </div>
+      )}
+
       {notice && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)' }}>{notice}</div>}
-      {results.map((r, i) => (
-        <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '12px 14px', textDecoration: 'none' }}>
-          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)', marginBottom: 4 }}>{r.title}</div>
-          {r.summary && <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: '#c8c6be', lineHeight: 1.4, marginBottom: 4 }}>{r.summary}</div>}
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.url}</div>
-        </a>
-      ))}
+
+      {results.map((r, i) => {
+        const bc = r.badge ? (BADGE_COLORS[r.badge] ?? 'var(--text3)') : undefined;
+        return (
+          <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', background: 'var(--bg3)', border: `.5px solid ${bc ? bc + '33' : 'var(--bg4)'}`, borderRadius: 10, padding: '12px 14px', textDecoration: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+              {r.badge && bc && (
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.14em', padding: '2px 6px', borderRadius: 4, background: bc + '22', color: bc, border: `.5px solid ${bc}55`, flexShrink: 0 }}>
+                  {r.badge}
+                </span>
+              )}
+              <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</div>
+            </div>
+            {r.price && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--green)', marginBottom: 4 }}>{r.price}</div>}
+            {(r.summary ?? r.description) && (
+              <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: '#c8c6be', lineHeight: 1.4, marginBottom: 4 }}>{r.summary ?? r.description}</div>
+            )}
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.url}</div>
+          </a>
+        );
+      })}
     </div>
   );
 }
