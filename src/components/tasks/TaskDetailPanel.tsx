@@ -8,6 +8,7 @@ export type TaskDetail = {
   detail?: string | null;
   notes?: string | null;
   propertyId?: string | null;
+  projectId?: number | null;
   prio?: number | null;
   prioManual?: number | null;
   prioFinal?: number | null;

@@ -33,6 +33,7 @@ export const projects = sqliteTable('projects', {
 export const tasks = sqliteTable('tasks', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   propertyId: text('property_id').references(() => properties.id),
+  projectId: integer('project_id').references(() => projects.id),
   title: text('title').notNull(),
   detail: text('detail'),
   prio: integer('prio').default(0),

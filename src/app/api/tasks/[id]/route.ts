@@ -14,7 +14,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const body = await req.json();
 
-  const allowed = ['title', 'detail', 'propertyId', 'prio', 'prioManual', 'prioFinal',
+  const allowed = ['title', 'detail', 'propertyId', 'projectId', 'prio', 'prioManual', 'prioFinal',
     'status', 'inNow', 'type', 'tags', 'context', 'constraints', 'dueDate',
     'lastActionAt', 'notes', 'isCapricho', 'isException'];
 

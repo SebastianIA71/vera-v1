@@ -19,21 +19,30 @@ export default function NewTaskModal({
   onClose,
   onCreated,
   defaultPropertyId,
+  defaultProjectId,
 }: {
   onClose: () => void;
   onCreated: (t: Task) => void;
   defaultPropertyId?: string;
+  defaultProjectId?: number;
 }) {
   const [title, setTitle]           = useState('');
   const [prio, setPrio]             = useState(5);
   const [propertyId, setPropertyId] = useState(defaultPropertyId ?? '');
+  const [projectId, setProjectId]   = useState<number | null>(defaultProjectId ?? null);
   const [saving, setSaving]         = useState(false);
   const [propList, setPropList]     = useState<Property[]>([]);
+  const [projList, setProjList]     = useState<{id: number; name: string; color: string | null}[]>([]);
 
   useEffect(() => {
     fetch('/api/properties')
       .then(r => r.json())
       .then((data: Property[]) => setPropList(data))
+      .catch(() => {});
+    fetch('/api/projects')
+      .then(r => r.json())
+      .then((data: {id: number; name: string; color: string | null; status: string | null}[]) =>
+        setProjList(data.filter(p => p.status === 'active' || p.status === 'paused')))
       .catch(() => {});
   }, []);
 
@@ -45,7 +54,7 @@ export default function NewTaskModal({
     const res = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, prio, propertyId: propertyId || null }),
+      body: JSON.stringify({ title, prio, propertyId: propertyId || null, projectId: projectId ?? null }),
     });
     if (res.ok) { const task = await res.json(); onCreated(task); }
     setSaving(false);
@@ -107,6 +116,34 @@ export default function NewTaskModal({
               })}
             </div>
           </div>
+
+          {projList.length > 0 && (
+            <div>
+              <label style={LABEL}>PROYECTO (opcional)</label>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button onClick={() => setProjectId(null)} style={{
+                  padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
+                  border: `.5px solid ${projectId === null ? '#9b7fe8' : 'var(--bg4)'}`,
+                  background: projectId === null ? '#9b7fe81e' : 'transparent',
+                  color: projectId === null ? '#9b7fe8' : 'var(--text3)',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em',
+                }}>NINGUNO</button>
+                {projList.map(p => {
+                  const col = p.color ?? '#9b7fe8';
+                  const sel = projectId === p.id;
+                  return (
+                    <button key={p.id} onClick={() => setProjectId(p.id)} style={{
+                      padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
+                      border: `.5px solid ${sel ? col : 'var(--bg4)'}`,
+                      background: sel ? `${col}1e` : 'transparent',
+                      color: sel ? col : 'var(--text3)',
+                      fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em',
+                    }}>{p.name.toUpperCase()}</button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <button onClick={save} disabled={!canSave || saving} style={{
             width: '100%', padding: '14px', borderRadius: 10,

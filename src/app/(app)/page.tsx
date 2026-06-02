@@ -48,9 +48,9 @@ export default async function AppRootPage() {
     Object.entries(snmMap).forEach(([k, v]) => { if (v) todaySnm.push(k); });
   }
 
-  // Top tarea por propiedad
+  // Top tarea por propiedad — solo si prio > 6
   const topTaskByProperty = allProperties.map(prop => {
-    const t = allTasks.find(t => t.propertyId === prop.id && t.status !== 'done');
+    const t = allTasks.find(t => t.propertyId === prop.id && t.status !== 'done' && (t.prioFinal ?? 0) > 6);
     return t ? { prop, task: t } : null;
   }).filter(Boolean) as { prop: typeof allProperties[0]; task: typeof allTasks[0] }[];
 

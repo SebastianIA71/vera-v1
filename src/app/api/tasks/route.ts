@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { title, detail, propertyId, prio, type, tags, dueDate } = body;
+  const { title, detail, propertyId, projectId, prio, type, tags, dueDate } = body;
 
   if (!title?.trim()) {
     return NextResponse.json({ error: 'Título requerido' }, { status: 400 });
@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
       title: title.trim(),
       detail: detail ?? null,
       propertyId: propertyId ?? null,
+      projectId: projectId ? Number(projectId) : null,
       prio: prioNum,
       prioFinal: prioNum,
       type: type ?? 'task',

@@ -10,6 +10,7 @@ function NavIcon({ icon }: { icon: string }) {
     inbox:    <svg viewBox="0 0 24 24" width={18} height={18} {...s}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
     trips:    <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>,
     props:    <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>,
+    projects: <svg viewBox="0 0 24 24" width={18} height={18} {...s}><rect x="2" y="3" width="6" height="6" rx="1"/><rect x="9" y="3" width="13" height="2.5" rx="1"/><rect x="2" y="10.5" width="6" height="6" rx="1"/><rect x="9" y="10.5" width="13" height="2.5" rx="1"/><rect x="2" y="18" width="6" height="3" rx="1"/><rect x="9" y="18" width="13" height="2.5" rx="1"/></svg>,
     finance:  <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M17 8.5C15.5 7 13.5 6 11.5 6C7.9 6 5 8.9 5 12.5S7.9 19 11.5 19c2 0 4-1 5.5-2.5"/><line x1="3" y1="11" x2="13" y2="11"/><line x1="3" y1="14" x2="13" y2="14"/></svg>,
     agents:   <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z"/></svg>,
     settings: <svg viewBox="0 0 24 24" width={18} height={18} {...s}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9z"/></svg>,
@@ -73,7 +74,7 @@ export default function DesktopNav({
 }: {
   inboxCount?: number;
   activeOverride?: string;
-  counts?: { tasks?: number; trips?: number; properties?: number; agents?: number };
+  counts?: { tasks?: number; trips?: number; properties?: number; projects?: number; agents?: number };
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -107,6 +108,7 @@ export default function DesktopNav({
       <NavItem icon="inbox"    label="INBOX"       active={isActive('/inbox')}      badge={inboxCount}         badgeColor="var(--red)"   onClick={() => router.push('/inbox')} />
       <NavItem icon="trips"    label="EVENTOS"     active={isActive('/trips')}      badge={counts.trips}       badgeColor="var(--green)" onClick={() => router.push('/trips')} />
       <NavItem icon="props"    label="PROPIEDADES" active={isActive('/properties')} badge={counts.properties}  badgeColor="var(--green)" onClick={() => router.push('/properties')} />
+      <NavItem icon="projects" label="PROYECTOS"   active={isActive('/projects')}  badge={counts.projects}    badgeColor="var(--purple)" onClick={() => router.push('/projects')} />
 
       <div style={{ height: .5, background: 'var(--bg4)', margin: '6px 14px' }} />
 

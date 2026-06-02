@@ -7,12 +7,14 @@ import DesktopShell from '@/components/layout/DesktopShell';
 import TaskDetailPanel, { TaskDetail } from '@/components/tasks/TaskDetailPanel';
 import { taskBorderColor } from '@/lib/utils';
 
-type Task = TaskDetail & { inNow?: boolean | null };
+type Task     = TaskDetail & { inNow?: boolean | null };
 type Property = { id: string; name: string; color: string | null; icon: string | null };
+type Project  = { id: number; name: string; color: string | null };
 
 
 type Filters = {
   propertyId: string | null;
+  projectId:  number | null;
   prioRange: '8-9' | '6-7' | '0-5' | null;
   status: string | null;
   context: 'now' | 'stale' | null;
@@ -21,7 +23,8 @@ type Filters = {
 
 
 function matchFilters(t: Task, f: Filters): boolean {
-  if (f.propertyId && t.propertyId !== f.propertyId) return false;
+  if (f.propertyId !== null && f.propertyId !== undefined && t.propertyId !== f.propertyId) return false;
+  if (f.projectId  !== null && f.projectId  !== undefined && t.projectId  !== f.projectId)  return false;
   if (f.prioRange) {
     const p = t.prioFinal ?? 0;
     if (f.prioRange === '8-9' && p < 8) return false;
@@ -64,18 +67,19 @@ function FilterChip({ label, active, color, onClick }: { label: string; active: 
 }
 
 export default function TasksClient({
-  initialTasks, urgentCount, waitingCount, inboxCount, properties = [],
+  initialTasks, urgentCount, waitingCount, inboxCount, properties = [], projects = [],
 }: {
   initialTasks: Task[];
   urgentCount: number;
   waitingCount: number;
   inboxCount: number;
   properties?: Property[];
+  projects?: Project[];
 }) {
   const router = useRouter();
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [selected, setSelected] = useState<Task | null>(null);
-  const [filters, setFilters] = useState<Filters>({ propertyId: null, prioRange: null, status: null, context: null, search: '' });
+  const [filters, setFilters] = useState<Filters>({ propertyId: null, projectId: null, prioRange: null, status: null, context: null, search: '' });
   const [showNewTask, setShowNewTask] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -94,7 +98,7 @@ export default function TasksClient({
   const restTasks = filtered.filter(t => !t.inNow && t.status !== 'done');
   const doneTasks = filtered.filter(t => t.status === 'done');
 
-  const clearFilters = () => setFilters({ propertyId: null, prioRange: null, status: null, context: null, search: '' });
+  const clearFilters = () => setFilters({ propertyId: null, projectId: null, prioRange: null, status: null, context: null, search: '' });
 
   const markDone = (id: number) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t));
@@ -181,6 +185,19 @@ export default function TasksClient({
               />
             ))}
             <FilterChip label="· General" active={filters.propertyId === ''} onClick={() => setFilters(f => ({ ...f, propertyId: f.propertyId === '' ? null : '' }))} />
+
+            {projects.length > 0 && (
+              <>
+                <div style={{ width: .5, height: 16, background: 'var(--bg4)', margin: '0 3px', flexShrink: 0 }} />
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', flexShrink: 0 }}>PROYECTO</span>
+                {projects.map(p => (
+                  <FilterChip key={p.id} label={p.name} color={p.color ?? '#9b7fe8'}
+                    active={filters.projectId === p.id}
+                    onClick={() => setFilters(f => ({ ...f, projectId: f.projectId === p.id ? null : p.id }))}
+                  />
+                ))}
+              </>
+            )}
 
             <div style={{ width: .5, height: 16, background: 'var(--bg4)', margin: '0 3px', flexShrink: 0 }} />
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', flexShrink: 0 }}>PRIO</span>
