@@ -3,10 +3,6 @@ import { cookies } from 'next/headers';
 
 const SESSION_SECRET = new TextEncoder().encode(process.env.SESSION_SECRET ?? '');
 
-// Dominio de producción fijo — app de un solo usuario
-const PROD_RP_ID = 'vera-v1-bhxy.vercel.app';
-const PROD_ORIGIN = 'https://vera-v1-bhxy.vercel.app';
-
 export async function verifySession(_req?: Request): Promise<boolean> {
   try {
     const cookieStore = await cookies();
@@ -19,13 +15,39 @@ export async function verifySession(_req?: Request): Promise<boolean> {
   }
 }
 
+// ─── WebAuthn helpers ─────────────────────────────────────────────────────────
+//
+// rpID y origin se derivan del host real de cada request.
+// Esto hace que el sistema funcione en cualquier dominio (localhost, Vercel,
+// dominio personalizado) sin ninguna configuración extra.
+//
+// El navegador incrusta el origin en los datos del autenticador (firmados),
+// así que el server siempre debe verificar contra el MISMO dominio desde el
+// que se sirvió la página. Derivarlo del header `host` garantiza esa consistencia.
+
+type RequestLike = { headers: { get(name: string): string | null } };
+
+export function getRpIdFromReq(req: RequestLike): string {
+  const host = req.headers.get('host') ?? '';
+  const hostname = host.split(':')[0]; // eliminar el puerto si lo hay
+  return hostname || 'localhost';
+}
+
+export function getOriginFromReq(req: RequestLike): string {
+  // `origin` header: presente en fetch cross-origin y en la mayoría de same-origin
+  const origin = req.headers.get('origin');
+  if (origin) return origin;
+  // Reconstruir desde host si origin no viene (ej. curl, algunos GET)
+  const host = req.headers.get('host') ?? 'localhost';
+  const isLocal = host.startsWith('localhost') || host.startsWith('127.0.0.1');
+  return `${isLocal ? 'http' : 'https'}://${host}`;
+}
+
+// Mantener estas funciones para compatibilidad con código existente fuera de WebAuthn
 export function getRpId(): string {
-  return process.env.WEBAUTHN_RP_ID ?? PROD_RP_ID;
+  return process.env.WEBAUTHN_RP_ID ?? 'localhost';
 }
 
 export function getExpectedOrigin(): string {
-  const envRpId = process.env.WEBAUTHN_RP_ID;
-  if (envRpId) return envRpId === 'localhost' ? 'http://localhost:3000' : `https://${envRpId}`;
-  // Fallback hardcodeado — por si la env var no está configurada en Vercel
-  return process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : PROD_ORIGIN;
+  return process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : '';
 }

@@ -1,13 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { startRegistration } from '@simplewebauthn/browser';
 import DesktopShell from '@/components/layout/DesktopShell';
 
+type Credential = {
+  id: number;
+  deviceName: string | null;
+  createdAt: Date | null;
+  lastUsedAt: Date | null;
+};
+
 export default function SettingsPage() {
-  const [registering, setRegistering] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'ok' | 'error'>('idle');
-  const [message, setMessage] = useState('');
+  const [registering, setRegistering]   = useState(false);
+  const [deleting, setDeleting]         = useState(false);
+  const [status, setStatus]             = useState<'idle' | 'ok' | 'error'>('idle');
+  const [message, setMessage]           = useState('');
+  const [credentials, setCredentials]   = useState<Credential[]>([]);
+  const [loadingCreds, setLoadingCreds] = useState(true);
+
+  const loadCredentials = async () => {
+    try {
+      const res = await fetch('/api/auth/webauthn/credentials');
+      if (res.ok) setCredentials(await res.json());
+    } catch {
+      // silencioso
+    } finally {
+      setLoadingCreds(false);
+    }
+  };
+
+  useEffect(() => { loadCredentials(); }, []);
 
   const registerFaceId = async () => {
     setRegistering(true);
@@ -32,6 +55,7 @@ export default function SettingsPage() {
       if (verifyRes.ok) {
         setStatus('ok');
         setMessage('Face ID configurado correctamente');
+        await loadCredentials();
       } else {
         const body = await verifyRes.json().catch(() => ({}));
         throw new Error(`VERIFY ${verifyRes.status}: ${body.error ?? verifyRes.statusText}`);
@@ -44,6 +68,25 @@ export default function SettingsPage() {
       setRegistering(false);
     }
   };
+
+  const deleteCredentials = async () => {
+    if (!confirm('¿Borrar todas las credenciales de Face ID? Tendrás que volver a configurarlo.')) return;
+    setDeleting(true);
+    try {
+      const res = await fetch('/api/auth/webauthn/credentials', { method: 'DELETE' });
+      if (res.ok) {
+        setCredentials([]);
+        setStatus('idle');
+        setMessage('Credenciales borradas. Pulsa "Configurar Face ID" para registrar de nuevo.');
+      }
+    } catch {
+      setMessage('Error al borrar credenciales');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const hasCredentials = credentials.length > 0;
 
   return (
     <DesktopShell urgentCount={0} staleCount={0} inboxCount={0}>
@@ -82,7 +125,7 @@ export default function SettingsPage() {
         {/* Seguridad */}
         <div style={{ marginBottom: 28 }}>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.22em', color: 'var(--text3)', marginBottom: 14 }}>
-            SEGURIDAD
+            SEGURIDAD · FACE ID
           </div>
 
           <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 12, padding: '16px 18px' }}>
@@ -90,30 +133,74 @@ export default function SettingsPage() {
               Face ID / Touch ID
             </div>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em', marginBottom: 16, lineHeight: 1.5 }}>
-              Registra tu dispositivo para entrar sin PIN. Solo funciona en el dispositivo donde lo configures.
+              Registra tu dispositivo para entrar sin PIN. Solo funciona en el dispositivo y dominio donde lo configures.
             </div>
 
-            <button
-              onClick={registerFaceId}
-              disabled={registering}
-              style={{
-                padding: '10px 18px',
-                borderRadius: 8,
-                background: 'transparent',
-                border: `.5px solid ${status === 'ok' ? 'var(--green)' : 'var(--gold2)'}`,
-                color: status === 'ok' ? 'var(--green)' : 'var(--gold)',
-                fontFamily: 'var(--font-dm-mono)',
-                fontSize: 10,
-                letterSpacing: '.18em',
-                cursor: registering ? 'default' : 'pointer',
-                opacity: registering ? 0.6 : 1,
-              }}
-            >
-              {registering ? 'ESPERANDO FACE ID...' : status === 'ok' ? '✓ CONFIGURADO' : 'CONFIGURAR FACE ID'}
-            </button>
+            {/* Estado actual */}
+            {loadingCreds ? (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', marginBottom: 14, letterSpacing: '.1em' }}>
+                ···
+              </div>
+            ) : hasCredentials ? (
+              <div style={{ marginBottom: 14 }}>
+                {credentials.map(c => (
+                  <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--bg3)', borderRadius: 8, marginBottom: 6, border: '.5px solid var(--green)44' }}>
+                    <span style={{ fontSize: 16 }}>📱</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)' }}>{c.deviceName ?? 'Dispositivo'}</div>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 2 }}>
+                        {c.lastUsedAt ? `Último uso: ${new Date(c.lastUsedAt).toLocaleDateString('es-ES')}` : `Registrado: ${c.createdAt ? new Date(c.createdAt).toLocaleDateString('es-ES') : '—'}`}
+                      </div>
+                    </div>
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--green)', letterSpacing: '.1em' }}>ACTIVO</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--amber)', letterSpacing: '.1em', marginBottom: 14 }}>
+                SIN CREDENCIALES — Pulsa el botón para configurar
+              </div>
+            )}
+
+            {/* Botones */}
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button
+                onClick={registerFaceId}
+                disabled={registering}
+                style={{
+                  padding: '10px 18px', borderRadius: 8,
+                  background: 'transparent',
+                  border: `.5px solid ${status === 'ok' ? 'var(--green)' : 'var(--gold2)'}`,
+                  color: status === 'ok' ? 'var(--green)' : 'var(--gold)',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em',
+                  cursor: registering ? 'default' : 'pointer',
+                  opacity: registering ? 0.6 : 1,
+                }}
+              >
+                {registering ? 'ESPERANDO FACE ID...' : hasCredentials ? 'AÑADIR DISPOSITIVO' : 'CONFIGURAR FACE ID'}
+              </button>
+
+              {hasCredentials && (
+                <button
+                  onClick={deleteCredentials}
+                  disabled={deleting}
+                  style={{
+                    padding: '10px 18px', borderRadius: 8,
+                    background: 'transparent',
+                    border: '.5px solid var(--red)',
+                    color: 'var(--red)',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em',
+                    cursor: deleting ? 'default' : 'pointer',
+                    opacity: deleting ? 0.6 : 1,
+                  }}
+                >
+                  {deleting ? 'BORRANDO...' : 'BORRAR Y RECONFIGURAR'}
+                </button>
+              )}
+            </div>
 
             {message && (
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: status === 'ok' ? 'var(--green)' : 'var(--red)', marginTop: 10, letterSpacing: '.12em' }}>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: status === 'ok' ? 'var(--green)' : status === 'error' ? 'var(--red)' : 'var(--text2)', marginTop: 12, letterSpacing: '.12em', lineHeight: 1.5 }}>
                 {message}
               </div>
             )}

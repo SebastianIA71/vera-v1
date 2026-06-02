@@ -4,9 +4,9 @@ import { SignJWT } from 'jose';
 import { db } from '@/lib/db';
 import { webauthnCredentials } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
-import { getExpectedOrigin, getRpId } from '@/lib/auth';
+import { getRpIdFromReq, getOriginFromReq } from '@/lib/auth';
 
-// isoBase64URL.toBuffer equivalent — base64url → Uint8Array limpio
+// base64url → Uint8Array
 function safeToBuffer(base64url: string): Uint8Array<ArrayBuffer> {
   const buf = Buffer.from(base64url, 'base64url');
   return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength) as Uint8Array<ArrayBuffer>;
@@ -18,6 +18,11 @@ const SESSION_DURATION = 60 * 60 * 24 * 30;
 export async function POST(req: NextRequest) {
   const challenge = req.cookies.get('webauthn_challenge')?.value;
   if (!challenge) return NextResponse.json({ error: 'Challenge expirado' }, { status: 400 });
+
+  // Usar el origin guardado en cookie (fijado en auth-options) para máxima consistencia.
+  // Si no existe la cookie, derivar del request actual.
+  const expectedOrigin = req.cookies.get('webauthn_origin')?.value || getOriginFromReq(req);
+  const expectedRPID   = getRpIdFromReq(req);
 
   const body = await req.json();
   const credentialIdB64 = body.id;
@@ -33,11 +38,11 @@ export async function POST(req: NextRequest) {
     const verification = await verifyAuthenticationResponse({
       response: body,
       expectedChallenge: challenge,
-      expectedOrigin: getExpectedOrigin(),
-      expectedRPID: getRpId(),
+      expectedOrigin,
+      expectedRPID,
       credential: {
         id: cred.credentialId,
-        publicKey: safeToBuffer(cred.publicKey), // base64url → Uint8Array correcto
+        publicKey: safeToBuffer(cred.publicKey),
         counter: cred.counter,
       },
     });
@@ -65,6 +70,7 @@ export async function POST(req: NextRequest) {
       path: '/',
     });
     res.cookies.delete('webauthn_challenge');
+    res.cookies.delete('webauthn_origin');
     return res;
   } catch (err) {
     console.error('WebAuthn auth error:', err);
