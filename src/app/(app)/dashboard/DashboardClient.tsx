@@ -452,7 +452,7 @@ export default function DashboardClient({
                     </span>
                   </div>
                   <div style={{ width: 2, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
-                  <div style={{ padding: '6px 8px', flex: 1, minWidth: 0 }}>
+                  <div style={{ padding: '6px 8px', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
                       {kpi.value}
                     </div>
@@ -557,30 +557,28 @@ export default function DashboardClient({
               flex: '0 0 185px', flexShrink: 0,
               display: 'flex', flexDirection: 'column',
               justifyContent: 'center',
-              gap: 18,
+              gap: 10,
               padding: '0 24px 0 18px',
               borderLeft: '.5px solid var(--bg4)',
             }}>
-              {([
-                { value: '2,7M',   label: 'PATRIMONIO', color: 'var(--text)'  },
-                { value: '145,1K', label: 'ANUAL',      color: 'var(--text2)' },
-                { value: '10,2K',  label: 'MENSUAL',    color: 'var(--green)' },
-              ] as const).map(stat => (
-                <div key={stat.label}>
-                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 44, color: stat.color, lineHeight: 1, letterSpacing: '-.03em' }}>{stat.value}</div>
-                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.22em', marginTop: 4 }}>{stat.label}</div>
+              {[
+                { value: '2,7M',   label: 'PATRIMONIO', color: 'var(--gold)',  borderPos: 'top',    points: '0,26 25,23 50,21 75,18 100,15 125,11 150,7'  },
+                { value: '145,1K', label: 'ANUAL',      color: 'var(--text)', borderPos: 'bottom', points: '0,28 25,25 50,23 75,20 100,16 125,12 150,8'  },
+                { value: '10,2K',  label: 'MENSUAL',    color: 'var(--green)', borderPos: 'bottom', points: '0,30 25,27 50,24 75,20 100,15 125,9  150,4'  },
+              ].map(stat => (
+                <div key={stat.label} style={{
+                  paddingTop:    stat.borderPos === 'top'    ? 8 : 0,
+                  paddingBottom: stat.borderPos === 'bottom' ? 8 : 0,
+                  borderTop:    stat.borderPos === 'top'    ? `1px solid ${stat.color}` : 'none',
+                  borderBottom: stat.borderPos === 'bottom' ? `1px solid ${stat.color}60` : 'none',
+                }}>
+                  <div style={{ fontFamily: 'Arial, Helvetica, sans-serif', fontWeight: 700, fontSize: 40, color: stat.color, lineHeight: 1, letterSpacing: '-.02em' }}>{stat.value}</div>
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.22em', marginTop: 3 }}>{stat.label}</div>
+                  <svg width="100%" height="28" viewBox="0 0 150 32" preserveAspectRatio="none" style={{ display: 'block', marginTop: 5 }}>
+                    <polyline points={stat.points} fill="none" stroke={stat.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.45" />
+                  </svg>
                 </div>
               ))}
-              <svg width="100%" height="44" viewBox="0 0 150 44" preserveAspectRatio="none" style={{ display: 'block' }}>
-                <defs>
-                  <linearGradient id="statsBg" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--green)" stopOpacity=".18" />
-                    <stop offset="100%" stopColor="var(--green)" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path d="M0,40 L18,36 L36,38 L55,28 L75,22 L95,14 L118,7 L150,2 L150,44 L0,44 Z" fill="url(#statsBg)" />
-                <polyline points="0,40 18,36 36,38 55,28 75,22 95,14 118,7 150,2" fill="none" stroke="var(--green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
             </div>
 
           </div>
