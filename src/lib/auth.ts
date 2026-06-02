@@ -28,16 +28,22 @@ export async function verifySession(_req?: Request): Promise<boolean> {
 type RequestLike = { headers: { get(name: string): string | null } };
 
 export function getRpIdFromReq(req: RequestLike): string {
-  // Prioridad: variable fija (necesaria cuando hay múltiples URLs de Vercel)
+  // 1. Variable manual (opcional, solo si hay dominio propio)
   if (process.env.WEBAUTHN_RP_ID) return process.env.WEBAUTHN_RP_ID;
+  // 2. Vercel system env — dominio de producción estable, siempre disponible sin configuración
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  // 3. Fallback local
   const host = req.headers.get('host') ?? '';
   const hostname = host.split(':')[0];
   return hostname || 'localhost';
 }
 
 export function getOriginFromReq(req: RequestLike): string {
-  // Prioridad: variable fija (necesaria cuando hay múltiples URLs de Vercel)
+  // 1. Variable manual (opcional)
   if (process.env.WEBAUTHN_EXPECTED_ORIGIN) return process.env.WEBAUTHN_EXPECTED_ORIGIN;
+  // 2. Vercel system env — siempre disponible sin configuración
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  // 3. Fallback: derivar del request
   const origin = req.headers.get('origin');
   if (origin) return origin;
   const host = req.headers.get('host') ?? 'localhost';
