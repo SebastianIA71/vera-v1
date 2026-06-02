@@ -28,16 +28,18 @@ export async function verifySession(_req?: Request): Promise<boolean> {
 type RequestLike = { headers: { get(name: string): string | null } };
 
 export function getRpIdFromReq(req: RequestLike): string {
+  // Prioridad: variable fija (necesaria cuando hay múltiples URLs de Vercel)
+  if (process.env.WEBAUTHN_RP_ID) return process.env.WEBAUTHN_RP_ID;
   const host = req.headers.get('host') ?? '';
-  const hostname = host.split(':')[0]; // eliminar el puerto si lo hay
+  const hostname = host.split(':')[0];
   return hostname || 'localhost';
 }
 
 export function getOriginFromReq(req: RequestLike): string {
-  // `origin` header: presente en fetch cross-origin y en la mayoría de same-origin
+  // Prioridad: variable fija (necesaria cuando hay múltiples URLs de Vercel)
+  if (process.env.WEBAUTHN_EXPECTED_ORIGIN) return process.env.WEBAUTHN_EXPECTED_ORIGIN;
   const origin = req.headers.get('origin');
   if (origin) return origin;
-  // Reconstruir desde host si origin no viene (ej. curl, algunos GET)
   const host = req.headers.get('host') ?? 'localhost';
   const isLocal = host.startsWith('localhost') || host.startsWith('127.0.0.1');
   return `${isLocal ? 'http' : 'https'}://${host}`;
