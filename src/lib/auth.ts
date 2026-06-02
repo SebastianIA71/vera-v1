@@ -27,28 +27,16 @@ export async function verifySession(_req?: Request): Promise<boolean> {
 
 type RequestLike = { headers: { get(name: string): string | null } };
 
-export function getRpIdFromReq(req: RequestLike): string {
-  // 1. Variable manual (opcional, solo si hay dominio propio)
+const PRODUCTION_DOMAIN = 'vera-v1-bhxy.vercel.app';
+
+export function getRpIdFromReq(_req: RequestLike): string {
   if (process.env.WEBAUTHN_RP_ID) return process.env.WEBAUTHN_RP_ID;
-  // 2. Vercel system env — dominio de producción estable, siempre disponible sin configuración
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return process.env.VERCEL_PROJECT_PRODUCTION_URL;
-  // 3. Fallback local
-  const host = req.headers.get('host') ?? '';
-  const hostname = host.split(':')[0];
-  return hostname || 'localhost';
+  return PRODUCTION_DOMAIN;
 }
 
-export function getOriginFromReq(req: RequestLike): string {
-  // 1. Variable manual (opcional)
+export function getOriginFromReq(_req: RequestLike): string {
   if (process.env.WEBAUTHN_EXPECTED_ORIGIN) return process.env.WEBAUTHN_EXPECTED_ORIGIN;
-  // 2. Vercel system env — siempre disponible sin configuración
-  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
-  // 3. Fallback: derivar del request
-  const origin = req.headers.get('origin');
-  if (origin) return origin;
-  const host = req.headers.get('host') ?? 'localhost';
-  const isLocal = host.startsWith('localhost') || host.startsWith('127.0.0.1');
-  return `${isLocal ? 'http' : 'https'}://${host}`;
+  return `https://${PRODUCTION_DOMAIN}`;
 }
 
 // Mantener estas funciones para compatibilidad con código existente fuera de WebAuthn
