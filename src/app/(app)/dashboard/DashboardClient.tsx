@@ -450,20 +450,20 @@ export default function DashboardClient({
                   }}>
                     {/* Zona icon — izquierda de la barra */}
                     <div style={{
-                      width: 28, display: 'flex', flexDirection: 'column',
+                      width: 34, display: 'flex', flexDirection: 'column',
                       alignItems: 'center', justifyContent: 'center',
-                      padding: '5px 2px', background: `${kpi.color}0a`, flexShrink: 0,
+                      padding: '5px 3px', background: `${kpi.color}0a`, flexShrink: 0,
                     }}>
                       {kpi.id === 'weight' ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center' }}>
                           {SNM_KEYS_LOCAL.map((key, i) => (
-                            <span key={key} style={{ fontSize: 7, lineHeight: 1, opacity: snmActive.includes(key) ? 1 : 0.12, filter: snmActive.includes(key) ? 'none' : 'grayscale(1)' }}>
+                            <span key={key} style={{ fontSize: 17, lineHeight: 1, opacity: snmActive.includes(key) ? 1 : 0.12, filter: snmActive.includes(key) ? 'none' : 'grayscale(1)' }}>
                               {SNM_ICONS_LOCAL[i]}
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: kpi.color, opacity: 0.8, lineHeight: 1 }}>
+                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, color: kpi.color, opacity: 0.8, lineHeight: 1 }}>
                           {KPI_ICONS[kpi.id] ?? '·'}
                         </span>
                       )}
@@ -471,11 +471,11 @@ export default function DashboardClient({
                     {/* Barra coloreada */}
                     <div style={{ width: 2, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
                     {/* Valor + label */}
-                    <div style={{ padding: '6px 10px', flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                    <div style={{ padding: '7px 10px', flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
                         {kpi.value}
                       </div>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {kpi.label}
                       </div>
                     </div>

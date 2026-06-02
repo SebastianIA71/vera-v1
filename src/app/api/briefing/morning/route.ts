@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     db.select().from(tasks).where(and(ne(tasks.status, 'archived'), ne(tasks.status, 'done'))).orderBy(desc(tasks.prioFinal)).limit(30),
     db.select().from(events).orderBy(desc(events.startDate)).limit(10),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(2),
-    db.select({ id: inbox.id }).from(inbox).limit(100),
+    db.select({ id: inbox.id, processed: inbox.processed }).from(inbox).limit(100),
   ]);
 
   const urgentTasks = allTasks
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
     lastWeight,
     weightTrend,
     urgentTasks,
-    inboxCount: inboxItems.length,
+    inboxCount: inboxItems.filter(i => !i.processed).length,
     memory: '',
   };
 

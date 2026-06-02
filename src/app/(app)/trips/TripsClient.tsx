@@ -126,7 +126,8 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
               {tab === 'viaje' ? 'Viajes' : 'Eventos'} <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>2026</em>
             </div>
             <button onClick={() => tab === 'viaje' ? setShowNewTrip(true) : setShowNewEvent(true)}
-              style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--bg3)', border: '.5px solid var(--bg4)', color: 'var(--gold2)', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+
+              style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', padding: '5px 11px', border: `.5px solid ${tab === 'viaje' ? 'var(--blue)44' : 'var(--purple)44'}`, borderRadius: 8, background: tab === 'viaje' ? 'var(--blue)12' : 'var(--purple)12', color: tab === 'viaje' ? 'var(--blue)' : 'var(--purple)', cursor: 'pointer' }}>
+              + NUEVO
             </button>
           </div>
           <div style={{ display: 'flex' }}>
@@ -185,7 +186,8 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
               {tab === 'viaje' ? 'Viajes' : 'Eventos'} <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>2026</em>
             </div>
             <button onClick={() => tab === 'viaje' ? setShowNewTrip(true) : setShowNewEvent(true)}
-              style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--bg3)', border: '.5px solid var(--bg4)', color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>+
+              style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', padding: '5px 11px', border: `.5px solid ${tab === 'viaje' ? 'var(--blue)44' : 'var(--purple)44'}`, borderRadius: 8, background: tab === 'viaje' ? 'var(--blue)12' : 'var(--purple)12', color: tab === 'viaje' ? 'var(--blue)' : 'var(--purple)', cursor: 'pointer' }}>
+              + NUEVO
             </button>
           </div>
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text4)', marginTop: 4 }}>

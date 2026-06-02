@@ -57,8 +57,8 @@ function NavItem({ icon, label, active, badge, badgeColor = 'var(--red)', onClic
       {badge !== undefined && badge > 0 && (
         <span style={{
           marginLeft: 'auto', background: badgeColor, color: '#fff',
-          fontFamily: 'var(--font-dm-mono)', fontSize: '9px',
-          padding: '2px 6px', borderRadius: '999px',
+          fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
+          padding: '2px 7px', borderRadius: '999px', fontWeight: 500,
         }}>
           {badge}
         </span>

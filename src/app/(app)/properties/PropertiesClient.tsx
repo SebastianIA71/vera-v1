@@ -94,10 +94,9 @@ export default function PropertiesClient({
                     </div>
                     <button
                       onClick={() => setNewTaskPropId(prop.id)}
-                      style={{ width: 24, height: 24, borderRadius: 7, background: 'transparent', border: '.5px solid var(--bg4)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', cursor: 'pointer' }}
-                      title={`Nueva tarea en ${prop.name}`}
+                      style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', padding: '4px 10px', border: `.5px solid ${color}44`, borderRadius: 7, background: `${color}10`, color, cursor: 'pointer' }}
                     >
-                      <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      + TAREA
                     </button>
                   </div>
                   <div style={{ display: 'flex', gap: 12 }}>
