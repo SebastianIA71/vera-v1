@@ -26,7 +26,6 @@ async function geocode(name: string): Promise<[number, number] | null> {
   } catch { return null; }
 }
 
-// Carga Leaflet desde CDN (sin npm) — idempotente
 async function loadLeaflet(): Promise<unknown> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ((window as any).L) return (window as any).L;
@@ -55,35 +54,35 @@ async function loadLeaflet(): Promise<unknown> {
 export default function MapWidget({ trips }: { trips: Trip[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mapRef      = useRef<any>(null);
-  const didInit     = useRef(false);
+  const mapRef    = useRef<any>(null);
+  // Ref para acceder a trips dentro del effect sin añadirlo como dependencia
+  const tripsRef  = useRef(trips);
+  tripsRef.current = trips;
+
   const [loading, setLoading] = useState(true);
   const [count,   setCount]   = useState(0);
 
+  // deps vacíos: se monta UNA sola vez — el clock del dashboard no lo reinicia
   useEffect(() => {
-    if (!containerRef.current || didInit.current) return;
-    didInit.current = true;
+    if (!containerRef.current) return;
 
     (async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const L = await loadLeaflet() as any;
 
-      // Evitar doble inicialización si el contenedor ya tiene un mapa
-      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
+      if (mapRef.current) return; // ya inicializado (StrictMode doble mount)
 
       const map = L.map(containerRef.current, {
         zoomControl: false, attributionControl: false,
         scrollWheelZoom: false, dragging: true,
       });
 
-      // CartoDB Dark Matter — sin API key
       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         subdomains: 'abcd', maxZoom: 19,
       }).addTo(map);
 
       mapRef.current = map;
 
-      // Icono circular gold
       const goldIcon = L.divIcon({
         className: '',
         html: `<div style="width:10px;height:10px;border-radius:50%;background:#c4a86a;border:2px solid #e8d5a3;box-shadow:0 0 6px #c4a86a99"></div>`,
@@ -91,7 +90,7 @@ export default function MapWidget({ trips }: { trips: Trip[] }) {
       });
 
       const now = new Date();
-      const upcoming = trips
+      const upcoming = (tripsRef.current)
         .filter(t => t.startDate && new Date(t.startDate) > now)
         .sort((a, b) => new Date(a.startDate!).getTime() - new Date(b.startDate!).getTime());
 
@@ -108,7 +107,7 @@ export default function MapWidget({ trips }: { trips: Trip[] }) {
       }
 
       if (coords.length > 0) {
-        map.fitBounds(L.latLngBounds(coords), { padding: [18, 18], maxZoom: 7 });
+        map.fitBounds(L.latLngBounds(coords), { padding: [22, 22], maxZoom: 7 });
       } else {
         map.setView([40.4, -3.7], 4);
       }
@@ -118,10 +117,12 @@ export default function MapWidget({ trips }: { trips: Trip[] }) {
     })().catch(() => setLoading(false));
 
     return () => {
-      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
-      didInit.current = false;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
-  }, [trips]);
+  }, []); // ← VACÍO: nunca se reinicializa aunque el padre re-renderice
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', borderRadius: 8, overflow: 'hidden', background: 'var(--bg3)' }}>
@@ -137,7 +138,7 @@ export default function MapWidget({ trips }: { trips: Trip[] }) {
           {count} DESTINO{count !== 1 ? 'S' : ''} · 2026
         </div>
       )}
-      <style>{`.leaflet-tooltip{background:rgba(7,8,10,.88)!important;border:.5px solid #c4a86a55!important;border-radius:6px!important;color:#eceae2!important;font-family:monospace;font-size:10px;box-shadow:none!important}.leaflet-tooltip::before{display:none!important}`}</style>
+      <style>{`.leaflet-tooltip{background:rgba(7,8,10,.9)!important;border:.5px solid #c4a86a55!important;border-radius:6px!important;color:#eceae2!important;font-size:10px;box-shadow:none!important}.leaflet-tooltip::before{display:none!important}`}</style>
     </div>
   );
 }

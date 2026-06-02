@@ -433,8 +433,8 @@ export default function DashboardClient({
 
           {/* Orbital map */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'stretch', overflow: 'hidden' }}>
-            {/* KPI zone + mapa: arriba KPIs en 2 columnas, abajo mapa de destinos */}
-            <div style={{ flex: '0 0 260px', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 14px', overflow: 'hidden' }}>
+            {/* KPI zone + mapa — 40% del ancho del centro */}
+            <div style={{ flex: '0 0 40%', display: 'flex', flexDirection: 'column', gap: 8, padding: '12px 14px', overflow: 'hidden' }}>
               {/* Grid 2 columnas — KPIs compactos */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, flexShrink: 0 }}>
                 {getKpiNodes(kpis).filter(k => k.id !== 'weight').map(kpi => (
@@ -495,7 +495,7 @@ export default function DashboardClient({
                 />
               </div>
             </div>
-            {/* Orbital — centrado en el espacio restante */}
+            {/* Orbital — 60% restante, centrado */}
             <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 0 }}>
             <div style={{ position: 'relative', width: '480px', height: '480px', flexShrink: 0 }}>
               {/* Rings */}

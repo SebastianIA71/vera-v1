@@ -1,5 +1,5 @@
 // Versión semántica — incrementar manualmente con cada release significativo
-const SEMVER = '1.23';
+const SEMVER = '1.24';
 
 // SHA corto del commit — Vercel lo inyecta en build time automáticamente
 // En local aparece como 'dev'
