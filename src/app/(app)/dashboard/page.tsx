@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { tasks, events, inbox, properties, weightLog, projects } from '@/lib/db/schema';
-import { ne, desc, eq } from 'drizzle-orm';
+import { ne, desc, sql } from 'drizzle-orm';
 import DashboardClient from './DashboardClient';
 
 export const dynamic = 'force-dynamic';
@@ -20,8 +20,10 @@ export default async function DashboardPage() {
     (t.prioFinal ?? 0) >= 8 && t.status !== 'done' && t.status !== 'archived'
   );
 
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
   const upcomingTrips = allEvents
-    .filter(e => e.type === 'viaje' && e.startDate && e.startDate > now)
+    .filter(e => e.type === 'viaje' && e.startDate && e.startDate >= todayStart)
     .sort((a, b) => (a.startDate?.getTime() ?? 0) - (b.startDate?.getTime() ?? 0));
 
   const nextTrip = upcomingTrips[0] ?? null;
@@ -29,9 +31,10 @@ export default async function DashboardPage() {
     ? Math.ceil((nextTrip.startDate.getTime() - now.getTime()) / 86400000)
     : null;
 
-  const inboxCount = await db.$count(inbox, eq(inbox.processed, false));
+  const allInboxItems = await db.select({ id: inbox.id, processed: inbox.processed }).from(inbox).limit(200);
+  const inboxCount = allInboxItems.filter(i => !i.processed).length;
 
-  const upcomingEvents = allEvents.filter(e => e.startDate && e.startDate > now);
+  const upcomingEvents = allEvents.filter(e => e.startDate && e.startDate >= todayStart);
   const tasksActive   = allTasks.filter(t => t.status !== 'done').length;
   const tasksDone     = allTasks.filter(t => t.status === 'done').length;
   const tripsCount    = upcomingEvents.filter(e => e.type === 'viaje').length;
@@ -53,7 +56,7 @@ export default async function DashboardPage() {
   }
 
   const nextEventItem = allEvents
-    .filter(e => e.type !== 'viaje' && e.startDate && e.startDate > now)
+    .filter(e => e.type !== 'viaje' && e.startDate && e.startDate >= todayStart)
     .sort((a, b) => (a.startDate?.getTime() ?? 0) - (b.startDate?.getTime() ?? 0))[0] ?? null;
   const daysToNextEvent = nextEventItem?.startDate
     ? Math.ceil((nextEventItem.startDate.getTime() - now.getTime()) / 86400000)
@@ -64,8 +67,8 @@ export default async function DashboardPage() {
       initialTasks={allTasks}
       urgentCount={urgentTasks.length}
       inboxCount={inboxCount}
-      nextTrip={nextTrip ? { title: nextTrip.title, daysTo: daysToNextTrip ?? 0 } : null}
-      nextEvent={nextEventItem && daysToNextEvent ? { title: nextEventItem.title, daysTo: daysToNextEvent, startDate: nextEventItem.startDate!.toISOString() } : null}
+      nextTrip={nextTrip !== null ? { title: nextTrip.title, daysTo: daysToNextTrip ?? 0 } : null}
+      nextEvent={nextEventItem !== null && daysToNextEvent !== null ? { title: nextEventItem.title, daysTo: daysToNextEvent, startDate: nextEventItem.startDate!.toISOString() } : null}
       allEvents={allEvents.map(e => ({ startDate: e.startDate, type: e.type ?? '', title: e.title }))}
       todaySnm={todaySnm}
       kpis={{ tasksActive, tasksDone, inboxPending: inboxCount, tripsCount, eventsCount, propsCount, projectsCount, currentWeight }}

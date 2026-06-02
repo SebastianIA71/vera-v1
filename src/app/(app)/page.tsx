@@ -64,8 +64,8 @@ export default async function AppRootPage() {
   return (
     <HomeRouter
       urgentTasks={urgentTasks}
-      nextTrip={nextTrip && daysToNextTrip ? { title: nextTrip.title, daysTo: daysToNextTrip, startDate: nextTrip.startDate?.toISOString() ?? '', endDate: nextTrip.endDate?.toISOString() ?? '', who: nextTrip.who ?? '', transport: nextTrip.transport ?? '' } : null}
-      nextEvent={nextEvent && daysToNextEvent ? { title: nextEvent.title, daysTo: daysToNextEvent, startDate: nextEvent.startDate?.toISOString() ?? '', who: nextEvent.who ?? '' } : null}
+      nextTrip={nextTrip !== null && daysToNextTrip !== null ? { title: nextTrip.title, daysTo: daysToNextTrip, startDate: nextTrip.startDate?.toISOString() ?? '', endDate: nextTrip.endDate?.toISOString() ?? '', who: nextTrip.who ?? '', transport: nextTrip.transport ?? '' } : null}
+      nextEvent={nextEvent !== null && daysToNextEvent !== null ? { title: nextEvent.title, daysTo: daysToNextEvent, startDate: nextEvent.startDate?.toISOString() ?? '', who: nextEvent.who ?? '' } : null}
       weightLogs={weights}
       inboxCount={inboxItems.length}
       inboxItems={inboxItems}

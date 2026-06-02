@@ -351,10 +351,14 @@ function SolutionPanel() {
   const solve = async () => {
     if (!problem.trim()) return;
     setLoading(true); setNotice(''); setOptions([]);
-    const res = await fetch('/api/agents/solution', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ problem }) });
-    const d = await res.json();
-    if (d.mode === 'no_ai') setNotice(d.notice);
-    else setOptions(d.options ?? []);
+    try {
+      const res = await fetch('/api/agents/solution', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ problem }) });
+      if (!res.ok) { setNotice(`Error ${res.status}. Reintenta.`); setLoading(false); return; }
+      const d = await res.json();
+      if (d.mode === 'no_ai') setNotice(d.notice ?? 'Sin IA disponible.');
+      else if (!d.options || d.options.length === 0) setNotice('No se generaron soluciones. Reintenta con más detalle.');
+      else setOptions(d.options);
+    } catch { setNotice('Error de conexión. Reintenta.'); }
     setLoading(false);
   };
 

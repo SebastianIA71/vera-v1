@@ -41,7 +41,7 @@ export async function GET(req: Request) {
   const idx = force ? Math.floor(Math.random() * candidates.length) : dayOfYear % candidates.length;
   const task = candidates[idx];
 
-  const searchResult = await runSearchAgent(`"${task.title}" opciones comparativa guía`);
+  const searchResult = await runSearchAgent(`${task.title} opciones consejos guía`);
 
   let ideas: { title: string; url?: string; description: string }[] = [];
   let mode = 'search';
@@ -53,15 +53,19 @@ export async function GET(req: Request) {
   } else {
     mode = 'ai';
     const claudeResult = await callClaude(
-      `Tarea pendiente de Sebastián: "${task.title}". Necesita información para tomar una mejor decisión al respecto. Dame 3 perspectivas o enfoques distintos para abordarla, con pros/contras concretos. Solo JSON array: [{"title":"...","description":"..."}]. Sin markdown.`,
-      'Eres Vera. Responde solo JSON.',
-      400,
+      `Tarea: "${task.title}"\n\nDa exactamente 3 perspectivas distintas para decidir cómo afrontarla. Solo JSON, sin preámbulos:\n[{"title":"Enfoque 1","description":"1-2 frases concretas"},{"title":"Enfoque 2","description":"..."},{"title":"Enfoque 3","description":"..."}]`,
+      'Responde SOLO con un JSON array válido. Sin markdown ni texto extra.',
+      500,
     );
     if (claudeResult.ok) {
       try {
-        ideas = JSON.parse(claudeResult.text.replace(/```json\n?|\n?```/g, '').trim());
-        if (!Array.isArray(ideas)) ideas = [];
-        ideas = ideas.slice(0, 3);
+        let raw = claudeResult.text.trim();
+        raw = raw.replace(/```json\n?|```\n?|```/g, '').trim();
+        const start = raw.indexOf('[');
+        const end = raw.lastIndexOf(']');
+        if (start !== -1 && end !== -1) raw = raw.slice(start, end + 1);
+        const parsed = JSON.parse(raw);
+        ideas = Array.isArray(parsed) ? parsed.slice(0, 3) : [];
       } catch { ideas = []; }
     }
   }

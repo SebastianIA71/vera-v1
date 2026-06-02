@@ -332,8 +332,10 @@ export default function MobileHome({
               {nextEvent.who && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 2 }}>{nextEvent.who.toUpperCase()}</div>}
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, color: 'var(--purple)', lineHeight: 1 }}>{nextEvent.daysTo}</div>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em' }}>DÍAS</div>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: nextEvent.daysTo <= 0 ? 13 : 22, color: 'var(--purple)', lineHeight: 1 }}>
+                {nextEvent.daysTo <= 0 ? 'HOY' : nextEvent.daysTo}
+              </div>
+              {nextEvent.daysTo > 0 && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em' }}>DÍAS</div>}
             </div>
           </div>
         ) : (

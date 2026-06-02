@@ -117,9 +117,14 @@ export default function DailyInsight() {
             </div>
 
             {(data.ideas ?? []).length === 0 ? (
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9,
-                color: 'var(--text3)', letterSpacing: '.1em' }}>
-                Sin resultados para esta búsqueda.
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', padding: '8px 0' }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10,
+                  color: 'var(--text3)', letterSpacing: '.1em' }}>
+                  Sin perspectivas generadas hoy.
+                </div>
+                <button onClick={() => load(true)} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', color: 'var(--gold2)', background: 'none', border: '.5px solid rgba(196,168,106,0.3)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                  REINTENTAR ↻
+                </button>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

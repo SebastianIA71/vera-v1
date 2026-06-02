@@ -229,14 +229,19 @@ type Kpis = {
   currentWeight: number | null;
 };
 
+const KPI_ICONS: Record<string, string> = {
+  tasks: '✓', inbox: '↓', trips: '✈', events: '◉', props: '⌂', projects: '◆', agents: '✦', weight: '⚖',
+};
+
 const getKpiNodes = (kpis: Kpis) => [
-  { id: 'tasks',    label: 'TAREAS',    value: kpis.tasksActive,                                      color: 'var(--gold2)'  },
-  { id: 'inbox',    label: 'INBOX',     value: kpis.inboxPending,                                     color: 'var(--red)'    },
-  { id: 'trips',    label: 'VIAJES',    value: kpis.tripsCount,                                       color: 'var(--blue)'   },
-  { id: 'events',   label: 'EVENTOS',   value: kpis.eventsCount,                                      color: 'var(--purple)' },
-  { id: 'props',    label: 'PROPS',     value: kpis.propsCount,                                       color: 'var(--green)'  },
-  { id: 'projects', label: 'PROYECTOS', value: kpis.projectsCount,                                    color: '#9b7fe8'       },
-  { id: 'weight',   label: 'KG',        value: kpis.currentWeight !== null ? kpis.currentWeight : '—', color: 'var(--amber)' },
+  { id: 'tasks',    label: 'TAREAS',      value: kpis.tasksActive,                                       color: 'var(--gold2)'  },
+  { id: 'inbox',    label: 'INBOX',       value: kpis.inboxPending,                                      color: 'var(--red)'    },
+  { id: 'trips',    label: 'VIAJES',      value: kpis.tripsCount,                                        color: 'var(--blue)'   },
+  { id: 'events',   label: 'EVENTOS',     value: kpis.eventsCount,                                       color: 'var(--purple)' },
+  { id: 'props',    label: 'PROPIEDADES', value: kpis.propsCount,                                        color: 'var(--green)'  },
+  { id: 'projects', label: 'PROYECTOS',   value: kpis.projectsCount,                                     color: '#9b7fe8'       },
+  { id: 'agents',   label: 'AGENTES',     value: 6,                                                      color: 'var(--gold2)'  },
+  { id: 'weight',   label: 'KG',          value: kpis.currentWeight !== null ? kpis.currentWeight : '—', color: 'var(--amber)'  },
 ];
 
 export default function DashboardClient({
@@ -432,33 +437,48 @@ export default function DashboardClient({
 
           {/* Orbital map */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-            {/* KPI zone — 20% del ancho del centro, 1 columna compacta */}
-            <div style={{ flex: '0 0 20%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 5, padding: '0 10px 0 4px' }}>
+            {/* KPI zone — 22% del ancho, icon a la izquierda de la barra */}
+            <div style={{ flex: '0 0 22%', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4, padding: '0 10px 0 6px' }}>
               {getKpiNodes(kpis).map(kpi => {
-                const SNM_KEYS = ['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const;
-                const SNM_ICONS = ['💧','🚶','💪','🧘','🍴'];
+                const SNM_KEYS_LOCAL = ['snmAgua','snmCaminar','snmEntreno','snmEscucha','snmDisfruta'] as const;
+                const SNM_ICONS_LOCAL = ['💧','🚶','💪','🧘','🍴'];
                 return (
                   <div key={kpi.id} style={{
-                    padding: '6px 8px', background: 'var(--bg)',
-                    border: `.5px solid ${kpi.color}33`,
-                    borderLeft: `2px solid ${kpi.color}`,
-                    borderRadius: '0 6px 6px 0',
+                    display: 'flex', alignItems: 'center', gap: 0,
+                    background: 'var(--bg)', border: `.5px solid ${kpi.color}22`,
+                    borderRadius: 7, overflow: 'hidden',
                   }}>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
-                      {kpi.value}
+                    {/* Zona icon — izquierda de la barra */}
+                    <div style={{
+                      width: 28, display: 'flex', flexDirection: 'column',
+                      alignItems: 'center', justifyContent: 'center',
+                      padding: '5px 2px', background: `${kpi.color}0a`, flexShrink: 0,
+                    }}>
+                      {kpi.id === 'weight' ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'center' }}>
+                          {SNM_KEYS_LOCAL.map((key, i) => (
+                            <span key={key} style={{ fontSize: 7, lineHeight: 1, opacity: snmActive.includes(key) ? 1 : 0.12, filter: snmActive.includes(key) ? 'none' : 'grayscale(1)' }}>
+                              {SNM_ICONS_LOCAL[i]}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: kpi.color, opacity: 0.8, lineHeight: 1 }}>
+                          {KPI_ICONS[kpi.id] ?? '·'}
+                        </span>
+                      )}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, letterSpacing: '.1em', color: 'var(--text3)', marginTop: 2 }}>
-                      {kpi.label}
-                    </div>
-                    {kpi.id === 'weight' && (
-                      <div style={{ display: 'flex', gap: 2, marginTop: 4 }}>
-                        {SNM_KEYS.map((key, i) => (
-                          <span key={key} style={{ fontSize: 11, opacity: snmActive.includes(key) ? 1 : 0.15, filter: snmActive.includes(key) ? 'none' : 'grayscale(1)', lineHeight: 1 }}>
-                            {SNM_ICONS[i]}
-                          </span>
-                        ))}
+                    {/* Barra coloreada */}
+                    <div style={{ width: 2, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
+                    {/* Valor + label */}
+                    <div style={{ padding: '6px 10px', flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                        {kpi.value}
                       </div>
-                    )}
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {kpi.label}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
