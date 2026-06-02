@@ -108,9 +108,9 @@ async function searchFlightsSerpAPI(intent: TravelIntent): Promise<{ results: Tr
   const key = process.env.SERPAPI_KEY;
   if (!key) return { results: [], reason: 'no_key' };
 
-  // Usar IATA si existe, si no pasar el nombre de ciudad directamente (SerpAPI lo resuelve)
-  const org  = toIata(intent.origin)  ?? intent.origin  ?? null;
-  const dest = toIata(intent.destination) ?? intent.destination ?? null;
+  // SerpAPI solo acepta códigos IATA de 3 letras en mayúsculas
+  const org  = toIata(intent.origin);
+  const dest = toIata(intent.destination);
   if (!org || !dest) return { results: [], reason: 'no_location' };
 
   // Fecha obligatoria para Google Flights — usar hoy+7 como fallback
@@ -125,6 +125,7 @@ async function searchFlightsSerpAPI(intent: TravelIntent): Promise<{ results: Tr
     url.searchParams.set('departure_id',  org);
     url.searchParams.set('arrival_id',    dest);
     url.searchParams.set('outbound_date', dateFrom);
+    url.searchParams.set('type',          '2');   // one-way (default=1 round trip requiere return_date)
     url.searchParams.set('adults',        String(intent.passengers));
     url.searchParams.set('currency',      'EUR');
     url.searchParams.set('hl',            'es');
@@ -145,8 +146,6 @@ async function searchFlightsSerpAPI(intent: TravelIntent): Promise<{ results: Tr
     if (offers.length === 0) return { results: [], reason: 'no_results' };
 
     const datePart = dateFrom.replace(/-/g, '').slice(2);
-    const iataOrg  = toIata(org)  ?? org;
-    const iataDest = toIata(dest) ?? dest;
 
     const results = offers.map((offer) => {
       const legs     = offer.flights ?? [];
@@ -163,7 +162,7 @@ async function searchFlightsSerpAPI(intent: TravelIntent): Promise<{ results: Tr
       const token    = offer.booking_token ?? '';
       const deepLink = token
         ? `https://www.google.com/flights?hl=es#flt=${token}`
-        : `https://www.skyscanner.es/vuelos/${iataOrg.toLowerCase()}/${iataDest.toLowerCase()}/${datePart}/`;
+        : `https://www.skyscanner.es/vuelos/${org.toLowerCase()}/${dest.toLowerCase()}/${datePart}/`;
 
       return {
         title:       `${org} → ${dest} · ${depTime}–${arrTime} · ${stopStr}`,
