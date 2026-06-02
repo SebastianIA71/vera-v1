@@ -105,17 +105,36 @@ export default function LockPage() {
   const handleFaceId = useCallback(async () => {
     setLockState('faceid');
     try {
+      // STEP 1: obtener opciones
       const optRes = await fetch('/api/auth/webauthn/auth-options');
       if (!optRes.ok) {
+        const txt = await optRes.text().catch(() => '');
+        console.error('[FaceID] auth-options status:', optRes.status, txt.slice(0, 100));
         setLockState('pin');
         setError('Face ID no configurado. Usa el PIN.');
-        setTimeout(() => setError(''), 2500);
+        setTimeout(() => setError(''), 3000);
         return;
       }
-      const options = await optRes.json();
 
+      // Leer como texto primero para detectar respuestas no-JSON
+      const rawText = await optRes.text();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let options: any;
+      try {
+        options = JSON.parse(rawText);
+      } catch {
+        console.error('[FaceID] auth-options respuesta no es JSON:', rawText.slice(0, 200));
+        setLockState('pin');
+        setError('Error servidor: respuesta inválida');
+        setTimeout(() => setError(''), 5000);
+        return;
+      }
+      console.log('[FaceID] options rpId:', options.rpId, 'challenge:', String(options.challenge).slice(0, 12));
+
+      // STEP 2: autenticar con Face ID
       const credential = await startAuthentication({ optionsJSON: options });
 
+      // STEP 3: verificar en servidor
       const verifyRes = await fetch('/api/auth/webauthn/auth-verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -125,6 +144,8 @@ export default function LockPage() {
       if (verifyRes.ok) {
         router.replace('/');
       } else {
+        const body = await verifyRes.json().catch(() => ({}));
+        console.error('[FaceID] auth-verify failed:', verifyRes.status, body);
         setLockState('pin');
         setError('Face ID no reconocido');
         setShaking(true);
@@ -135,12 +156,13 @@ export default function LockPage() {
       if (err instanceof Error && err.name === 'NotAllowedError') {
         setError('Cancelado');
       } else if (err instanceof Error) {
-        console.error('[FaceID]', err.name, err.message);
-        setError(`Error: ${err.name}`);
+        console.error('[FaceID] catch:', err.name, err.message, err.stack);
+        setError(`${err.name}: ${err.message.slice(0, 60)}`);
       } else {
+        console.error('[FaceID] catch unknown:', err);
         setError('Error de Face ID');
       }
-      setTimeout(() => setError(''), 4000);
+      setTimeout(() => setError(''), 6000);
     }
   }, [router]);
 
