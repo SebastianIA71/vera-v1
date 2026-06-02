@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { tasks, events, inbox, properties, weightLog } from '@/lib/db/schema';
+import { tasks, events, inbox, properties, weightLog, projects } from '@/lib/db/schema';
 import { ne, desc, eq } from 'drizzle-orm';
 import DashboardClient from './DashboardClient';
 
@@ -8,11 +8,12 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage() {
   const now = new Date();
 
-  const [allTasks, allEvents, allProperties, weightLogs] = await Promise.all([
+  const [allTasks, allEvents, allProperties, weightLogs, allProjects] = await Promise.all([
     db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)).limit(50),
     db.select().from(events).orderBy(desc(events.startDate)).limit(20),
     db.select().from(properties),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(1),
+    db.select({ id: projects.id }).from(projects).where(ne(projects.status, 'archived')),
   ]);
 
   const urgentTasks = allTasks.filter(t =>
@@ -31,11 +32,12 @@ export default async function DashboardPage() {
   const inboxCount = await db.$count(inbox, eq(inbox.processed, false));
 
   const upcomingEvents = allEvents.filter(e => e.startDate && e.startDate > now);
-  const tasksActive  = allTasks.filter(t => t.status !== 'done').length;
-  const tasksDone    = allTasks.filter(t => t.status === 'done').length;
-  const tripsCount   = upcomingEvents.filter(e => e.type === 'viaje').length;
-  const eventsCount  = upcomingEvents.filter(e => e.type !== 'viaje').length;
-  const propsCount   = allProperties.length;
+  const tasksActive   = allTasks.filter(t => t.status !== 'done').length;
+  const tasksDone     = allTasks.filter(t => t.status === 'done').length;
+  const tripsCount    = upcomingEvents.filter(e => e.type === 'viaje').length;
+  const eventsCount   = upcomingEvents.filter(e => e.type !== 'viaje').length;
+  const propsCount    = allProperties.length;
+  const projectsCount = allProjects.length;
   const currentWeight = weightLogs[0]?.value ?? null;
 
   const todayDate = now.toISOString().slice(0, 10);
@@ -66,7 +68,7 @@ export default async function DashboardPage() {
       nextEvent={nextEventItem && daysToNextEvent ? { title: nextEventItem.title, daysTo: daysToNextEvent, startDate: nextEventItem.startDate!.toISOString() } : null}
       allEvents={allEvents.map(e => ({ startDate: e.startDate, type: e.type ?? '' }))}
       todaySnm={todaySnm}
-      kpis={{ tasksActive, tasksDone, inboxPending: inboxCount, tripsCount, eventsCount, propsCount, currentWeight }}
+      kpis={{ tasksActive, tasksDone, inboxPending: inboxCount, tripsCount, eventsCount, propsCount, projectsCount, currentWeight }}
     />
   );
 }

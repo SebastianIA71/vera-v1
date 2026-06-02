@@ -225,16 +225,18 @@ type Kpis = {
   tripsCount: number;
   eventsCount: number;
   propsCount: number;
+  projectsCount: number;
   currentWeight: number | null;
 };
 
 const getKpiNodes = (kpis: Kpis) => [
-  { id: 'tasks',  label: 'TAREAS',  value: kpis.tasksActive,                                         color: 'var(--gold2)'  },
-  { id: 'inbox',  label: 'INBOX',   value: kpis.inboxPending,                                         color: 'var(--red)'    },
-  { id: 'trips',  label: 'VIAJES',  value: kpis.tripsCount,                                           color: 'var(--blue)'   },
-  { id: 'events', label: 'EVENTOS', value: kpis.eventsCount,                                          color: 'var(--purple)' },
-  { id: 'props',  label: 'PROPS',   value: kpis.propsCount,                                           color: 'var(--green)'  },
-  { id: 'weight', label: 'KG',      value: kpis.currentWeight !== null ? kpis.currentWeight : '—',    color: 'var(--amber)'  },
+  { id: 'tasks',    label: 'TAREAS',    value: kpis.tasksActive,                                      color: 'var(--gold2)'  },
+  { id: 'inbox',    label: 'INBOX',     value: kpis.inboxPending,                                     color: 'var(--red)'    },
+  { id: 'trips',    label: 'VIAJES',    value: kpis.tripsCount,                                       color: 'var(--blue)'   },
+  { id: 'events',   label: 'EVENTOS',   value: kpis.eventsCount,                                      color: 'var(--purple)' },
+  { id: 'props',    label: 'PROPS',     value: kpis.propsCount,                                       color: 'var(--green)'  },
+  { id: 'projects', label: 'PROYECTOS', value: kpis.projectsCount,                                    color: '#9b7fe8'       },
+  { id: 'weight',   label: 'KG',        value: kpis.currentWeight !== null ? kpis.currentWeight : '—', color: 'var(--amber)' },
 ];
 
 export default function DashboardClient({
@@ -392,7 +394,7 @@ export default function DashboardClient({
 
         {/* LEFT PANEL — nav + briefing */}
         <div style={{ width: 260, flexShrink: 0, borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <DesktopNav inboxCount={initialInboxCount} activeOverride="dashboard" counts={{ tasks: kpis.tasksActive, trips: kpis.tripsCount, properties: kpis.propsCount, agents: 6 }} />
+          <DesktopNav inboxCount={initialInboxCount} activeOverride="dashboard" counts={{ tasks: kpis.tasksActive, trips: kpis.tripsCount, properties: kpis.propsCount, projects: kpis.projectsCount, agents: 6 }} />
           <div style={{ height: '.5px', background: 'var(--bg4)', margin: '4px 16px' }} />
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px 20px' }}>
             <DailyBriefing compact={true} />
