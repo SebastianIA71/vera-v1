@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 const BRIEFING_LANGS: { days: string[]; suffix: string; lang: string }[] = [
   { days: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'], suffix: '· Resumen', lang: 'Español' },
@@ -68,13 +68,19 @@ export default function DailyBriefing({ compact = false }: { compact?: boolean }
 
   useEffect(() => { setTitleData(getBriefingTitle()); }, []);
 
-  useEffect(() => {
-    fetch('/api/briefing/morning')
+  const load = useCallback((force = false) => {
+    setLoading(true);
+    fetch(`/api/briefing/morning${force ? '?force=1' : ''}`)
       .then(r => r.json())
-      .then(d => setBriefing(d.briefing ?? null))
+      .then(d => {
+        setBriefing(d.briefing ?? null);
+        if (force) setTitleData(getBriefingTitle()); // nuevo idioma al regenerar
+      })
       .catch(() => setBriefing(null))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   return (
     <div style={{ marginBottom: compact ? 16 : 28 }}>
@@ -93,6 +99,19 @@ export default function DailyBriefing({ compact = false }: { compact?: boolean }
             </span>
           )}
         </div>
+        <button
+          onClick={() => !loading && load(true)}
+          title="Regenerar briefing"
+          style={{
+            background: 'none', border: 'none', cursor: loading ? 'default' : 'pointer',
+            color: loading ? 'var(--text4)' : 'var(--text3)',
+            fontFamily: 'var(--font-dm-mono)', fontSize: 11, lineHeight: 1,
+            padding: 0, display: 'flex', alignItems: 'center',
+            transition: 'color .15s',
+          }}
+        >
+          {loading ? '···' : '↻'}
+        </button>
       </div>
 
       <div style={{

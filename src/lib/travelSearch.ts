@@ -104,25 +104,34 @@ export async function extractTravelEntities(query: string): Promise<TravelIntent
 
 // ─── SerpAPI — Google Flights ──────────────────────────────────────────────────
 
-async function searchFlightsSerpAPI(intent: TravelIntent): Promise<TravelResult[]> {
-  const key  = process.env.SERPAPI_KEY;
-  const org  = toIata(intent.origin);
-  const dest = toIata(intent.destination);
-  if (!key || !org || !dest) return [];
+async function searchFlightsSerpAPI(intent: TravelIntent): Promise<{ results: TravelResult[]; reason: string }> {
+  const key = process.env.SERPAPI_KEY;
+  if (!key) return { results: [], reason: 'no_key' };
+
+  // Usar IATA si existe, si no pasar el nombre de ciudad directamente (SerpAPI lo resuelve)
+  const org  = toIata(intent.origin)  ?? intent.origin  ?? null;
+  const dest = toIata(intent.destination) ?? intent.destination ?? null;
+  if (!org || !dest) return { results: [], reason: 'no_location' };
+
+  // Fecha obligatoria para Google Flights — usar hoy+7 como fallback
+  const dateFrom = intent.dateFrom ?? (() => {
+    const d = new Date(); d.setDate(d.getDate() + 7);
+    return d.toISOString().slice(0, 10);
+  })();
 
   try {
     const url = new URL('https://serpapi.com/search');
-    url.searchParams.set('engine',       'google_flights');
-    url.searchParams.set('departure_id', org);
-    url.searchParams.set('arrival_id',   dest);
-    url.searchParams.set('adults',       String(intent.passengers));
-    url.searchParams.set('currency',     'EUR');
-    url.searchParams.set('hl',           'es');
-    url.searchParams.set('api_key',      key);
-    if (intent.dateFrom) url.searchParams.set('outbound_date', intent.dateFrom);
+    url.searchParams.set('engine',        'google_flights');
+    url.searchParams.set('departure_id',  org);
+    url.searchParams.set('arrival_id',    dest);
+    url.searchParams.set('outbound_date', dateFrom);
+    url.searchParams.set('adults',        String(intent.passengers));
+    url.searchParams.set('currency',      'EUR');
+    url.searchParams.set('hl',            'es');
+    url.searchParams.set('api_key',       key);
 
     const res = await fetch(url.toString());
-    if (!res.ok) return [];
+    if (!res.ok) return { results: [], reason: 'api_error' };
     const data = await res.json();
 
     type FlightLeg = { departure_airport?: { time?: string }; arrival_airport?: { time?: string }; airline?: string };
@@ -133,9 +142,13 @@ async function searchFlightsSerpAPI(intent: TravelIntent): Promise<TravelResult[
       ...((data.other_flights ?? []) as FlightOffer[]),
     ].slice(0, 3);
 
-    const datePart = intent.dateFrom?.replace(/-/g, '').slice(2) ?? '';
+    if (offers.length === 0) return { results: [], reason: 'no_results' };
 
-    return offers.map((offer) => {
+    const datePart = dateFrom.replace(/-/g, '').slice(2);
+    const iataOrg  = toIata(org)  ?? org;
+    const iataDest = toIata(dest) ?? dest;
+
+    const results = offers.map((offer) => {
       const legs     = offer.flights ?? [];
       const first    = legs[0] ?? {};
       const last     = legs[legs.length - 1] ?? {};
@@ -150,7 +163,7 @@ async function searchFlightsSerpAPI(intent: TravelIntent): Promise<TravelResult[
       const token    = offer.booking_token ?? '';
       const deepLink = token
         ? `https://www.google.com/flights?hl=es#flt=${token}`
-        : `https://www.skyscanner.es/vuelos/${org.toLowerCase()}/${dest.toLowerCase()}/${datePart}/`;
+        : `https://www.skyscanner.es/vuelos/${iataOrg.toLowerCase()}/${iataDest.toLowerCase()}/${datePart}/`;
 
       return {
         title:       `${org} → ${dest} · ${depTime}–${arrTime} · ${stopStr}`,
@@ -160,8 +173,9 @@ async function searchFlightsSerpAPI(intent: TravelIntent): Promise<TravelResult[
         price:       `€ ${price} · ${airline}${durStr ? ` · ${durStr}` : ''}`,
       };
     });
+    return { results, reason: 'ok' };
   } catch {
-    return [];
+    return { results: [], reason: 'api_error' };
   }
 }
 
@@ -227,12 +241,14 @@ export async function runTravelPipeline(rawQuery: string): Promise<void> {
   const dest   = intent.destination ?? '?';
 
   // Búsqueda real + smart links en paralelo
-  const [serpResults, smartLinks] = await Promise.all([
-    searchFlightsSerpAPI(intent),
+  const [serpSearch, smartLinks] = await Promise.all([
+    intent.type === 'flight' ? searchFlightsSerpAPI(intent) : Promise.resolve({ results: [] as TravelResult[], reason: 'not_flight' }),
     Promise.resolve(buildSmartLinks(intent)),
   ]);
 
-  const hasReal = serpResults.length > 0;
+  const serpResults = serpSearch.results;
+  const serpReason  = serpSearch.reason;
+  const hasReal     = serpResults.length > 0;
 
   // Título de notificación y tarea
   const subject = dest !== '?' ? `${org} → ${dest}` : rawQuery.slice(0, 40);
@@ -246,7 +262,11 @@ export async function runTravelPipeline(rawQuery: string): Promise<void> {
   // Notas completas para la tarea
   const flightLines = hasReal
     ? serpResults.map((r, i) => `${i + 1}. ${r.title}\n   ${r.price ?? ''}\n   ${r.url}`).join('\n\n')
-    : '(SERPAPI_KEY no configurada — sin precios en tiempo real)';
+    : serpReason === 'no_key'       ? '(Configura SERPAPI_KEY en Vercel para precios reales)'
+    : serpReason === 'no_location'  ? '(No se pudo identificar origen/destino — prueba con ciudad + código IATA)'
+    : serpReason === 'not_flight'   ? '(Búsqueda no es de vuelos)'
+    : serpReason === 'no_results'   ? '(SerpAPI sin resultados para esta ruta/fecha — prueba otra fecha o aeropuerto)'
+    :                                 '(Error en SerpAPI — los links directos siguen disponibles)';
 
   const linkLines = smartLinks.slice(0, 4).map(l => `${l.badge ?? 'LINK'}: ${l.url}`).join('\n');
 

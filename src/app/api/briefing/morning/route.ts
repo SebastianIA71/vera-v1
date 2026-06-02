@@ -14,14 +14,17 @@ export async function GET(req: NextRequest) {
   if (!rateLimit(ip, 5, 60_000)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
+  const force = req.nextUrl.searchParams.get('force') === '1';
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
   const key = `morning_briefing_${today}`;
 
-  // Devolver el briefing cacheado si ya existe hoy
-  const [cached] = await db.select().from(memory).where(eq(memory.key, key)).limit(1);
-  if (cached?.value) {
-    return NextResponse.json({ briefing: cached.value, cached: true });
+  // Devolver el briefing cacheado si ya existe hoy (salvo force=1)
+  if (!force) {
+    const [cached] = await db.select().from(memory).where(eq(memory.key, key)).limit(1);
+    if (cached?.value) {
+      return NextResponse.json({ briefing: cached.value, cached: true });
+    }
   }
 
   const DAYS_ES = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];

@@ -9,14 +9,19 @@ import { callClaude } from '@/lib/claude';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const force = searchParams.get('force') === '1';
+
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
   const key = `daily_insight_${today}`;
 
-  // Devolver cached si ya existe hoy
-  const [cached] = await db.select().from(memory).where(eq(memory.key, key)).limit(1);
-  if (cached?.value) {
-    return NextResponse.json(JSON.parse(cached.value));
+  // Devolver cached si ya existe hoy (salvo que force=1)
+  if (!force) {
+    const [cached] = await db.select().from(memory).where(eq(memory.key, key)).limit(1);
+    if (cached?.value) {
+      return NextResponse.json(JSON.parse(cached.value));
+    }
   }
 
   // Candidatas: filtrar nulls en JS (lte falla con NULL en libSQL)
@@ -31,8 +36,10 @@ export async function GET() {
     return NextResponse.json({ taskTitle: null, taskPrio: 0, mode: 'no_tasks', ideas: [], date: today });
   }
 
+  // En regeneración forzada, elegir tarea diferente (aleatoria)
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-  const task = candidates[dayOfYear % candidates.length];
+  const idx = force ? Math.floor(Math.random() * candidates.length) : dayOfYear % candidates.length;
+  const task = candidates[idx];
 
   const searchResult = await runSearchAgent(`"${task.title}" opciones comparativa guía`);
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 type Idea = { title: string; url?: string; description: string };
 type InsightData = {
@@ -37,13 +37,16 @@ export default function DailyInsight() {
   const [data, setData] = useState<InsightData>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch('/api/daily-insight')
+  const load = useCallback((force = false) => {
+    setLoading(true);
+    fetch(`/api/daily-insight${force ? '?force=1' : ''}`)
       .then(r => r.json())
       .then(d => setData(d))
       .catch(() => setData(null))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => { load(); }, [load]);
 
   return (
     <div style={{ marginBottom: 28 }}>
@@ -53,11 +56,26 @@ export default function DailyInsight() {
           letterSpacing: '.22em', color: 'var(--gold2)', textTransform: 'uppercase' }}>
           Daily Pick
         </span>
-        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em' }}>
-          {data?.date ?? ''}
-          {data?.mode === 'ai' && ' · VERA'}
-          {data?.mode === 'search' && ' · WEB'}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em' }}>
+            {data?.date ?? ''}
+            {data?.mode === 'ai' && ' · VERA'}
+            {data?.mode === 'search' && ' · WEB'}
+          </span>
+          <button
+            onClick={() => !loading && load(true)}
+            title="Regenerar"
+            style={{
+              background: 'none', border: 'none', cursor: loading ? 'default' : 'pointer',
+              color: loading ? 'var(--text4)' : 'var(--text3)',
+              fontFamily: 'var(--font-dm-mono)', fontSize: 11, lineHeight: 1,
+              padding: 0, display: 'flex', alignItems: 'center',
+              transition: 'color .15s',
+            }}
+          >
+            {loading ? '···' : '↻'}
+          </button>
+        </div>
       </div>
 
       <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)',
