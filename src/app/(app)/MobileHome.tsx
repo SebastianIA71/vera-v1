@@ -68,7 +68,7 @@ function weightTrendPath(logs: WeightLog[]): string {
 }
 
 type PropTask = { prop: { id: string; name: string; color: string | null; icon: string | null }; task: { id: number; title: string; prioFinal: number | null } };
-type ProjTask = { proj: { id: number; name: string; color: string | null }; task: { id: number; title: string; prioFinal: number | null } };
+type ProjTask = { proj: { id: number; name: string; color: string | null; icon: string | null }; task: { id: number; title: string; prioFinal: number | null } };
 
 export default function MobileHome({
   urgentTasks,
