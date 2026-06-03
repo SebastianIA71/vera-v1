@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DesktopShell from '@/components/layout/DesktopShell';
 import MobilePageHeader from '@/components/layout/MobilePageHeader';
+import { fmtTime } from '@/lib/utils';
 
 type InboxItem = {
   id: number;
@@ -33,15 +34,6 @@ const PROPS = [
 
 type Project = { id: number; name: string; color: string | null };
 type Trip    = { id: number; title: string };
-
-function fmtTime(d: Date | null | undefined): string {
-  if (!d) return '';
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - new Date(d).getTime()) / 60000);
-  if (diff < 60) return `${diff}m`;
-  if (diff < 1440) return `${Math.floor(diff / 60)}h`;
-  return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-}
 
 export default function InboxClient({ initialItems, urgentCount, staleCount, inboxCount, projects = [], trips = [] }: {
   initialItems: InboxItem[];

@@ -34,3 +34,13 @@ export function urlB64ToUint8Array(base64String: string): ArrayBuffer {
 export function daysTo(date: Date | string): number {
   return Math.ceil((new Date(date).getTime() - Date.now()) / 86400000);
 }
+
+// ── Format time difference (relative or date) ────────────
+export function fmtTime(d: Date | null | undefined): string {
+  if (!d) return '';
+  const now = new Date();
+  const diff = Math.floor((now.getTime() - new Date(d).getTime()) / 60000);
+  if (diff < 60) return `${diff}m`;
+  if (diff < 1440) return `${Math.floor(diff / 60)}h`;
+  return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+}

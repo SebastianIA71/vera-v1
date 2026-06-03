@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import MobilePageHeader from '@/components/layout/MobilePageHeader';
 import DesktopShell from '@/components/layout/DesktopShell';
 import TaskDetailPanel, { TaskDetail } from '@/components/tasks/TaskDetailPanel';
-import { taskBorderColor } from '@/lib/utils';
+import { taskBorderColor, fmtTime } from '@/lib/utils';
 
 type Task     = TaskDetail & { inNow?: boolean | null };
 type Property = { id: string; name: string; color: string | null; icon: string | null };
@@ -331,6 +331,7 @@ function TaskRow({ task, selected, onSelect, onPrioChange, projects, trips }: { 
           {task.propertyId && <span style={{ color: 'var(--gold2)' }}>{task.propertyId.toUpperCase()}</span>}
           {project && <><span style={{ color: 'var(--text3)' }}>·</span><span style={{ color: 'var(--purple)' }}>{project.name.toUpperCase()}</span></>}
           {matchedTrip && <><span style={{ color: 'var(--text3)' }}>·</span><span style={{ color: 'var(--blue)' }}>✈ {matchedTrip.title.toUpperCase()}</span></>}
+          {task.createdAt && <><span style={{ color: 'var(--text3)' }}>·</span><span style={{ color: 'var(--text4)' }}>+{fmtTime(task.createdAt)}</span></>}
           {stale >= 14 && <><span style={{ color: 'var(--text3)' }}>·</span><span style={{ color: 'var(--amber)' }}>{stale}D SIN MOVER</span></>}
         </div>
       </div>
