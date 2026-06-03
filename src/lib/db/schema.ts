@@ -185,6 +185,40 @@ export const pushSubscriptions = sqliteTable('push_subscriptions', {
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow(),
 });
 
+export const financeRecords = sqliteTable('finance_records', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  date: text('date').notNull().unique(), // YYYY-MM-DD
+  // Grupo 1
+  vb: real('vb').default(0),
+  xc: real('xc').default(0),
+  ps: real('ps').default(0),
+  pm: real('pm').default(0),
+  // Grupo 2
+  lf: real('lf').default(0),
+  rs: real('rs').default(0),
+  gh: real('gh').default(0),
+  mh: real('mh').default(0),
+  // Grupo 3
+  doo: real('doo').default(0),   // 'do' es palabra reservada SQL
+  mo: real('mo').default(0),
+  so: real('so').default(0),
+  // Libre
+  x1: real('x1').default(0),
+  x2: real('x2').default(0),
+  x3: real('x3').default(0),
+  x4: real('x4').default(0),
+  x5: real('x5').default(0),
+  x6: real('x6').default(0),
+  // Calculados (guardados para queries)
+  calcA: real('calc_a'),  // VB + XC
+  calcB: real('calc_b'),  // VB + XC + PS + PM
+  calcC: real('calc_c'),  // LF + RS + GH + MH/2
+  calcD: real('calc_d'),  // (A+B+C)/1000
+  calcE: real('calc_e'),  // DO + MO + SO
+  createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
+});
+
 export type EventMeta = {
   destination?: string;
   budget?: { total: number; currency: string; spent: number };

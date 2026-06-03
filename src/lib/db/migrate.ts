@@ -18,6 +18,20 @@ export async function runAutoMigrations(): Promise<void> {
       id:  'tasks.project_id',
       sql: 'ALTER TABLE tasks ADD COLUMN project_id INTEGER REFERENCES projects(id)',
     },
+    {
+      id:  'create.finance_records',
+      sql: `CREATE TABLE IF NOT EXISTS finance_records (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL UNIQUE,
+        vb REAL DEFAULT 0, xc REAL DEFAULT 0, ps REAL DEFAULT 0, pm REAL DEFAULT 0,
+        lf REAL DEFAULT 0, rs REAL DEFAULT 0, gh REAL DEFAULT 0, mh REAL DEFAULT 0,
+        doo REAL DEFAULT 0, mo REAL DEFAULT 0, so REAL DEFAULT 0,
+        x1 REAL DEFAULT 0, x2 REAL DEFAULT 0, x3 REAL DEFAULT 0,
+        x4 REAL DEFAULT 0, x5 REAL DEFAULT 0, x6 REAL DEFAULT 0,
+        calc_a REAL, calc_b REAL, calc_c REAL, calc_d REAL, calc_e REAL,
+        created_at INTEGER, updated_at INTEGER
+      )`,
+    },
   ];
 
   for (const m of migrations) {

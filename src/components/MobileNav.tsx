@@ -62,7 +62,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/tasks',   label: 'tareas',  icon: TasksIcon   },
   { href: '/trips',   label: 'eventos', icon: EventsIcon  },
   { href: '/agents',  label: 'agentes', icon: AgentsIcon  },
-  { href: '/finance', label: 'finanzas', icon: FinanceIcon, disabled: true },
+  { href: '/finance', label: 'finanzas', icon: FinanceIcon },
 ]
 
 export function MobileNav({ inboxCount = 0 }: { inboxCount?: number }) {
