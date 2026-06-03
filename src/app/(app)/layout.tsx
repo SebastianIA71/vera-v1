@@ -3,6 +3,7 @@ import { inbox } from '@/lib/db/schema';
 import { inArray } from 'drizzle-orm';
 import FAB from '@/components/capture/FAB';
 import { MobileNav } from '@/components/MobileNav';
+import LayoutClient from './LayoutClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,10 +22,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      {/* Contenido principal */}
-      <main className="main-content">
-        {children}
-      </main>
+      {/* Update banner (client component) */}
+      <LayoutClient>
+        {/* Contenido principal */}
+        <main className="main-content">
+          {children}
+        </main>
+      </LayoutClient>
 
       {/* Nav móvil — siempre presente, CSS la oculta en desktop */}
       <MobileNav inboxCount={inboxCount} />
