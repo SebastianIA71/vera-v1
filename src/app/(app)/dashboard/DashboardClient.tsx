@@ -415,10 +415,10 @@ export default function DashboardClient({
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '16px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexShrink: 0 }}>
             <div>
-              <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: '22px', color: 'var(--text)', letterSpacing: '-.01em' }}>
+              <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: '26px', color: 'var(--text)', letterSpacing: '-.01em' }}>
                 Command <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Centre</em>
               </div>
-              <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: '13px', color: 'var(--text3)', letterSpacing: '.01em', marginTop: 2 }}>
+              <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: '16px', color: 'var(--text3)', letterSpacing: '.01em', marginTop: 2 }}>
                 good {getGreeting()},{' '}
                 <a
                   href={personaSearchUrl(persona)}
@@ -435,10 +435,6 @@ export default function DashboardClient({
             </div>
           </div>
 
-          {/* Quote */}
-          <div style={{ padding: '6px 0 16px 10', fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 13, color: 'var(--text2)', letterSpacing: '.01em', lineHeight: 1.6, flexShrink: 0, borderLeft: '1.5px solid rgba(196,168,106,0.25)', marginLeft: 24 }}>
-            {renderQuote(quote)}
-          </div>
 
           {/* Orbital map */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
@@ -450,17 +446,17 @@ export default function DashboardClient({
                   <div key={kpi.id} style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     background: 'var(--bg)', border: `.5px solid ${kpi.color}22`,
-                    borderRadius: 8, padding: '7px 10px', overflow: 'hidden',
+                    borderRadius: 8, padding: '10px 14px', overflow: 'hidden',
                   }}>
-                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, color: kpi.color, opacity: 0.8, lineHeight: 1, flexShrink: 0 }}>
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 20, color: kpi.color, opacity: 0.8, lineHeight: 1, flexShrink: 0 }}>
                       {KPI_ICONS[kpi.id] ?? '·'}
                     </span>
                     <div style={{ width: 1.5, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
                     <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, gap: 5 }}>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, fontWeight: 500, color: kpi.color, lineHeight: 1, flexShrink: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 33, fontWeight: 500, color: kpi.color, lineHeight: 1, flexShrink: 0 }}>
                         {kpi.value}
                       </div>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 12, letterSpacing: '.1em', color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {kpi.label}
                       </div>
                     </div>
@@ -511,6 +507,11 @@ export default function DashboardClient({
                 <div style={{ position: 'absolute', inset: '-24px', borderRadius: '50%', border: '.5px solid rgba(196,168,106,.07)' }} />
                 <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: '14px', letterSpacing: '.3em', color: 'var(--gold2)' }}>VERA</div>
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.2em', color: 'var(--green)', marginTop: '3px' }}>● ACTIVA</div>
+              </div>
+
+              {/* Quote — centered below core */}
+              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, calc(-50% + 80px))', fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 18, color: 'var(--text2)', letterSpacing: '.01em', lineHeight: 1.6, textAlign: 'center', maxWidth: 220, zIndex: 3 }}>
+                {renderQuote(quote)}
               </div>
 
               {/* Agent nodes */}
