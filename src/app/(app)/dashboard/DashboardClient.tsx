@@ -456,11 +456,11 @@ export default function DashboardClient({
                       {KPI_ICONS[kpi.id] ?? '·'}
                     </span>
                     <div style={{ width: 1.5, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
-                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 30, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, gap: 5 }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, fontWeight: 500, color: kpi.color, lineHeight: 1, flexShrink: 0 }}>
                         {kpi.value}
                       </div>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {kpi.label}
                       </div>
                     </div>

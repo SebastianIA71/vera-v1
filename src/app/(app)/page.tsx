@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { tasks, events, weightLog, inbox, properties, financeRecords } from '@/lib/db/schema';
+import { tasks, events, weightLog, inbox, properties, projects, financeRecords } from '@/lib/db/schema';
 import { ne, desc, eq, and, isNotNull, gte, or } from 'drizzle-orm';
 import HomeRouter from './HomeRouter';
 
@@ -8,19 +8,24 @@ export const dynamic = 'force-dynamic';
 export default async function AppRootPage() {
   const now = new Date();
 
-  const [allTasks, allEvents, weights, inboxItems, allProperties, propTasks, urgentTasksDb, financeData] = await Promise.all([
+  const [allTasks, allEvents, weights, inboxItems, allProperties, allProjects, propTasks, projTasks, urgentTasksDb, financeData] = await Promise.all([
     db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)).limit(30),
     db.select().from(events).orderBy(desc(events.startDate)).limit(20),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(14),
     db.select().from(inbox).where(eq(inbox.processed, false)).orderBy(desc(inbox.createdAt)).limit(50),
     db.select().from(properties),
-    // Query dedicada para tareas de propiedades — evita que limit(30) las excluya
+    db.select().from(projects).where(ne(projects.status, 'archived')),
+    // Query dedicada para tareas de propiedades
     db.select().from(tasks)
       .where(and(ne(tasks.status, 'archived'), ne(tasks.status, 'done'), isNotNull(tasks.propertyId)))
       .orderBy(desc(tasks.prioFinal))
       .limit(50),
-    // Query dedicada para urgentes — usa prio como fallback cuando prioFinal = 0
-    // Umbral 7 para excluir tareas "activas" de baja prio que no son urgentes
+    // Query dedicada para tareas de proyectos
+    db.select().from(tasks)
+      .where(and(ne(tasks.status, 'archived'), ne(tasks.status, 'done'), isNotNull(tasks.projectId)))
+      .orderBy(desc(tasks.prioFinal))
+      .limit(50),
+    // Query dedicada para urgentes
     db.select().from(tasks)
       .where(and(
         ne(tasks.status, 'archived'),
@@ -81,6 +86,13 @@ export default async function AppRootPage() {
     return t ? { prop, task: t } : null;
   }).filter(Boolean) as { prop: typeof allProperties[0]; task: typeof propTasks[0] }[];
 
+  // Top tarea por proyecto — similar a propiedades
+  type ProjTask = { proj: typeof allProjects[0]; task: typeof projTasks[0] };
+  const topTaskByProject = allProjects.map(proj => {
+    const t = projTasks.find(t => t.projectId === proj.id);
+    return t ? { proj, task: t } : null;
+  }).filter(Boolean) as ProjTask[];
+
   return (
     <HomeRouter
       urgentTasks={urgentTasks}
@@ -92,6 +104,7 @@ export default async function AppRootPage() {
       inboxItems={inboxItems}
       todaySnm={todaySnm}
       topTaskByProperty={topTaskByProperty}
+      topTaskByProject={topTaskByProject}
       allEvents={allEvents
         .filter(e => e.startDate && e.startDate >= new Date(now.getFullYear(), now.getMonth(), 1))
         .map(e => ({ startDate: e.startDate!.toISOString(), type: e.type ?? 'social', title: e.title }))}

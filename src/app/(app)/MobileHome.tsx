@@ -68,6 +68,7 @@ function weightTrendPath(logs: WeightLog[]): string {
 }
 
 type PropTask = { prop: { id: string; name: string; color: string | null; icon: string | null }; task: { id: number; title: string; prioFinal: number | null } };
+type ProjTask = { proj: { id: number; name: string; color: string | null }; task: { id: number; title: string; prioFinal: number | null } };
 
 export default function MobileHome({
   urgentTasks,
@@ -78,6 +79,7 @@ export default function MobileHome({
   inboxCount,
   inboxItems = [],
   topTaskByProperty = [],
+  topTaskByProject = [],
   allEvents = [],
   todaySnm = [],
   financeRecords,
@@ -90,6 +92,7 @@ export default function MobileHome({
   inboxCount: number;
   inboxItems?: InboxItem[];
   topTaskByProperty?: PropTask[];
+  topTaskByProject?: ProjTask[];
   allEvents?: { startDate: string; type: string; title: string }[];
   todaySnm?: string[];
   financeRecords?: { calcD: number|null; calcB: number|null; calcA: number|null; calcE: number|null }[];
@@ -491,6 +494,25 @@ export default function MobileHome({
                   >
                     <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                   </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Projects — top task por proyecto */}
+        {topTaskByProject.length > 0 && (
+          <div style={{ marginBottom: 28 }}>
+            <SectionLabel label="Projects" link="→" onLinkClick={() => router.push('/projects')} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {topTaskByProject.map(({ proj, task }) => (
+                <div key={proj.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${proj.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 14, flexShrink: 0 }}>◆</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: proj.color ?? 'var(--text3)', letterSpacing: '.12em', marginBottom: 2 }}>{proj.name.toUpperCase()}</div>
+                    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: 'var(--text3)', flexShrink: 0 }}>{task.prioFinal ?? 0}</span>
                 </div>
               ))}
             </div>
