@@ -29,7 +29,7 @@ export default async function AppRootPage() {
       ))
       .orderBy(desc(tasks.prioFinal), desc(tasks.prio))
       .limit(10),
-    db.select({ calcD: financeRecords.calcD, calcB: financeRecords.calcB, calcE: financeRecords.calcE })
+    db.select({ calcD: financeRecords.calcD, calcB: financeRecords.calcB, calcA: financeRecords.calcA, calcE: financeRecords.calcE })
       .from(financeRecords).orderBy(desc(financeRecords.date)).limit(12),
   ]);
 

@@ -14,7 +14,7 @@ export default async function DashboardPage() {
     db.select().from(properties),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(1),
     db.select({ id: projects.id }).from(projects).where(ne(projects.status, 'archived')),
-    db.select({ calcD: financeRecords.calcD, calcB: financeRecords.calcB, calcE: financeRecords.calcE })
+    db.select({ calcD: financeRecords.calcD, calcB: financeRecords.calcB, calcA: financeRecords.calcA, calcE: financeRecords.calcE })
       .from(financeRecords).orderBy(desc(financeRecords.date)).limit(12),
   ]);
 

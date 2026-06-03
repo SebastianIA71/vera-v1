@@ -92,7 +92,7 @@ export default function MobileHome({
   topTaskByProperty?: PropTask[];
   allEvents?: { startDate: string; type: string; title: string }[];
   todaySnm?: string[];
-  financeRecords?: { calcD: number|null; calcB: number|null; calcE: number|null }[];
+  financeRecords?: { calcD: number|null; calcB: number|null; calcA: number|null; calcE: number|null }[];
 }) {
   const router = useRouter();
   const [showCapture, setShowCapture] = useState(false);

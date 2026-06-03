@@ -1,8 +1,8 @@
 'use client';
 
-type FinanceEntry = { calcD: number|null; calcB: number|null; calcE: number|null };
+type FinanceEntry = { calcD: number|null; calcB: number|null; calcA: number|null; calcE: number|null };
 
-function Sparkline({ values, color, height = 32 }: { values: number[]; color: string; height?: number }) {
+function Sparkline({ values, color, height = 28 }: { values: number[]; color: string; height?: number }) {
   if (values.length < 2) return null;
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -25,50 +25,62 @@ function Sparkline({ values, color, height = 32 }: { values: number[]; color: st
   );
 }
 
+type MetricRowProps = {
+  label: string;
+  value: number;
+  values: number[];
+  color: string;
+  fontSize?: number;
+  decimals?: number;
+  sparklineHeight?: number;
+  border?: boolean;
+};
+
+function MetricRow({ label, value, values, color, fontSize = 28, decimals = 2, sparklineHeight = 28, border = true }: MetricRowProps) {
+  return (
+    <div style={{
+      paddingBottom: border ? 10 : 0,
+      marginBottom: border ? 10 : 0,
+      borderBottom: border ? '.5px solid var(--bg4)' : 'none',
+    }}>
+      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.22em', color: 'var(--text3)', marginBottom: 3 }}>
+        {label}
+      </div>
+      <div style={{
+        fontFamily: '"Arial Black", Arial, sans-serif',
+        fontWeight: 900,
+        fontSize,
+        color,
+        lineHeight: 1,
+        letterSpacing: '-.02em',
+        marginBottom: 5,
+      }}>
+        {value.toFixed(decimals)}
+      </div>
+      <Sparkline values={values} color={color} height={sparklineHeight} />
+    </div>
+  );
+}
+
 export function FinanceSparklineHeader({ records }: { records: FinanceEntry[] }) {
   if (records.length === 0) return null;
 
-  // records llegan en orden desc (más reciente primero)
   const last12 = records.slice(0, 12).reverse();
   const dVals = last12.map(r => r.calcD ?? 0);
   const bVals = last12.map(r => r.calcB ?? 0);
+  const aVals = last12.map(r => r.calcA ?? 0);
   const eVals = last12.map(r => r.calcE ?? 0);
   const lastD = records[0]?.calcD ?? 0;
   const lastB = records[0]?.calcB ?? 0;
+  const lastA = records[0]?.calcA ?? 0;
   const lastE = records[0]?.calcE ?? 0;
 
   return (
-    <>
-      {/* D — protagonista */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10, paddingBottom: 10, borderBottom: '.5px solid var(--bg4)' }}>
-        <div style={{ flexShrink: 0 }}>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.22em', color: 'var(--text3)', marginBottom: 2 }}>D · 12M</div>
-          <div style={{ fontFamily: '"Arial Black", Arial, sans-serif', fontWeight: 900, fontSize: 46, color: 'var(--gold)', lineHeight: 1, letterSpacing: '-.03em' }}>
-            {lastD.toFixed(2)}
-          </div>
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Sparkline values={dVals} color="var(--gold)" height={48} />
-        </div>
-      </div>
-
-      {/* B y E — lado a lado */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.22em', color: 'var(--text3)', marginBottom: 2 }}>B · 12M</div>
-          <div style={{ fontFamily: '"Arial Black", Arial, sans-serif', fontWeight: 900, fontSize: 30, color: 'var(--gold2)', lineHeight: 1, letterSpacing: '-.02em', marginBottom: 4 }}>
-            {lastB.toFixed(1)}
-          </div>
-          <Sparkline values={bVals} color="var(--gold2)" height={32} />
-        </div>
-        <div>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.22em', color: 'var(--text3)', marginBottom: 2 }}>E · 12M</div>
-          <div style={{ fontFamily: '"Arial Black", Arial, sans-serif', fontWeight: 900, fontSize: 24, color: 'var(--green)', lineHeight: 1, letterSpacing: '-.02em', marginBottom: 4 }}>
-            {lastE.toFixed(2)}
-          </div>
-          <Sparkline values={eVals} color="var(--green)" height={32} />
-        </div>
-      </div>
-    </>
+    <div style={{ width: '100%' }}>
+      <MetricRow label="D · 12M" value={lastD} values={dVals} color="var(--gold)"  fontSize={34} decimals={2} sparklineHeight={36} />
+      <MetricRow label="B · 12M" value={lastB} values={bVals} color="var(--gold2)" fontSize={26} decimals={1} sparklineHeight={28} />
+      <MetricRow label="A · 12M" value={lastA} values={aVals} color="var(--amber)" fontSize={26} decimals={1} sparklineHeight={28} />
+      <MetricRow label="E · 12M" value={lastE} values={eVals} color="var(--green)" fontSize={22} decimals={2} sparklineHeight={26} border={false} />
+    </div>
   );
 }

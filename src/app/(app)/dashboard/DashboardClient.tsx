@@ -265,7 +265,7 @@ export default function DashboardClient({
   allEvents: { startDate: Date | null; type: string; title: string }[];
   kpis: Kpis;
   todaySnm?: string[];
-  financeRecords?: { calcD: number|null; calcB: number|null; calcE: number|null }[];
+  financeRecords?: { calcD: number|null; calcB: number|null; calcA: number|null; calcE: number|null }[];
 }) {
   const router = useRouter();
   const [time, setTime] = useState('');
@@ -449,35 +449,34 @@ export default function DashboardClient({
           {/* Orbital map */}
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
 
-            {/* ── LEFT: KPI zone ── */}
-            <div style={{ flex: '0 0 200px', width: 200, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'stretch', gap: 5, padding: '0 16px' }}>
-              {getKpiNodes(kpis).map(kpi => (
-                <div key={kpi.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  background: 'var(--bg)', border: `.5px solid ${kpi.color}22`,
-                  borderRadius: 8, padding: '7px 10px', overflow: 'hidden',
-                }}>
-                  {/* icon */}
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, color: kpi.color, opacity: 0.8, lineHeight: 1, flexShrink: 0 }}>
-                    {KPI_ICONS[kpi.id] ?? '·'}
-                  </span>
-                  {/* accent line — stretch llena el alto del card */}
-                  <div style={{ width: 1.5, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
-                  {/* value + label */}
-                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 30, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
-                      {kpi.value}
-                    </div>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {kpi.label}
+            {/* ── LEFT: KPI zone (30%) ── */}
+            <div style={{ flex: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', padding: '0 8px' }}>
+              <div style={{ width: '100%', maxWidth: 220, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                {getKpiNodes(kpis).map(kpi => (
+                  <div key={kpi.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    background: 'var(--bg)', border: `.5px solid ${kpi.color}22`,
+                    borderRadius: 8, padding: '7px 10px', overflow: 'hidden',
+                  }}>
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, color: kpi.color, opacity: 0.8, lineHeight: 1, flexShrink: 0 }}>
+                      {KPI_ICONS[kpi.id] ?? '·'}
+                    </span>
+                    <div style={{ width: 1.5, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 30, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                        {kpi.value}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {kpi.label}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
 
-            {/* ── CENTER: Orbital ── */}
-            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 0 }}>
+            {/* ── CENTER: Orbital (40%) ── */}
+            <div style={{ flex: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 0 }}>
             <div style={{ position: 'relative', width: '480px', height: '480px', flexShrink: 0 }}>
               {/* Rings */}
               {[140, 260, 380, 440].map((size, i) => (
@@ -556,15 +555,18 @@ export default function DashboardClient({
             </div>
             {/* fin C (CENTER wrapper) — RIGHT stats sigue dentro de A */}
 
-            {/* ── RIGHT: Finance D·B·E ── */}
+            {/* ── RIGHT: Finance D·B·A·E (30%) ── */}
             <div style={{
-              flex: '0 0 200px', flexShrink: 0,
+              flex: 3,
               display: 'flex', flexDirection: 'column',
-              justifyContent: 'center',
-              padding: '0 16px 0 14px',
+              justifyContent: 'center', alignItems: 'center',
+              overflow: 'hidden',
               borderLeft: '.5px solid var(--bg4)',
+              padding: '0 8px',
             }}>
-              <FinanceSparklineHeader records={financeRecords} />
+              <div style={{ width: '100%', maxWidth: 220 }}>
+                <FinanceSparklineHeader records={financeRecords} />
+              </div>
             </div>
 
           </div>
