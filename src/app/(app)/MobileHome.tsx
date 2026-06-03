@@ -80,6 +80,7 @@ export default function MobileHome({
   topTaskByProperty = [],
   allEvents = [],
   todaySnm = [],
+  financeRecords,
 }: {
   urgentTasks: Task[];
   urgentTotal?: number;
