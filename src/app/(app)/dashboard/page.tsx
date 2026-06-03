@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { tasks, events, inbox, properties, weightLog, projects } from '@/lib/db/schema';
+import { tasks, events, inbox, properties, weightLog, projects, financeRecords } from '@/lib/db/schema';
 import { ne, desc, sql } from 'drizzle-orm';
 import DashboardClient from './DashboardClient';
 
@@ -8,12 +8,14 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage() {
   const now = new Date();
 
-  const [allTasks, allEvents, allProperties, weightLogs, allProjects] = await Promise.all([
+  const [allTasks, allEvents, allProperties, weightLogs, allProjects, financeData] = await Promise.all([
     db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal), desc(tasks.prio)).limit(100),
     db.select().from(events).orderBy(desc(events.startDate)).limit(20),
     db.select().from(properties),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(1),
     db.select({ id: projects.id }).from(projects).where(ne(projects.status, 'archived')),
+    db.select({ calcD: financeRecords.calcD, calcB: financeRecords.calcB, calcE: financeRecords.calcE })
+      .from(financeRecords).orderBy(desc(financeRecords.date)).limit(12),
   ]);
 
   const urgentTasks = allTasks.filter(t =>
@@ -72,6 +74,7 @@ export default async function DashboardPage() {
       allEvents={allEvents.map(e => ({ startDate: e.startDate, type: e.type ?? '', title: e.title }))}
       todaySnm={todaySnm}
       kpis={{ tasksActive, tasksDone, inboxPending: inboxCount, tripsCount, eventsCount, propsCount, projectsCount, currentWeight }}
+      financeRecords={financeData}
     />
   );
 }

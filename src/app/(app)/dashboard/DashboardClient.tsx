@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AgentPanel from '@/components/command/AgentPanel';
+import { FinanceSparklineHeader } from '@/components/finance/FinanceSparklineHeader';
 import DesktopNav from '@/components/layout/DesktopNav';
 import { QUOTES } from '@/lib/quotes';
 import { getRandomPersona } from '@/lib/personas';
@@ -254,6 +255,7 @@ export default function DashboardClient({
   allEvents,
   kpis,
   todaySnm = [],
+  financeRecords = [],
 }: {
   initialTasks: Task[];
   urgentCount: number;
@@ -263,6 +265,7 @@ export default function DashboardClient({
   allEvents: { startDate: Date | null; type: string; title: string }[];
   kpis: Kpis;
   todaySnm?: string[];
+  financeRecords?: { calcD: number|null; calcB: number|null; calcE: number|null }[];
 }) {
   const router = useRouter();
   const [time, setTime] = useState('');
@@ -553,32 +556,15 @@ export default function DashboardClient({
             </div>
             {/* fin C (CENTER wrapper) — RIGHT stats sigue dentro de A */}
 
-            {/* ── RIGHT: Stats ── */}
+            {/* ── RIGHT: Finance D·B·E ── */}
             <div style={{
               flex: '0 0 200px', flexShrink: 0,
               display: 'flex', flexDirection: 'column',
               justifyContent: 'center',
-              gap: 10,
-              padding: '0 24px 0 18px',
+              padding: '0 16px 0 14px',
               borderLeft: '.5px solid var(--bg4)',
             }}>
-              {[
-                { value: '2,7',   color: 'var(--gold)',  borderPos: 'top',    points: '0,26 25,23 50,21 75,18 100,15 125,11 150,7'  },
-                { value: '145,1', color: 'var(--text)', borderPos: 'bottom', points: '0,28 25,25 50,23 75,20 100,16 125,12 150,8'  },
-                { value: '10,2',  color: 'var(--green)', borderPos: 'bottom', points: '0,30 25,27 50,24 75,20 100,15 125,9  150,4'  },
-              ].map(stat => (
-                <div key={stat.value} style={{
-                  paddingTop:    stat.borderPos === 'top'    ? 8 : 0,
-                  paddingBottom: stat.borderPos === 'bottom' ? 8 : 0,
-                  borderTop:    stat.borderPos === 'top'    ? `2.5px solid ${stat.color}` : 'none',
-                  borderBottom: stat.borderPos === 'bottom' ? `2.5px solid ${stat.color}` : 'none',
-                }}>
-                  <div style={{ fontFamily: '"Arial Black", Arial, sans-serif', fontWeight: 900, fontSize: 50, color: stat.color, lineHeight: 1, letterSpacing: '-.03em' }}>{stat.value}</div>
-                  <svg width="100%" height="28" viewBox="0 0 150 32" preserveAspectRatio="none" style={{ display: 'block', marginTop: 5 }}>
-                    <polyline points={stat.points} fill="none" stroke={stat.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.45" />
-                  </svg>
-                </div>
-              ))}
+              <FinanceSparklineHeader records={financeRecords} />
             </div>
 
           </div>
