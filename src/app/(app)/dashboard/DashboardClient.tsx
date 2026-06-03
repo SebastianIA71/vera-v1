@@ -109,19 +109,16 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
     }}>
-      <div style={{ padding: '14px 18px 10px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
+      <div style={{ padding: '12px 18px 8px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.22em', color: 'var(--text3)' }}>
-          PUNCH LIST · HOY
-        </div>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', color: 'var(--text3)', marginTop: 2 }}>
-          {topTasks.length} TAREAS <span style={{ color: 'var(--text4)', fontSize: 8 }}>({activeTasks.length} en total)</span> · {inboxCount > 0 ? `${inboxCount} INBOX` : 'INBOX OK'}
+          PUNCH LIST
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
 
         {/* PUNCH LIST */}
-        <div style={{ padding: '0 18px', marginBottom: 12 }}>
+        <div style={{ padding: '0 18px', marginBottom: 8 }}>
           {topTasks.map(task => {
             const prio = task.prioFinal ?? 0;
             const color = prio >= 9 ? 'var(--red)' : prio >= 7 ? 'var(--amber)' : 'var(--text3)';
@@ -391,17 +388,14 @@ export default function DashboardClient({
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', border: '.5px solid var(--bg4)', borderRadius: '999px', fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.14em', color: 'var(--green)' }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--green)', display: 'inline-block', animation: 'blink 2s ease-in-out infinite' }} />
-            SISTEMA ACTIVO
+            ACTIVO
           </div>
-          <button
-            onClick={() => setShowCapture(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 16px', border: '.5px solid var(--gold2)', borderRadius: '999px', background: 'transparent', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', letterSpacing: '.18em', cursor: 'pointer' }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--gold2)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="9" y="3" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/>
-            </svg>
-            OYE VERA
-          </button>
+          {Object.values(agentStatus).filter(s => s.status === 'running' || s.status === 'active').length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', border: '.5px solid var(--gold2)', borderRadius: '999px', fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.14em', color: 'var(--gold2)' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--gold2)', display: 'inline-block', animation: 'blink 2s ease-in-out infinite' }} />
+              {Object.entries(agentStatus).filter(([_, s]) => s.status === 'running' || s.status === 'active').map(([id]) => id.toUpperCase()).join(',')}
+            </div>
+          )}
         </div>
       </div>
 

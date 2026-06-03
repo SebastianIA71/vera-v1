@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 
 export type TaskDetail = {
   id: number;
@@ -46,6 +46,9 @@ function daysUntil(date: Date | null | undefined): number | null {
 export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }: Props) {
   const [notes, setNotes] = useState(task.notes ?? '');
   const [saving, setSaving] = useState(false);
+  const [showInsight, setShowInsight] = useState(false);
+  const [insight, setInsight] = useState<{ perspectives: { title: string; description: string }[] } | null>(null);
+  const [loadingInsight, setLoadingInsight] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isDone = task.status === 'done' || task.status === 'archived';
@@ -74,6 +77,25 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
     onMarkDone(task.id);
   };
 
+  const loadInsight = useCallback(async () => {
+    setLoadingInsight(true);
+    try {
+      const res = await fetch(`/api/agents/task-insight?taskId=${task.id}`);
+      const data = await res.json();
+      setInsight(data);
+    } catch {
+      setInsight({ perspectives: [{ title: 'Error', description: 'No se pudo cargar el análisis.' }] });
+    } finally {
+      setLoadingInsight(false);
+    }
+  }, [task.id]);
+
+  useEffect(() => {
+    if (showInsight && !insight && !loadingInsight) {
+      loadInsight();
+    }
+  }, [showInsight, insight, loadingInsight, loadInsight]);
+
   const s8 = (col?: string) => ({
     fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.24em',
     color: col ?? 'var(--text3)', marginBottom: 7,
@@ -87,7 +109,14 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
           <button onClick={onClose} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer' }}>
             ← LISTA
           </button>
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button
+              onClick={() => setShowInsight(!showInsight)}
+              title="Análisis de la tarea"
+              style={{ fontFamily: 'var(--font-syne)', fontSize: 14, color: 'var(--gold2)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+            >
+              ?
+            </button>
             {task.inNow && (
               <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.14em', padding: '2px 7px', borderRadius: 999, border: '.5px solid var(--gold2)', color: 'var(--gold2)' }}>⚡ NOW</span>
             )}
@@ -132,6 +161,33 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
           )}
         </div>
       </div>
+
+      {/* Insight Panel */}
+      {showInsight && (
+        <div style={{ padding: '12px 16px', borderBottom: '.5px solid var(--bg4)', background: 'var(--bg2)' }}>
+          {loadingInsight ? (
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)' }}>
+              ANALIZANDO···
+            </div>
+          ) : insight ? (
+            <div>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--purple)', marginBottom: 6 }}>
+                PERSPECTIVAS
+              </div>
+              {insight.perspectives.map((p, i) => (
+                <div key={i} style={{ marginBottom: i < insight.perspectives.length - 1 ? 6 : 0, paddingBottom: i < insight.perspectives.length - 1 ? 6 : 0, borderBottom: i < insight.perspectives.length - 1 ? '.5px solid var(--bg4)' : 'none' }}>
+                  <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, color: 'var(--text)', marginBottom: 2 }}>
+                    {p.title}
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 10, color: 'rgba(255,255,255,0.55)', lineHeight: 1.3 }}>
+                    {p.description}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      )}
 
       {/* Scroll */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px 72px' }}>

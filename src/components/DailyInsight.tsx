@@ -14,17 +14,19 @@ type InsightData = {
 function IdeaCard({ idea }: { idea: Idea }) {
   return (
     <div>
-      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13,
-        color: 'var(--text)', marginBottom: 3, lineHeight: 1.3 }}>
+      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12,
+        color: 'var(--text)', marginBottom: 2, lineHeight: 1.2, overflow: 'hidden',
+        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
         {idea.title}
       </div>
-      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11,
-        color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>
+      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 10,
+        color: 'rgba(255,255,255,0.55)', lineHeight: 1.3, overflow: 'hidden',
+        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
         {idea.description}
       </div>
       {idea.url && (
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8,
-          color: 'var(--blue)', letterSpacing: '.06em', marginTop: 3,
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7,
+          color: 'var(--blue)', letterSpacing: '.06em', marginTop: 1,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {idea.url.replace(/^https?:\/\//, '').split('/')[0]}
         </div>
@@ -49,18 +51,17 @@ export default function DailyInsight() {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <div style={{ marginBottom: 28 }}>
+    <div style={{ marginBottom: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between',
-        alignItems: 'baseline', marginBottom: 10 }}>
-        <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 15,
+        alignItems: 'baseline', marginBottom: 6 }}>
+        <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 13,
           letterSpacing: '.22em', color: 'var(--gold2)', textTransform: 'uppercase' }}>
-          Daily Pick
+          Pick
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em' }}>
-            {data?.date ?? ''}
-            {data?.mode === 'ai' && ' · VERA'}
-            {data?.mode === 'search' && ' · WEB'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, color: 'var(--text3)', letterSpacing: '.1em' }}>
+            {data?.mode === 'ai' && 'VERA'}
+            {data?.mode === 'search' && 'WEB'}
           </span>
           <button
             onClick={() => !loading && load(true)}
@@ -68,7 +69,7 @@ export default function DailyInsight() {
             style={{
               background: 'none', border: 'none', cursor: loading ? 'default' : 'pointer',
               color: loading ? 'var(--text4)' : 'var(--text3)',
-              fontFamily: 'var(--font-dm-mono)', fontSize: 11, lineHeight: 1,
+              fontFamily: 'var(--font-dm-mono)', fontSize: 10, lineHeight: 1,
               padding: 0, display: 'flex', alignItems: 'center',
               transition: 'color .15s',
             }}
@@ -79,7 +80,7 @@ export default function DailyInsight() {
       </div>
 
       <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)',
-        borderRadius: 14, padding: '14px 14px 12px' }}>
+        borderRadius: 10, padding: '10px 10px 8px' }}>
 
         {loading && (
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9,
@@ -99,35 +100,28 @@ export default function DailyInsight() {
 
         {!loading && data?.taskTitle && (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6,
-              marginBottom: 12, paddingBottom: 10, borderBottom: '.5px solid var(--bg4)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4,
+              marginBottom: 8, paddingBottom: 6, borderBottom: '.5px solid var(--bg4)' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12,
+                <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11,
                   color: 'var(--text)', overflow: 'hidden',
                   textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
                   {data.taskTitle}
                 </span>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em',
-                  color: 'var(--text3)', marginTop: 2 }}>
-                  PERSPECTIVAS PARA DECIDIR
-                </div>
               </div>
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10,
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9,
                 color: 'var(--text3)', flexShrink: 0 }}>p{data.taskPrio}</span>
             </div>
 
             {(data.ideas ?? []).length === 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center', padding: '8px 0' }}>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10,
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', padding: '4px 0' }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9,
                   color: 'var(--text3)', letterSpacing: '.1em' }}>
-                  Sin perspectivas generadas hoy.
+                  Sin perspectivas.
                 </div>
-                <button onClick={() => load(true)} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', color: 'var(--gold2)', background: 'none', border: '.5px solid rgba(196,168,106,0.3)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
-                  REINTENTAR ↻
-                </button>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {(data.ideas ?? []).map((idea, i) => (
                   idea.url ? (
                     <a key={i} href={idea.url} target="_blank" rel="noopener noreferrer"
