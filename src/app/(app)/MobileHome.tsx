@@ -15,6 +15,7 @@ const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'),
 const NewTaskModal  = dynamic(() => import('@/components/tasks/NewTaskModal'), { ssr: false });
 const DailyInsight   = dynamic(() => import('@/components/DailyInsight'), { ssr: false });
 const DailyBriefing  = dynamic(() => import('@/components/DailyBriefing'), { ssr: false });
+const FinanceSparklineHeader = dynamic(() => import('@/components/finance/FinanceSparklineHeader').then(m => ({ default: m.FinanceSparklineHeader })), { ssr: false });
 
 type Task = { id: number; title: string; detail?: string | null; propertyId?: string | null; prioFinal?: number | null; lastActionAt?: Date | null; tags?: string | null };
 type WeightLog = { id: number; date: string; value: number; snmAgua?: boolean | null; snmCaminar?: boolean | null; snmEntreno?: boolean | null; snmEscucha?: boolean | null; snmDisfruta?: boolean | null };
@@ -90,6 +91,7 @@ export default function MobileHome({
   topTaskByProperty?: PropTask[];
   allEvents?: { startDate: string; type: string; title: string }[];
   todaySnm?: string[];
+  financeRecords?: { calcD: number|null; calcB: number|null; calcE: number|null }[];
 }) {
   const router = useRouter();
   const [showCapture, setShowCapture] = useState(false);
@@ -494,33 +496,18 @@ export default function MobileHome({
           </div>
         )}
 
-        {/* Finance — estático */}
+        {/* Finance — D · B · E con sparklines reales */}
         <div style={{ marginBottom: 28 }}>
-          <SectionLabel label="Finance" />
+          <SectionLabel label="Finance" link="/finance" onLinkClick={() => router.push('/finance')} />
           <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 20, color: 'var(--text)', lineHeight: 1 }}>2,7M</div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>PATRIMONIO</div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 20, color: 'var(--text)', lineHeight: 1 }}>145,1K</div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>ANUAL</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 20, color: 'var(--green)', lineHeight: 1 }}>10,2K</div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 3 }}>MENSUAL</div>
-              </div>
-            </div>
-            <svg width="100%" height="32" viewBox="0 0 300 32" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id="finGrad" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="var(--green)" stopOpacity="0.3"/>
-                  <stop offset="100%" stopColor="var(--green)" stopOpacity="1"/>
-                </linearGradient>
-              </defs>
-              <polyline points="0,28 40,24 80,26 120,20 160,18 200,14 240,10 300,4" fill="none" stroke="url(#finGrad)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            {financeRecords && financeRecords.length > 0
+              ? <FinanceSparklineHeader records={financeRecords} />
+              : (
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.2em', color: 'var(--text3)', textAlign: 'center', padding: '16px 0' }}>
+                  SIN DATOS · CARGA EL EXCEL EN /FINANCE
+                </div>
+              )
+            }
           </div>
         </div>
 

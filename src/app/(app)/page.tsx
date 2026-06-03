@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { tasks, events, weightLog, inbox, properties } from '@/lib/db/schema';
+import { tasks, events, weightLog, inbox, properties, financeRecords } from '@/lib/db/schema';
 import { ne, desc, eq, and, isNotNull, gte, or } from 'drizzle-orm';
 import HomeRouter from './HomeRouter';
 
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function AppRootPage() {
   const now = new Date();
 
-  const [allTasks, allEvents, weights, inboxItems, allProperties, propTasks, urgentTasksDb] = await Promise.all([
+  const [allTasks, allEvents, weights, inboxItems, allProperties, propTasks, urgentTasksDb, financeData] = await Promise.all([
     db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)).limit(30),
     db.select().from(events).orderBy(desc(events.startDate)).limit(20),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(14),
@@ -29,6 +29,8 @@ export default async function AppRootPage() {
       ))
       .orderBy(desc(tasks.prioFinal), desc(tasks.prio))
       .limit(10),
+    db.select({ calcD: financeRecords.calcD, calcB: financeRecords.calcB, calcE: financeRecords.calcE })
+      .from(financeRecords).orderBy(desc(financeRecords.date)).limit(12),
   ]);
 
   // Merge: urgentTasksDb cubre prio alto aunque prioFinal=0; allTasks cubre prioFinal alto
@@ -93,6 +95,7 @@ export default async function AppRootPage() {
       allEvents={allEvents
         .filter(e => e.startDate && e.startDate >= new Date(now.getFullYear(), now.getMonth(), 1))
         .map(e => ({ startDate: e.startDate!.toISOString(), type: e.type ?? 'social', title: e.title }))}
+      financeRecords={financeData}
     />
   );
 }
