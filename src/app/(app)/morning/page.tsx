@@ -9,12 +9,17 @@ export default async function MorningPage() {
   const now = new Date();
 
   const [allTasks, allEvents, weights] = await Promise.all([
-    db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)).limit(20),
+    // Ordenar por prio porque prioFinal defaultea a 0 hasta que corra PrioAgent
+    db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prio)).limit(50),
     db.select().from(events).orderBy(asc(events.startDate)).limit(20),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(1),
   ]);
 
-  const urgentTasks = allTasks.filter(t => (t.prioFinal ?? t.prio ?? 0) >= 6 && t.status !== 'done' && t.status !== 'archived').slice(0, 5);
+  const effectivePrio = (t: typeof allTasks[0]) => Math.max(t.prioFinal ?? 0, t.prio ?? 0);
+  const urgentTasks = allTasks
+    .filter(t => t.status !== 'done' && t.status !== 'archived' && effectivePrio(t) >= 6)
+    .sort((a, b) => effectivePrio(b) - effectivePrio(a))
+    .slice(0, 5);
 
   const upcomingTrips = allEvents
     .filter(e => e.type === 'viaje' && e.startDate && e.startDate > now)

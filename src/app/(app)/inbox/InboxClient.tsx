@@ -31,6 +31,9 @@ const PROPS = [
   { id: 'willys',   label: "Willy's" },
 ];
 
+type Project = { id: number; name: string; color: string | null };
+type Trip    = { id: number; title: string };
+
 function fmtTime(d: Date | null | undefined): string {
   if (!d) return '';
   const now = new Date();
@@ -40,11 +43,13 @@ function fmtTime(d: Date | null | undefined): string {
   return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }
 
-export default function InboxClient({ initialItems, urgentCount, staleCount, inboxCount }: {
+export default function InboxClient({ initialItems, urgentCount, staleCount, inboxCount, projects = [], trips = [] }: {
   initialItems: InboxItem[];
   urgentCount: number;
   staleCount: number;
   inboxCount: number;
+  projects?: Project[];
+  trips?: Trip[];
 }) {
   const router = useRouter();
   const [items, setItems] = useState<InboxItem[]>(initialItems);
@@ -61,6 +66,8 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
   // Edit state for selected item
   const [editTitle, setEditTitle] = useState('');
   const [editProp, setEditProp] = useState<string>('');
+  const [editProject, setEditProject] = useState<string>('');
+  const [editTrip, setEditTrip] = useState<string>('');
   const [editPrio, setEditPrio] = useState(5);
   const [saving, setSaving] = useState(false);
 
@@ -68,6 +75,8 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
     setSelected(item);
     setEditTitle(item.content);
     setEditProp(item.suggestedPropertyId ?? '');
+    setEditProject('');
+    setEditTrip('');
     setEditPrio(5);
   };
 
@@ -90,6 +99,8 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
           createTask: true,
           title: editTitle,
           propertyId: editProp || null,
+          projectId: editProject ? Number(editProject) : null,
+          tags: editTrip || null,
           prio: editPrio,
           type: 'task',
         }),
@@ -231,21 +242,44 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
                   />
                 </div>
 
-                <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                  <div style={{ flex: 1 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)', marginBottom: 6 }}>PROPIEDAD</div>
                     <select value={editProp} onChange={e => setEditProp(e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '7px 8px', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: 11 }}>
                       <option value="">— ninguna</option>
                       {PROPS.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
                     </select>
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)', marginBottom: 6 }}>PRIORIDAD</div>
                     <select value={editPrio} onChange={e => setEditPrio(Number(e.target.value))} style={{ width: '100%', background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '7px 8px', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: 11 }}>
                       {[9,8,7,6,5,4,3,2,1].map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
                   </div>
                 </div>
+
+                {(projects.length > 0 || trips.length > 0) && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                    {projects.length > 0 && (
+                      <div>
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--purple)', marginBottom: 6 }}>PROYECTO</div>
+                        <select value={editProject} onChange={e => setEditProject(e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '7px 8px', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: 11 }}>
+                          <option value="">— ninguno</option>
+                          {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                      </div>
+                    )}
+                    {trips.length > 0 && (
+                      <div>
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--blue)', marginBottom: 6 }}>VIAJE ✈</div>
+                        <select value={editTrip} onChange={e => setEditTrip(e.target.value)} style={{ width: '100%', background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '7px 8px', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: 11 }}>
+                          <option value="">— ninguno</option>
+                          {trips.map(t => <option key={t.id} value={t.title}>{t.title}</option>)}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button

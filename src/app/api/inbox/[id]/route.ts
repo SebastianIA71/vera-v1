@@ -12,6 +12,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const [task] = await db.insert(tasks).values({
       title: body.title,
       propertyId: body.propertyId ?? null,
+      projectId: body.projectId ?? null,
+      tags: body.tags ?? null,
       prio: body.prio ?? 5,
       prioFinal: body.prio ?? 5,
       status: 'wait',
