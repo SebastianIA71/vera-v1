@@ -447,25 +447,25 @@ export default function DashboardClient({
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
 
             {/* ── LEFT: KPI zone ── */}
-            <div style={{ flex: '0 0 200px', width: 200, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'stretch', gap: 6, padding: '0 16px' }}>
+            <div style={{ flex: '0 0 200px', width: 200, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'stretch', gap: 5, padding: '0 16px' }}>
               {getKpiNodes(kpis).map(kpi => (
                 <div key={kpi.id} style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
+                  display: 'flex', alignItems: 'center', gap: 8,
                   background: 'var(--bg)', border: `.5px solid ${kpi.color}22`,
-                  borderRadius: 10, padding: '9px 12px', overflow: 'hidden',
+                  borderRadius: 8, padding: '7px 10px', overflow: 'hidden',
                 }}>
                   {/* icon */}
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 20, color: kpi.color, opacity: 0.8, lineHeight: 1, flexShrink: 0 }}>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, color: kpi.color, opacity: 0.8, lineHeight: 1, flexShrink: 0 }}>
                     {KPI_ICONS[kpi.id] ?? '·'}
                   </span>
-                  {/* accent line */}
-                  <div style={{ width: 1.5, height: 40, background: kpi.color, flexShrink: 0 }} />
+                  {/* accent line — stretch llena el alto del card */}
+                  <div style={{ width: 1.5, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
                   {/* value + label */}
                   <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 38, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 30, fontWeight: 500, color: kpi.color, lineHeight: 1 }}>
                       {kpi.value}
                     </div>
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {kpi.label}
                     </div>
                   </div>

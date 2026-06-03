@@ -29,6 +29,15 @@ function getTimeGreeting(): string {
   return 'Buenas noches';
 }
 
+function buildFocusReason(task: Task, all: Task[]): string {
+  const prio = task.prioFinal ?? 0;
+  const n = all.length;
+  if (prio >= 9) return `Prioridad ${prio} — la más alta de ${n} activas. No puede esperar otro día.`;
+  if (prio >= 8) return `Prioridad ${prio} entre ${n} urgentes. Es la que más impacto tiene si la mueves hoy.`;
+  if (prio >= 7) return `Con ${n} urgentes encima, esta es la que desbloquea más cosas. Empieza aquí.`;
+  return `La más relevante ahora mismo. ${n > 1 ? `El resto puede esperar.` : ''}`.trim();
+}
+
 function taskColor(prio: number): string {
   return prio >= 8 ? 'var(--red)' : prio >= 6 ? 'var(--amber)' : 'var(--purple)';
 }
@@ -208,7 +217,7 @@ export default function MorningRitual({
             <h1 style={h1Style}>¿Cuánto pesas<br /><em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>hoy?</em></h1>
             <p style={subStyle}>ÚLTIMO · {lastWeightEntry ? `${lastWeightEntry.value} KG · ${lastWeightEntry.date}` : 'sin registro'}</p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, marginBottom: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, marginBottom: 8 }}>
               {WEIGHT_DELTAS.map(d => {
                 const base = lastWeightEntry?.value ?? 75;
                 const val = Math.round((base + d) * 10) / 10;
@@ -225,6 +234,21 @@ export default function MorningRitual({
                   </button>
                 );
               })}
+            </div>
+
+            {/* Ajuste fino ±0.1 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, justifyContent: 'center' }}>
+              <button
+                onClick={() => setWeightVal(w => w !== null ? Math.round((w - 0.1) * 10) / 10 : (lastWeightEntry?.value ?? 75) - 0.1)}
+                style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--bg2)', border: '.5px solid var(--bg4)', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: 18, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >−</button>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', color: 'var(--text3)', minWidth: 60, textAlign: 'center' }}>
+                {weightVal !== null ? `${weightVal} KG` : '—'}
+              </div>
+              <button
+                onClick={() => setWeightVal(w => w !== null ? Math.round((w + 0.1) * 10) / 10 : (lastWeightEntry?.value ?? 75) + 0.1)}
+                style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--bg2)', border: '.5px solid var(--bg4)', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: 18, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >+</button>
             </div>
 
             {weightVal !== null && (
@@ -255,20 +279,45 @@ export default function MorningRitual({
         )}
 
         {/* ── PASO 3: Foco ── */}
-        {step === 3 && (
-          <>
-            <div style={metaStyle}>
-              <span style={stepIdStyle}>RITUAL · 3 DE 5</span>
-              <button style={skipStyle} onClick={next}>SALTAR →</button>
-            </div>
-            <h1 style={h1Style}>Foco de<br /><em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>hoy.</em></h1>
-            <p style={subStyle}>{urgentTasks.length} URGENTES · FOCO EN LAS 3 PRIMERAS</p>
+        {step === 3 && (() => {
+          const focusTask = urgentTasks[0] ?? null;
+          const reason = focusTask ? buildFocusReason(focusTask, urgentTasks) : null;
+          return (
+            <>
+              <div style={metaStyle}>
+                <span style={stepIdStyle}>RITUAL · 3 DE 5</span>
+                <button style={skipStyle} onClick={next}>SALTAR →</button>
+              </div>
+              <h1 style={h1Style}>Foco de<br /><em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>hoy.</em></h1>
+              <p style={subStyle}>
+                {focusTask ? `${urgentTasks.length} URGENTES · 1 DECIDIDA` : 'SIN TAREAS URGENTES'}
+              </p>
 
-            {urgentTasks.map((t, i) => (
-              <FocusTaskCard key={t.id} task={t} isFocus={i < 3} />
-            ))}
-          </>
-        )}
+              {focusTask ? (
+                <>
+                  <FocusTaskCard task={focusTask} isFocus={true} />
+                  <div style={{
+                    background: 'transparent', border: '.5px solid rgba(196,168,106,.18)',
+                    borderLeft: '2px solid var(--gold2)', borderRadius: 9, padding: '10px 13px', marginTop: 8,
+                  }}>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--gold2)', marginBottom: 5 }}>VERA DICE</div>
+                    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, lineHeight: 1.55, color: '#c8c6be' }}>{reason}</div>
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: 10 }}>
+                  <div style={{ fontSize: 36, lineHeight: 1 }}>✦</div>
+                  <div style={{ fontFamily: 'var(--font-syne)', fontSize: 15, color: 'var(--text)', textAlign: 'center', lineHeight: 1.4 }}>
+                    Feliz día, Sebastián.
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', color: 'var(--text3)', textAlign: 'center' }}>
+                    NADA URGENTE · PIENSA EN ALGO NUEVO
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {/* ── PASO 4: Briefing ── */}
         {step === 4 && (

@@ -14,7 +14,7 @@ export default async function MorningPage() {
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(1),
   ]);
 
-  const urgentTasks = allTasks.filter(t => (t.prioFinal ?? 0) >= 6 && t.status !== 'done' && t.status !== 'archived').slice(0, 5);
+  const urgentTasks = allTasks.filter(t => (t.prioFinal ?? t.prio ?? 0) >= 6 && t.status !== 'done' && t.status !== 'archived').slice(0, 5);
 
   const upcomingTrips = allEvents
     .filter(e => e.type === 'viaje' && e.startDate && e.startDate > now)

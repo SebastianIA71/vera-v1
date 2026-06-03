@@ -154,7 +154,7 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
             width: '100%', background: 'transparent', border: '.5px solid var(--bg4)',
             borderRadius: 9, padding: '9px 10px', color: 'var(--text)',
             fontFamily: 'var(--font-dm-sans)', fontSize: 12, lineHeight: 1.5,
-            resize: 'vertical', minHeight: 900, outline: 'none',
+            resize: 'vertical', minHeight: 450, outline: 'none',
             boxSizing: 'border-box',
           }}
           onFocus={e => (e.target.style.borderColor = 'var(--gold2)')}

@@ -257,7 +257,7 @@ export default function TasksClient({
               <div style={{ padding: '10px 20px 4px', display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.26em', color: 'var(--text3)' }}>
                 <span>NOW · {nowTasks.length} TAREAS</span>
               </div>
-              {nowTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={setSelected} onPrioChange={(id, v) => setTasks(prev => prev.map(x => x.id === id ? { ...x, prioFinal: v } : x))} />)}
+              {nowTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={setSelected} onPrioChange={(id, v) => setTasks(prev => prev.map(x => x.id === id ? { ...x, prioFinal: v } : x))} projects={projects} trips={trips} />)}
             </>
           )}
           {restTasks.length > 0 && (
@@ -265,7 +265,7 @@ export default function TasksClient({
               <div style={{ padding: '10px 20px 4px', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.26em', color: 'var(--text3)' }}>
                 RESTO · {restTasks.length} TAREAS
               </div>
-              {restTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={setSelected} onPrioChange={(id, v) => setTasks(prev => prev.map(x => x.id === id ? { ...x, prioFinal: v } : x))} />)}
+              {restTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={setSelected} onPrioChange={(id, v) => setTasks(prev => prev.map(x => x.id === id ? { ...x, prioFinal: v } : x))} projects={projects} trips={trips} />)}
             </>
           )}
           {doneTasks.length > 0 && filters.status === 'done' && (
@@ -273,7 +273,7 @@ export default function TasksClient({
               <div style={{ padding: '10px 20px 4px', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.26em', color: 'var(--text3)' }}>
                 HECHAS · {doneTasks.length}
               </div>
-              {doneTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={setSelected} onPrioChange={(id, v) => setTasks(prev => prev.map(x => x.id === id ? { ...x, prioFinal: v } : x))} />)}
+              {doneTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={setSelected} onPrioChange={(id, v) => setTasks(prev => prev.map(x => x.id === id ? { ...x, prioFinal: v } : x))} projects={projects} trips={trips} />)}
             </>
           )}
           {filtered.filter(t => t.status !== 'done').length === 0 && (
@@ -288,9 +288,12 @@ export default function TasksClient({
   );
 }
 
-function TaskRow({ task, selected, onSelect, onPrioChange }: { task: Task; selected: boolean; onSelect: (t: Task) => void; onPrioChange: (id: number, v: number) => void }) {
+function TaskRow({ task, selected, onSelect, onPrioChange, projects, trips }: { task: Task; selected: boolean; onSelect: (t: Task) => void; onPrioChange: (id: number, v: number) => void; projects: { id: number; name: string; color: string | null }[]; trips: { id: number; title: string }[] }) {
   const bc = selected ? 'var(--gold2)' : taskBorderColor(task.prioFinal ?? 0, task.lastActionAt);
   const stale = task.lastActionAt ? Math.floor((Date.now() - new Date(task.lastActionAt).getTime()) / 86400000) : 0;
+  const project = task.projectId ? projects.find(p => p.id === task.projectId) : null;
+  const taskTagList = (task.tags ?? '').split(',').map(s => s.trim()).filter(Boolean);
+  const matchedTrip = trips.find(tr => taskTagList.includes(tr.title));
 
   const changePrio = async (e: React.MouseEvent, delta: number) => {
     e.stopPropagation();
@@ -324,11 +327,11 @@ function TaskRow({ task, selected, onSelect, onPrioChange }: { task: Task; selec
         <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {task.title}
         </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 3, fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', color: 'var(--text4)' }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 3, fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', color: 'var(--text4)', alignItems: 'center' }}>
           {task.propertyId && <span style={{ color: 'var(--gold2)' }}>{task.propertyId.toUpperCase()}</span>}
-          {task.propertyId && <span style={{ color: 'var(--text3)' }}>·</span>}
-          {stale >= 14 && <span style={{ color: 'var(--amber)' }}>{stale}D SIN MOVER</span>}
-          {task.tags && <span>{task.tags.toUpperCase()}</span>}
+          {project && <><span style={{ color: 'var(--text3)' }}>·</span><span style={{ color: 'var(--purple)' }}>{project.name.toUpperCase()}</span></>}
+          {matchedTrip && <><span style={{ color: 'var(--text3)' }}>·</span><span style={{ color: 'var(--blue)' }}>✈ {matchedTrip.title.toUpperCase()}</span></>}
+          {stale >= 14 && <><span style={{ color: 'var(--text3)' }}>·</span><span style={{ color: 'var(--amber)' }}>{stale}D SIN MOVER</span></>}
         </div>
       </div>
       {task.inNow && (
