@@ -70,7 +70,20 @@ export async function GET(req: Request) {
     }
   }
 
-  const insight = { taskTitle: task.title, taskPrio: task.prioFinal ?? 0, mode, ideas, date: today };
+  // Limitar a ~600 caracteres totales
+  let totalLen = 0;
+  const trimmedIdeas = ideas.map(idea => {
+    const titleLen = idea.title.length;
+    const descLen = Math.min(idea.description.length, Math.max(50, 600 - totalLen - titleLen - 10));
+    const trimmed = {
+      ...idea,
+      description: idea.description.slice(0, descLen),
+    };
+    totalLen += titleLen + trimmed.description.length;
+    return trimmed;
+  }).filter((_, i) => totalLen < 600 && i < 3);
+
+  const insight = { taskTitle: task.title, taskPrio: task.prioFinal ?? 0, mode, ideas: trimmedIdeas, date: today };
 
   await db.insert(memory).values({ key, value: JSON.stringify(insight), updatedAt: new Date() })
     .onConflictDoUpdate({ target: memory.key, set: { value: JSON.stringify(insight), updatedAt: new Date() } });

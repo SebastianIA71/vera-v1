@@ -509,8 +509,8 @@ export default function DashboardClient({
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.2em', color: 'var(--green)', marginTop: '3px' }}>● ACTIVA</div>
               </div>
 
-              {/* Quote — centered below core */}
-              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, calc(-50% + 80px))', fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 18, color: 'var(--text2)', letterSpacing: '.01em', lineHeight: 1.6, textAlign: 'center', maxWidth: 220, zIndex: 3 }}>
+              {/* Quote — top of orbital */}
+              <div style={{ position: 'absolute', top: '5%', left: '50%', transform: 'translateX(-50%)', fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 18, color: 'var(--text2)', letterSpacing: '.01em', lineHeight: 1.6, textAlign: 'center', maxWidth: 220, zIndex: 3 }}>
                 {renderQuote(quote)}
               </div>
 

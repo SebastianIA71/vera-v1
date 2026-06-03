@@ -507,7 +507,7 @@ export default function MobileHome({
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {topTaskByProject.map(({ proj, task }) => (
                 <div key={proj.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${proj.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 14, flexShrink: 0 }}>◆</span>
+                  <span style={{ fontSize: 14, flexShrink: 0 }}>{proj.icon ?? '◆'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: proj.color ?? 'var(--text3)', letterSpacing: '.12em', marginBottom: 2 }}>{proj.name.toUpperCase()}</div>
                     <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{task.title}</div>
