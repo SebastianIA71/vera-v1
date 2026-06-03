@@ -466,7 +466,11 @@ export default function DashboardClient({
             </div>
 
             {/* ── CENTER: Orbital (40%) ── */}
-            <div style={{ flex: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minWidth: 0 }}>
+            <div style={{ flex: 4, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minWidth: 0, gap: 0 }}>
+              {/* Quote — above orbital */}
+              <div style={{ marginBottom: 24, fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 18, color: 'var(--text2)', letterSpacing: '.01em', lineHeight: 1.6, textAlign: 'center', maxWidth: 280 }}>
+                {renderQuote(quote)}
+              </div>
             <div style={{ position: 'relative', width: '480px', height: '480px', flexShrink: 0 }}>
               {/* Rings */}
               {[140, 260, 380, 440].map((size, i) => (
@@ -507,11 +511,6 @@ export default function DashboardClient({
                 <div style={{ position: 'absolute', inset: '-24px', borderRadius: '50%', border: '.5px solid rgba(196,168,106,.07)' }} />
                 <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: '14px', letterSpacing: '.3em', color: 'var(--gold2)' }}>VERA</div>
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '9px', letterSpacing: '.2em', color: 'var(--green)', marginTop: '3px' }}>● ACTIVA</div>
-              </div>
-
-              {/* Quote — top of orbital */}
-              <div style={{ position: 'absolute', top: '5%', left: '50%', transform: 'translateX(-50%)', fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 18, color: 'var(--text2)', letterSpacing: '.01em', lineHeight: 1.6, textAlign: 'center', maxWidth: 220, zIndex: 3 }}>
-                {renderQuote(quote)}
               </div>
 
               {/* Agent nodes */}
