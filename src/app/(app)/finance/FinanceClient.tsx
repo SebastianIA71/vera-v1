@@ -49,6 +49,33 @@ function n(v: number|null|undefined): number { return v ?? 0; }
 function fmt(v: number): string { return v.toFixed(2); }
 function fmtD(v: number): string { return v.toFixed(4); }
 
+/* ─── Sparkline ───────────────────────────────────── */
+function Sparkline({ values, color, height = 32 }: { values: number[]; color: string; height?: number }) {
+  if (values.length < 2) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const W = 100;
+  const pad = 3;
+  const pts = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * W;
+    const y = height - pad - ((v - min) / range) * (height - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const lastX = W;
+  const lastY = height - pad - ((values[values.length - 1] - min) / range) * (height - pad * 2);
+  return (
+    <svg viewBox={`0 0 ${W} ${height}`} width="100%" height={height}
+      preserveAspectRatio="none" style={{ display: 'block', overflow: 'visible' }}>
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8"
+        strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.55"
+        vectorEffect="non-scaling-stroke" />
+      <circle cx={lastX} cy={lastY} r="2.5" fill={color}
+        vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
 /* ─── NumInput ────────────────────────────────────── */
 function NumInput({ label, value, onChange, color = 'var(--gold2)' }: {
   label: string; value: number|null; onChange: (v: number) => void; color?: string;
@@ -314,16 +341,66 @@ export default function FinanceClient({ initialRecords }: { initialRecords: Fina
     setSeeding(false);
   };
 
+  /* ── Datos para sparklines (últimos 12, orden cronológico) ── */
+  const last12 = records.slice(0, 12).reverse();
+  const dVals  = last12.map(r => r.calcD ?? 0);
+  const bVals  = last12.map(r => r.calcB ?? 0);
+  const eVals  = last12.map(r => r.calcE ?? 0);
+  const lastD  = records[0]?.calcD ?? 0;
+  const lastB  = records[0]?.calcB ?? 0;
+  const lastE  = records[0]?.calcE ?? 0;
+
   /* ── List panel ── */
   const ListPanel = (
-    <div style={{ width: isMobile ? '100%' : 300, flexShrink: 0, borderRight: isMobile ? 'none' : '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ width: isMobile ? '100%' : 420, flexShrink: 0, borderRight: isMobile ? 'none' : '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {isMobile && <MobilePageHeader title="Finanzas" />}
-      <div style={{ padding: '14px 18px 10px', flexShrink: 0 }}>
+
+      {/* ── Header métricas ── */}
+      <div style={{ padding: '14px 18px 0', flexShrink: 0 }}>
         {!isMobile && (
-          <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em', marginBottom: 12 }}>
+          <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 16, color: 'var(--text)', letterSpacing: '-.01em', marginBottom: 12 }}>
             Finanzas <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>mensuales</em>
           </div>
         )}
+
+        {records.length > 0 && (
+          <>
+            {/* D — protagonista */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10, paddingBottom: 10, borderBottom: '.5px solid var(--bg4)' }}>
+              <div style={{ flexShrink: 0 }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.22em', color: 'var(--text3)', marginBottom: 2 }}>D · 12M</div>
+                <div style={{ fontFamily: '"Arial Black", Arial, sans-serif', fontWeight: 900, fontSize: 46, color: 'var(--gold)', lineHeight: 1, letterSpacing: '-.03em' }}>
+                  {fmtD(lastD)}
+                </div>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <Sparkline values={dVals} color="var(--gold)" height={48} />
+              </div>
+            </div>
+
+            {/* B y E — lado a lado */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              {/* B */}
+              <div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.22em', color: 'var(--text3)', marginBottom: 2 }}>B · 12M</div>
+                <div style={{ fontFamily: '"Arial Black", Arial, sans-serif', fontWeight: 900, fontSize: 30, color: 'var(--gold2)', lineHeight: 1, letterSpacing: '-.02em', marginBottom: 4 }}>
+                  {lastB.toFixed(1)}
+                </div>
+                <Sparkline values={bVals} color="var(--gold2)" height={32} />
+              </div>
+              {/* E */}
+              <div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.22em', color: 'var(--text3)', marginBottom: 2 }}>E · 12M</div>
+                <div style={{ fontFamily: '"Arial Black", Arial, sans-serif', fontWeight: 900, fontSize: 24, color: 'var(--green)', lineHeight: 1, letterSpacing: '-.02em', marginBottom: 4 }}>
+                  {lastE.toFixed(2)}
+                </div>
+                <Sparkline values={eVals} color="var(--green)" height={32} />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Botón NUEVO */}
         <div style={{ display: 'flex', gap: 7, marginBottom: 10 }}>
           <button onClick={handleNew} style={{ flex: 1, padding: '8px 10px', borderRadius: 8, border: '.5px solid var(--gold2)', background: 'transparent', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', cursor: 'pointer' }}>
             + NUEVO
@@ -337,6 +414,7 @@ export default function FinanceClient({ initialRecords }: { initialRecords: Fina
         <div style={{ height: .5, background: 'var(--bg4)' }} />
       </div>
 
+      {/* ── Lista ── */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {records.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 180, gap: 8 }}>
@@ -364,16 +442,16 @@ export default function FinanceClient({ initialRecords }: { initialRecords: Fina
               onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
             >
               {isActive && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--gold2)' }} />}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, fontWeight: 500, color: 'var(--text)', letterSpacing: '.06em' }}>
                   {fmtDate(r.date)}
                 </div>
-                <div style={{ fontFamily: '"Arial Black", Arial, sans-serif', fontWeight: 900, fontSize: 18, color: dColor, lineHeight: 1, letterSpacing: '-.02em' }}>
+                <div style={{ fontFamily: '"Arial Black", Arial, sans-serif', fontWeight: 900, fontSize: 19, color: dColor, lineHeight: 1, letterSpacing: '-.02em' }}>
                   {fmtD(D)}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 10, fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.08em' }}>
-                <span>A <span style={{ color: 'var(--gold2)' }}>{(r.calcA??0).toFixed(1)}</span></span>
+              <div style={{ display: 'flex', gap: 12, fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.08em' }}>
+                <span>A <span style={{ color: 'var(--text2)' }}>{(r.calcA??0).toFixed(1)}</span></span>
                 <span>B <span style={{ color: 'var(--gold2)' }}>{(r.calcB??0).toFixed(1)}</span></span>
                 <span>C <span style={{ color: 'var(--amber)' }}>{(r.calcC??0).toFixed(0)}</span></span>
                 <span>E <span style={{ color: 'var(--green)' }}>{(r.calcE??0).toFixed(1)}</span></span>
