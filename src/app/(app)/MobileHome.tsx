@@ -13,6 +13,7 @@ const CaptureSheet  = dynamic(() => import('@/components/capture/CaptureSheet'),
 const InboxMobile   = dynamic(() => import('@/components/inbox/InboxMobile'), { ssr: false });
 const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
 const NewTaskModal  = dynamic(() => import('@/components/tasks/NewTaskModal'), { ssr: false });
+const TaskDetailPanel = dynamic(() => import('@/components/tasks/TaskDetailPanel'), { ssr: false });
 const DailyInsight   = dynamic(() => import('@/components/DailyInsight'), { ssr: false });
 const DailyBriefing  = dynamic(() => import('@/components/DailyBriefing'), { ssr: false });
 const FinanceSparklineHeader = dynamic(() => import('@/components/finance/FinanceSparklineHeader').then(m => ({ default: m.FinanceSparklineHeader })), { ssr: false });
@@ -102,6 +103,7 @@ export default function MobileHome({
   const [showInbox, setShowInbox] = useState(false);
   const [showNewEvent, setShowNewEvent] = useState(false);
   const [newTaskPropId, setNewTaskPropId] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [statusLine, setStatusLine] = useState('');
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const [persona] = useState(() => getRandomPersona());
@@ -143,12 +145,12 @@ export default function MobileHome({
     if (weightLogs[0]) parts.push(`${weightLogs[0].value} KG`);
     parts.push('10,2K');
     if (nextTrip) {
-      const transportStr = nextTrip.transport ? `${transportIcons(nextTrip.transport)} ` : '';
+      const transportEmojis = nextTrip.transport ? transportIcons(nextTrip.transport) : '';
       const duration = nextTrip.endDate && nextTrip.startDate
         ? Math.ceil((new Date(nextTrip.endDate).getTime() - new Date(nextTrip.startDate).getTime()) / 86400000)
         : null;
       const durationStr = duration ? ` · ${duration}D` : '';
-      parts.push(`${transportStr}${nextTrip.title.toUpperCase()} · ${nextTrip.daysTo}D${durationStr}`);
+      parts.push(`${nextTrip.title.toUpperCase()} · ${nextTrip.daysTo}D${durationStr}`);
     }
     setStatusLine(parts.join(' · '));
   }, [weightLogs, nextTrip]);
@@ -231,8 +233,13 @@ export default function MobileHome({
             {'.'}
           </div>
           {statusLine && (
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', color: 'var(--text2)', marginTop: 12 }}>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', color: 'var(--text2)', marginTop: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
               {statusLine}
+              {nextTrip && nextTrip.transport && (
+                <span style={{ fontSize: 24, lineHeight: 1, display: 'flex', gap: 3 }}>
+                  {transportIcons(nextTrip.transport)}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -363,7 +370,7 @@ export default function MobileHome({
                   <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 16, color: 'var(--text)', letterSpacing: '-.01em' }}>{nextTrip.title}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
                     {nextTrip.transport && (
-                      <span style={{ fontFamily: 'var(--font-syne)', fontSize: 18, lineHeight: 1, display: 'flex', gap: 2 }}>
+                      <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 12, lineHeight: 1 }}>
                         {transportIcons(nextTrip.transport)}
                       </span>
                     )}
@@ -482,7 +489,7 @@ export default function MobileHome({
             <SectionLabel label="Real Estate" link="→" onLinkClick={() => router.push('/properties')} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {topTaskByProperty.map(({ prop, task }) => (
-                <div key={prop.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${prop.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => router.push('/properties')}>
+                <div key={prop.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${prop.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => setSelectedTask(task)}>
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{prop.icon ?? '🏠'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: prop.color ?? 'var(--text3)', letterSpacing: '.12em', marginBottom: 2 }}>{prop.name.toUpperCase()}</div>
@@ -508,7 +515,7 @@ export default function MobileHome({
             <SectionLabel label="Projects" link="→" onLinkClick={() => router.push('/projects')} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {topTaskByProject.map(({ proj, task }) => (
-                <div key={proj.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${proj.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => router.push('/projects')}>
+                <div key={proj.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${proj.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => setSelectedTask(task)}>
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{proj.icon ?? '◆'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: proj.color ?? 'var(--text3)', letterSpacing: '.12em', marginBottom: 2 }}>{proj.name.toUpperCase()}</div>
@@ -545,6 +552,17 @@ export default function MobileHome({
       {showInbox && <InboxMobile items={inboxItems} onClose={() => { setShowInbox(false); router.refresh(); }} />}
       {showNewEvent && <NewEventSheet onClose={() => setShowNewEvent(false)} onCreated={() => setShowNewEvent(false)} />}
       {newTaskPropId && <NewTaskModal defaultPropertyId={newTaskPropId} onClose={() => setNewTaskPropId(null)} onCreated={() => { setNewTaskPropId(null); router.refresh(); }} />}
+      {selectedTask && (
+        <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingBottom: 80 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '.5px solid var(--bg4)' }}>
+            <button onClick={() => setSelectedTask(null)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', padding: 0 }}>
+              <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              ATRÁS
+            </button>
+          </div>
+          <TaskDetailPanel key={selectedTask.id} task={selectedTask} onClose={() => setSelectedTask(null)} onMarkDone={() => { setSelectedTask(null); router.refresh(); }} onUpdate={() => router.refresh()} />
+        </div>
+      )}
     </div>
   );
 }
