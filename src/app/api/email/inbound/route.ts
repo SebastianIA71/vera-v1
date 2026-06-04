@@ -242,6 +242,22 @@ export async function POST(req: NextRequest) {
   }
   if (!rawSubject) return NextResponse.json({ error: 'No subject' }, { status: 400 });
 
+  // IDEMPOTENCIA: Verificar si este email ya fue procesado
+  const existingInbox = await db.select().from(inbox).where(eq(inbox.sourceUrl, emailId)).limit(1);
+  if (existingInbox.length > 0) {
+    return NextResponse.json({ ok: true, duplicated: true, message: 'Email ya procesado' });
+  }
+
+  // MARCA INMEDIATA: Guardar que estamos procesando este email
+  // Esto previene reintentos simultáneos que creen duplicados
+  await db.insert(inbox).values({
+    content: `[PROCESSING] ${rawSubject}`,
+    source: 'email',
+    sourceUrl: emailId,
+    type: 'raw',
+    processed: false,
+  }).catch(() => {});
+
   // 1. Detectar prefijo + obtener cuerpo
   const { intent: prefixIntent, cleanSubject } = detectPrefix(rawSubject);
   const body = await fetchEmailBody(emailId);
@@ -298,14 +314,11 @@ export async function POST(req: NextRequest) {
   // 4. Guardar
   const { summary, saved } = await saveByIntent(intent, extracted, cleanSubject);
 
-  // 5. Registrar el email como procesado (para idempotencia)
-  await db.insert(inbox).values({
-    content: `[PROCESSED] ${rawSubject}`,
-    source: 'email',
-    sourceUrl: emailId,
-    type: 'raw',
-    processed: true,
-  }).catch(() => {});
+  // 5. Actualizar marca a [PROCESSED]
+  await db.update(inbox)
+    .set({ content: `[PROCESSED] ${rawSubject}`, processed: true })
+    .where(eq(inbox.sourceUrl, emailId))
+    .catch(() => {});
 
   // 6. Push al teléfono
   await sendPush(
