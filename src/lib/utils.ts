@@ -36,11 +36,13 @@ export function daysTo(date: Date | string): number {
 }
 
 // ── Format time difference (relative or date) ────────────
-export function fmtTime(d: Date | null | undefined): string {
+export function fmtTime(d: Date | string | number | null | undefined): string {
   if (!d) return '';
+  let date = new Date(d);
+  if (isNaN(date.getTime())) return '';
   const now = new Date();
-  const diff = Math.floor((now.getTime() - new Date(d).getTime()) / 60000);
+  const diff = Math.floor((now.getTime() - date.getTime()) / 60000);
   if (diff < 60) return `${diff}m`;
   if (diff < 1440) return `${Math.floor(diff / 60)}h`;
-  return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 }

@@ -31,17 +31,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'transcript required' }, { status: 400 });
   }
 
-  // --- Amivera fast path ---
+  // --- VERA+ fast path ---
   const amiQuery = extractAmiVeraQuery(transcript.trim());
   if (amiQuery) {
     after(() => runAmiVeraPipeline(amiQuery).catch(() => {}));
     return NextResponse.json({
       amivera:    true,
       id:         0,
-      title:      'Vera Go — pipeline activado',
+      title:      'VERA+ — pipeline activado',
       propertyId: null,
       prio:       null,
-      chips:      ['VERA GO ✦'],
+      chips:      ['VERA+ ACTIVADO'],
       classified: true,
     });
   }

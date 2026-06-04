@@ -238,16 +238,16 @@ export async function POST(req: NextRequest) {
   const body = await fetchEmailBody(emailId);
   const fullText = `Asunto: ${cleanSubject}\n\nCuerpo: ${body}`;
 
-  // --- Amivera fast path (nunca va al inbox) ---
+  // --- VERA+ fast path (nunca va al inbox) ---
   const amiQuery = extractAmiVeraQuery(`${rawSubject} ${body}`);
   if (amiQuery) {
     await runAmiVeraPipeline(amiQuery);
     await sendReply(
       fromEmail,
-      'VERA · amivera activado',
+      'VERA · VERA+ activado',
       `Pipeline iniciado para: "${amiQuery.slice(0, 80)}"\nVera investigará y te notificará cuando esté listo.\n\nVERA · ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}`,
     );
-    return NextResponse.json({ ok: true, amivera: true });
+    return NextResponse.json({ ok: true, vera_plus: true });
   }
 
   // 2. Clasificar intención

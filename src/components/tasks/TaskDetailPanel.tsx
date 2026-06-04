@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import EditTaskModal from './EditTaskModal';
 
 export type TaskDetail = {
   id: number;
@@ -49,6 +50,8 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
   const [showInsight, setShowInsight] = useState(false);
   const [insight, setInsight] = useState<{ perspectives: { title: string; description: string }[] } | null>(null);
   const [loadingInsight, setLoadingInsight] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [loadingVeraPlus, setLoadingVeraPlus] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isDone = task.status === 'done' || task.status === 'archived';
@@ -110,6 +113,34 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
             ← LISTA
           </button>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button
+              onClick={() => setShowEditModal(true)}
+              title="Editar datos de la tarea"
+              style={{ fontFamily: 'var(--font-syne)', fontSize: 13, color: 'var(--gold2)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px' }}
+            >
+              ✎
+            </button>
+            <button
+              onClick={async () => {
+                setLoadingVeraPlus(true);
+                try {
+                  const res = await fetch(`/api/tasks/${task.id}/vera-plus`, { method: 'POST' });
+                  if (res.ok) {
+                    const updated = await res.json();
+                    setNotes(updated.notes ?? '');
+                    onUpdate?.(task.id, updated);
+                  }
+                } catch (err) {
+                  console.error('Error calling VERA+:', err);
+                }
+                setLoadingVeraPlus(false);
+              }}
+              disabled={loadingVeraPlus}
+              title="Llamar a VERA+ para sugerencias"
+              style={{ fontFamily: 'var(--font-syne)', fontSize: 13, color: 'var(--gold2)', background: 'none', border: 'none', cursor: loadingVeraPlus ? 'default' : 'pointer', padding: '2px 6px', opacity: loadingVeraPlus ? 0.5 : 1 }}
+            >
+              ⚡
+            </button>
             <button
               onClick={() => setShowInsight(!showInsight)}
               title="Análisis de la tarea"
@@ -240,6 +271,11 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
         >
           MARCAR COMO HECHA ✓
         </button>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <EditTaskModal task={task} onClose={() => setShowEditModal(false)} onUpdated={(updated) => onUpdate?.(task.id, updated)} />
       )}
     </div>
   );

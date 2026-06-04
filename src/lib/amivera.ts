@@ -3,9 +3,9 @@ import { db } from '@/lib/db';
 import { tasks, notifications } from '@/lib/db/schema';
 import { sendPush } from '@/lib/push';
 
-/** Devuelve la query posterior a "vera go" (o "primavera"), o null si no aparece el trigger */
+/** Devuelve la query posterior a "VERA", o null si no aparece el trigger */
 export function extractAmiVeraQuery(text: string): string | null {
-  const m = text.match(/(?:vera\s+go|primavera)\s+([\s\S]+)/i);
+  const m = text.match(/\bvera\s+([\s\S]+)/i);
   return m ? m[1].trim() : null;
 }
 
@@ -66,15 +66,15 @@ export async function runAmiVeraPipeline(rawQuery: string): Promise<void> {
 
   await sendPush(notifTitle.slice(0, 50), notifSummary.slice(0, 100)).catch(() => {});
 
-  // Paso 4 — Tarea general (sin propiedad, source 'amivera')
+  // Paso 4 — Tarea general (sin propiedad, source 'vera+')
   await db.insert(tasks).values({
     title:      taskTitle.slice(0, 80),
     detail:     rawQuery.slice(0, 200),
     notes:      notes.slice(0, 3000),
-    prio:       6,
-    prioFinal:  6,
+    prio:       7,
+    prioFinal:  7,
     status:     'wait',
-    source:     'amivera',
+    source:     'vera+',
     propertyId: null,
     inNow:      false,
   }).catch(() => {});
