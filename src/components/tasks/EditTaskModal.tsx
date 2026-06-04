@@ -12,6 +12,7 @@ type Task = {
   prioFinal?: number | null;
   status?: string | null;
   tags?: string | null;
+  dueDate?: Date | null;
 };
 
 type Property = { id: string; name: string; color: string | null; icon: string | null };
@@ -41,6 +42,7 @@ export default function EditTaskModal({
   const [propertyId, setPropertyId] = useState(task.propertyId ?? '');
   const [projectId, setProjectId] = useState<number | null>(task.projectId ?? null);
   const [tags, setTags] = useState(task.tags ?? '');
+  const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '');
   const [saving, setSaving] = useState(false);
   const [propList, setPropList] = useState<Property[]>([]);
   const [projList, setProjList] = useState<{ id: number; name: string; color: string | null }[]>([]);
@@ -75,6 +77,7 @@ export default function EditTaskModal({
         propertyId: propertyId || null,
         projectId: projectId ?? null,
         tags: tags || null,
+        dueDate: dueDate ? new Date(dueDate) : null,
       }),
     });
     if (res.ok) {
@@ -226,6 +229,11 @@ export default function EditTaskModal({
           <div>
             <label style={LABEL}>TAGS (opcional)</label>
             <input value={tags} onChange={e => setTags(e.target.value)} placeholder="Ej: viaje, proyecto..." style={INPUT} />
+          </div>
+
+          <div>
+            <label style={LABEL}>FECHA LÍMITE (opcional)</label>
+            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} style={{ ...INPUT, colorScheme: 'dark' }} />
           </div>
         </div>
 

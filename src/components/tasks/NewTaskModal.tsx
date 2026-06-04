@@ -31,6 +31,7 @@ export default function NewTaskModal({
   const [propertyId, setPropertyId] = useState(defaultPropertyId ?? '');
   const [projectId, setProjectId]   = useState<number | null>(defaultProjectId ?? null);
   const [tripTitle, setTripTitle]   = useState<string | null>(null);
+  const [dueDate, setDueDate]       = useState(new Date().toISOString().slice(0, 10));
   const [saving, setSaving]         = useState(false);
   const [propList, setPropList]     = useState<Property[]>([]);
   const [projList, setProjList]     = useState<{id: number; name: string; color: string | null}[]>([]);
@@ -60,7 +61,7 @@ export default function NewTaskModal({
     const res = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, prio, propertyId: propertyId || null, projectId: projectId ?? null, tags: tripTitle ?? null }),
+      body: JSON.stringify({ title, prio, propertyId: propertyId || null, projectId: projectId ?? null, tags: tripTitle ?? null, dueDate: dueDate ? new Date(dueDate) : null }),
     });
     if (res.ok) { const task = await res.json(); onCreated(task); }
     setSaving(false);
@@ -80,6 +81,11 @@ export default function NewTaskModal({
           <div>
             <label style={LABEL}>TÍTULO</label>
             <input autoFocus value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} placeholder="Qué hay que hacer..." style={INPUT} />
+          </div>
+
+          <div>
+            <label style={LABEL}>FECHA (opcional)</label>
+            <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} style={{ ...INPUT, colorScheme: 'dark' }} />
           </div>
 
           <div>

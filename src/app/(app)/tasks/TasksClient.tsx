@@ -331,7 +331,7 @@ function TaskRow({ task, selected, onSelect, onPrioChange, projects, trips }: { 
           {task.propertyId && <span style={{ color: 'var(--gold2)' }}>{task.propertyId.toUpperCase()}</span>}
           {project && <><span style={{ color: 'var(--text3)' }}>·</span><span style={{ color: 'var(--purple)' }}>{project.name.toUpperCase()}</span></>}
           {matchedTrip && <><span style={{ color: 'var(--text3)' }}>·</span><span style={{ color: 'var(--blue)' }}>✈ {matchedTrip.title.toUpperCase()}</span></>}
-          {task.createdAt && <><span style={{ color: 'var(--text3)' }}>·</span><span style={{ color: 'var(--text4)' }}>{new Date(task.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span></>}
+          {task.dueDate && <><span style={{ color: 'var(--text3)' }}>·</span><span style={{ color: 'var(--blue)' }}>{new Date(task.dueDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}</span></>}
           {stale >= 14 && <><span style={{ color: 'var(--text3)' }}>·</span><span style={{ color: 'var(--amber)' }}>{stale}D SIN MOVER</span></>}
         </div>
       </div>

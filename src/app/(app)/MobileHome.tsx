@@ -251,8 +251,8 @@ export default function MobileHome({
                 background: 'var(--bg2)', border: `.5px solid var(--bg4)`,
                 borderLeft: `2px solid ${taskBorderColor(t.prioFinal ?? 0, t.lastActionAt)}`,
                 borderRadius: 14, padding: '13px 13px 13px 14px', marginBottom: 7,
-                display: 'flex', alignItems: 'flex-start', gap: 10,
-              }}>
+                display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer'
+              }} onClick={() => router.push(`/tasks`)}>
                 <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 13, color: 'var(--gold)', minWidth: 20, paddingTop: 1 }}>{t.prioFinal}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, lineHeight: 1.35, color: 'var(--text)' }}>{t.title}</div>
@@ -283,8 +283,8 @@ export default function MobileHome({
         {/* Weight section */}
         {latestWeight && (
           <div style={{ marginBottom: 28 }}>
-            <SectionLabel label="Weight" meta="14 DÍAS" />
-            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '16px 16px 12px' }}>
+            <SectionLabel label="Weight" meta="14 DÍAS" link="→" onLinkClick={() => router.push('/weight')} />
+            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '16px 16px 12px', cursor: 'pointer' }} onClick={() => router.push('/weight')}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
                 <div>
                   <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 32, color: 'var(--text)', lineHeight: 1, letterSpacing: '-.02em' }}>{latestWeight.value}</div>
@@ -331,7 +331,7 @@ export default function MobileHome({
         <div style={{ marginBottom: 28 }}>
           <SectionLabel label="Upcoming Events" link="→" onLinkClick={() => router.push('/trips?type=social')} />
         {nextEvent ? (
-          <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => router.push('/trips?type=social')}>
             <div>
               <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 14, color: 'var(--text)', lineHeight: 1.2 }}>{nextEvent.title}</div>
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text2)', letterSpacing: '.12em', marginTop: 4 }}>
@@ -357,13 +357,13 @@ export default function MobileHome({
         {nextTrip && (
           <div style={{ marginBottom: 28 }}>
             <SectionLabel label="Upcoming trips" link="→" onLinkClick={() => router.push('/trips')} />
-            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px' }}>
+            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px', cursor: 'pointer' }} onClick={() => router.push('/trips')}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
+                <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 16, color: 'var(--text)', letterSpacing: '-.01em' }}>{nextTrip.title}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
                     {nextTrip.transport && (
-                      <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 15, lineHeight: 1 }}>
+                      <span style={{ fontFamily: 'var(--font-syne)', fontSize: 18, lineHeight: 1, display: 'flex', gap: 2 }}>
                         {transportIcons(nextTrip.transport)}
                       </span>
                     )}
@@ -382,9 +382,11 @@ export default function MobileHome({
                     </div>
                   )}
                 </div>
-                <div>
-                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 26, color: 'var(--blue)', lineHeight: 1, textAlign: 'right' }}>{nextTrip.daysTo}</div>
-                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.18em', color: 'var(--text2)', marginTop: 2, textAlign: 'right' }}>DÍAS</div>
+                <div style={{ flexShrink: 0, marginLeft: 12 }}>
+                  <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: nextTrip.daysTo <= 0 ? 13 : 26, color: 'var(--blue)', lineHeight: 1, textAlign: 'right' }}>
+                    {nextTrip.daysTo <= 0 ? 'HOY' : nextTrip.daysTo}
+                  </div>
+                  {nextTrip.daysTo > 0 && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.18em', color: 'var(--text2)', marginTop: 2, textAlign: 'right' }}>DÍAS</div>}
                 </div>
               </div>
             </div>
@@ -480,7 +482,7 @@ export default function MobileHome({
             <SectionLabel label="Real Estate" link="→" onLinkClick={() => router.push('/properties')} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {topTaskByProperty.map(({ prop, task }) => (
-                <div key={prop.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${prop.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div key={prop.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${prop.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => router.push('/properties')}>
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{prop.icon ?? '🏠'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: prop.color ?? 'var(--text3)', letterSpacing: '.12em', marginBottom: 2 }}>{prop.name.toUpperCase()}</div>
@@ -506,7 +508,7 @@ export default function MobileHome({
             <SectionLabel label="Projects" link="→" onLinkClick={() => router.push('/projects')} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {topTaskByProject.map(({ proj, task }) => (
-                <div key={proj.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${proj.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div key={proj.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${proj.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => router.push('/projects')}>
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{proj.icon ?? '◆'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: proj.color ?? 'var(--text3)', letterSpacing: '.12em', marginBottom: 2 }}>{proj.name.toUpperCase()}</div>
@@ -521,8 +523,8 @@ export default function MobileHome({
 
         {/* Finance — D · B · E con sparklines reales */}
         <div style={{ marginBottom: 28 }}>
-          <SectionLabel label="Finance" link="/finance" onLinkClick={() => router.push('/finance')} />
-          <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px' }}>
+          <SectionLabel label="Finance" link="→" onLinkClick={() => router.push('/finance')} />
+          <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px', cursor: 'pointer' }} onClick={() => router.push('/finance')}>
             {financeRecords && financeRecords.length > 0
               ? <FinanceSparklineHeader records={financeRecords} />
               : (
