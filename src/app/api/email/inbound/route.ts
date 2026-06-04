@@ -5,6 +5,7 @@ import { tasks, events, inbox, weightLog } from '@/lib/db/schema';
 import { callClaude } from '@/lib/claude';
 import { sendPush } from '@/lib/push';
 import { extractAmiVeraQuery, runAmiVeraPipeline } from '@/lib/amivera';
+import { eq } from 'drizzle-orm';
 
 // ─── Verificación firma Resend (svix) ──────────────────────────────────────
 async function verifyResend(req: NextRequest, body: string): Promise<boolean> {
@@ -227,6 +228,12 @@ export async function POST(req: NextRequest) {
   const fromEmail  = String(data.from ?? '');
   const rawSubject = String(data.subject ?? '').trim();
 
+  // IDEMPOTENCIA: Verificar si este email ya fue procesado
+  const existingInbox = await db.select().from(inbox).where(eq(inbox.sourceUrl, emailId)).limit(1);
+  if (existingInbox.length > 0) {
+    return NextResponse.json({ ok: true, duplicated: true, message: 'Email ya procesado' });
+  }
+
   const allowed = (process.env.INBOUND_ALLOWED_FROM ?? '').toLowerCase();
   if (allowed && !fromEmail.toLowerCase().includes(allowed)) {
     return NextResponse.json({ error: 'Sender not allowed' }, { status: 403 });
@@ -289,13 +296,22 @@ export async function POST(req: NextRequest) {
   // 4. Guardar
   const { summary, saved } = await saveByIntent(intent, extracted, cleanSubject);
 
-  // 5. Push al teléfono
+  // 5. Registrar el email como procesado (para idempotencia)
+  await db.insert(inbox).values({
+    content: `[PROCESSED] ${rawSubject}`,
+    source: 'email',
+    sourceUrl: emailId,
+    type: 'raw',
+    processed: true,
+  }).catch(() => {});
+
+  // 6. Push al teléfono
   await sendPush(
     saved ? 'VERA · Email procesado' : 'VERA · Email en inbox',
     summary.replace(/^[✓⚠] /, ''),
   ).catch(() => {});
 
-  // 6. Email de confirmación al remitente
+  // 7. Email de confirmación al remitente
   const replyText = saved
     ? `${summary}\n\nVERA · ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}`
     : `${summary}\n\nPuedes revisarlo en Inbox y procesarlo manualmente.\n\nVERA · ${new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })}`;
