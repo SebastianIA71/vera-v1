@@ -115,6 +115,8 @@ async function saveByIntent(
           propertyId, prio, prioFinal: prio,
           status: 'wait', source: 'email',
           type: String(data.type ?? 'task'),
+          createdAt: new Date(),
+          updatedAt: new Date(),
         });
         return {
           summary: `✓ Tarea creada: "${title}"${propertyId ? ` · ${propertyId}` : ''} · prio ${prio}`,

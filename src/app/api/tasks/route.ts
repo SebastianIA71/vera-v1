@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
   }
 
   const prioNum = Number(prio ?? 5);
+  const now = new Date();
   const [row] = await db
     .insert(tasks)
     .values({
@@ -45,6 +46,8 @@ export async function POST(req: NextRequest) {
       dueDate: dueDate ? new Date(dueDate) : null,
       status: 'wait',
       source: 'manual',
+      createdAt: now,
+      updatedAt: now,
     })
     .returning();
 
