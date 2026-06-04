@@ -418,7 +418,10 @@ export default function DashboardClient({
               <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: '26px', color: 'var(--text)', letterSpacing: '-.01em' }}>
                 Command <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Centre</em>
               </div>
-              <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: '16px', color: 'var(--text3)', letterSpacing: '.01em', marginTop: 2 }}>
+              <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: '14px', color: 'var(--text3)', letterSpacing: '.01em', marginTop: 3, lineHeight: 1.5 }}>
+                {renderQuote(quote)}
+              </div>
+              <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: '13px', color: 'var(--text3)', letterSpacing: '.01em', marginTop: 4 }}>
                 good {getGreeting()},{' '}
                 <a
                   href={personaSearchUrl(persona)}
@@ -467,10 +470,6 @@ export default function DashboardClient({
 
             {/* ── CENTER: Orbital (40%) ── */}
             <div style={{ flex: 4, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minWidth: 0, gap: 0 }}>
-              {/* Quote — above orbital */}
-              <div style={{ marginBottom: 24, fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 18, color: 'var(--text2)', letterSpacing: '.01em', lineHeight: 1.6, textAlign: 'center', maxWidth: 280 }}>
-                {renderQuote(quote)}
-              </div>
             <div style={{ position: 'relative', width: '480px', height: '480px', flexShrink: 0 }}>
               {/* Rings */}
               {[140, 260, 380, 440].map((size, i) => (
