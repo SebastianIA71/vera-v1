@@ -211,6 +211,16 @@ async function sendReply(to: string, subject: string, text: string): Promise<voi
 
 // ─── Handler principal ─────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  // ⚠️ EMERGENCIA: Webhook deshabilitado temporalmente por duplicados
+  // TODO: Arreglar idempotencia antes de habilitar
+  if (process.env.EMAIL_WEBHOOK_DISABLED === 'true') {
+    return NextResponse.json({
+      ok: true,
+      message: 'Email webhook temporalmente deshabilitado — contacta admin',
+      disabled: true
+    });
+  }
+
   const rawBody = await req.text();
 
   if (!await verifyResend(req, rawBody)) {
@@ -229,12 +239,6 @@ export async function POST(req: NextRequest) {
   const emailId    = String(data.email_id ?? '');
   const fromEmail  = String(data.from ?? '');
   const rawSubject = String(data.subject ?? '').trim();
-
-  // IDEMPOTENCIA: Verificar si este email ya fue procesado
-  const existingInbox = await db.select().from(inbox).where(eq(inbox.sourceUrl, emailId)).limit(1);
-  if (existingInbox.length > 0) {
-    return NextResponse.json({ ok: true, duplicated: true, message: 'Email ya procesado' });
-  }
 
   const allowed = (process.env.INBOUND_ALLOWED_FROM ?? '').toLowerCase();
   if (allowed && !fromEmail.toLowerCase().includes(allowed)) {
