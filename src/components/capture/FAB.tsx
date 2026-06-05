@@ -28,17 +28,15 @@ export default function FAB() {
         style={{
           position: 'fixed', right: 22, bottom: 82,
           width: 62, height: 62, borderRadius: '50%',
-          background: pressed
-            ? 'rgba(196,168,106,0.18)'
-            : 'linear-gradient(145deg, rgba(196,168,106,0.12) 0%, rgba(7,8,10,0.95) 100%)',
-          border: 'none',
+          background: pressed ? 'var(--bg3)' : 'var(--bg2)',
+          border: '.5px solid var(--bg4)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 50, cursor: 'pointer',
           transform: pressed ? 'scale(0.94)' : 'scale(1)',
           transition: 'transform .12s ease, background .12s ease, box-shadow .12s ease',
           boxShadow: pressed
-            ? '0 2px 12px rgba(196,168,106,0.2), inset 0 1px 0 rgba(196,168,106,0.1)'
-            : '0 6px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(196,168,106,0.35), 0 0 20px rgba(196,168,106,0.08)',
+            ? '0 2px 8px rgba(196,168,106,0.15)'
+            : '0 4px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(196,168,106,0.3)',
           WebkitTapHighlightColor: 'transparent',
         }}
       >

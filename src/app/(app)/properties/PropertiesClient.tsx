@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import DesktopShell from '@/components/layout/DesktopShell';
@@ -39,6 +39,14 @@ export default function PropertiesClient({
   const [tasks, setTasks] = useState<Task[]>(allTasks);
   const [activeProp, setActiveProp] = useState(properties[0]?.id ?? '');
   const [newTaskPropId, setNewTaskPropId] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 769);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const markDone = (id: number) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t));
@@ -134,7 +142,7 @@ export default function PropertiesClient({
                     const bc = taskBorderColor(t);
                     const stale = t.lastActionAt ? Math.floor((Date.now() - new Date(t.lastActionAt).getTime()) / 86400000) : 0;
                     return (
-                      <div key={t.id} onClick={() => router.push(`/tasks/${t.id}`)} style={{
+                      <div key={t.id} onClick={() => isMobile ? router.push(`/tasks/${t.id}`) : setSelected(t)} style={{
                         display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px',
                         cursor: 'pointer', borderBottom: '.5px solid var(--bg2)',
                         position: 'relative', transition: 'background .1s',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import DesktopShell from '@/components/layout/DesktopShell';
@@ -59,13 +59,14 @@ function ProjectCard({ project, selected, tasks, onClick }: { project: Project; 
   );
 }
 
-function ProjectDetail({ project, tasks, onEdit, onTaskCreated, onTaskUpdate, onMarkDone }: {
+function ProjectDetail({ project, tasks, onEdit, onTaskCreated, onTaskUpdate, onMarkDone, isMobile }: {
   project: Project;
   tasks: Task[];
   onEdit: () => void;
   onTaskCreated: (t: Task) => void;
   onTaskUpdate: (id: number, d: Partial<Task>) => void;
   onMarkDone: (id: number) => void;
+  isMobile?: boolean;
 }) {
   const router = useRouter();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -148,7 +149,7 @@ function ProjectDetail({ project, tasks, onEdit, onTaskCreated, onTaskUpdate, on
                   ACTIVAS · {projTasks.length}
                 </div>
                 {projTasks.map(t => (
-                  <div key={t.id} onClick={() => router.push(`/tasks/${t.id}`)} style={{
+                  <div key={t.id} onClick={() => isMobile ? router.push(`/tasks/${t.id}`) : setSelectedTask(t)} style={{
                     display: 'flex', alignItems: 'center', gap: 12, padding: '10px 24px',
                     cursor: 'pointer', borderBottom: '.5px solid var(--bg2)',
                     transition: 'background .1s',
@@ -207,6 +208,14 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
   const [showNew,  setShowNew]      = useState(false);
   const [editing,  setEditing]      = useState<Project | null>(null);
   const [tab,      setTab]          = useState<'active' | 'done'>('active');
+  const [isMobile, setIsMobile]     = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 769);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const filteredProjects = projects.filter(p =>
     tab === 'active'
@@ -264,6 +273,7 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
               onTaskCreated={t => setTasks(prev => [t, ...prev])}
               onTaskUpdate={(id, d) => setTasks(prev => prev.map(t => t.id === id ? { ...t, ...d } : t))}
               onMarkDone={id => setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t))}
+              isMobile={isMobile}
             />
           ) : (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
