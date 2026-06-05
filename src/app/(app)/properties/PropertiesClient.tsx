@@ -48,6 +48,15 @@ export default function PropertiesClient({
   return (
     <>
     <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}
+      rightSlot={selected && (
+        <TaskDetailPanel
+          key={selected.id}
+          task={selected}
+          onClose={() => setSelected(null)}
+          onMarkDone={markDone}
+          onUpdate={(id, data) => setTasks(prev => prev.map(t => t.id === id ? { ...t, ...data } : t))}
+        />
+      )}
     >
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ padding: '14px 20px 12px', borderBottom: '.5px solid var(--bg4)', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexShrink: 0 }}>
@@ -125,7 +134,7 @@ export default function PropertiesClient({
                     const bc = taskBorderColor(t);
                     const stale = t.lastActionAt ? Math.floor((Date.now() - new Date(t.lastActionAt).getTime()) / 86400000) : 0;
                     return (
-                      <div key={t.id} onClick={() => router.push('/tasks')} style={{
+                      <div key={t.id} onClick={() => setSelected(t)} style={{
                         display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px',
                         cursor: 'pointer', borderBottom: '.5px solid var(--bg2)',
                         position: 'relative', transition: 'background .1s',
