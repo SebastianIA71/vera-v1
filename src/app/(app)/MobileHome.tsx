@@ -104,7 +104,6 @@ export default function MobileHome({
   const [showNewEvent, setShowNewEvent] = useState(false);
   const [newTaskPropId, setNewTaskPropId] = useState<string | null>(null);
   const [newTaskProjId, setNewTaskProjId] = useState<number | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [statusLine, setStatusLine] = useState('');
   const [transportEmojis, setTransportEmojis] = useState('');
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
@@ -260,7 +259,7 @@ export default function MobileHome({
                 borderLeft: `2px solid ${taskBorderColor(t.prioFinal ?? 0, t.lastActionAt)}`,
                 borderRadius: 14, padding: '13px 13px 13px 14px', marginBottom: 7,
                 display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer'
-              }} onClick={() => setSelectedTask(t)}>
+              }} onClick={() => router.push(`/tasks/${t.id}`)}>
                 <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 13, color: 'var(--gold)', minWidth: 20, paddingTop: 1 }}>{t.prioFinal}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, lineHeight: 1.35, color: 'var(--text)' }}>{t.title}</div>
@@ -492,7 +491,7 @@ export default function MobileHome({
             <SectionLabel label="Real Estate" link="→" onLinkClick={() => router.push('/properties')} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {topTaskByProperty.map(({ prop, task }) => (
-                <div key={prop.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${prop.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => router.push('/properties')}>
+                <div key={prop.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${prop.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => router.push(`/tasks/${task.id}`)}>
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{prop.icon ?? '🏠'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: prop.color ?? 'var(--text3)', letterSpacing: '.12em', marginBottom: 2 }}>{prop.name.toUpperCase()}</div>
@@ -518,7 +517,7 @@ export default function MobileHome({
             <SectionLabel label="Projects" link="→" onLinkClick={() => router.push('/projects')} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {topTaskByProject.map(({ proj, task }) => (
-                <div key={proj.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${proj.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => router.push('/projects')}>
+                <div key={proj.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${proj.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => router.push(`/tasks/${task.id}`)}>
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{proj.icon ?? '◆'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: proj.color ?? 'var(--text3)', letterSpacing: '.12em', marginBottom: 2 }}>{proj.name.toUpperCase()}</div>
@@ -563,17 +562,6 @@ export default function MobileHome({
       {showNewEvent && <NewEventSheet onClose={() => setShowNewEvent(false)} onCreated={() => setShowNewEvent(false)} />}
       {newTaskPropId && <NewTaskModal defaultPropertyId={newTaskPropId} onClose={() => setNewTaskPropId(null)} onCreated={() => { setNewTaskPropId(null); router.refresh(); }} />}
       {newTaskProjId && <NewTaskModal defaultProjectId={newTaskProjId} onClose={() => setNewTaskProjId(null)} onCreated={() => { setNewTaskProjId(null); router.refresh(); }} />}
-      {selectedTask && (
-        <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingBottom: 80 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '.5px solid var(--bg4)' }}>
-            <button onClick={() => setSelectedTask(null)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', padding: 0 }}>
-              <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-              ATRÁS
-            </button>
-          </div>
-          <TaskDetailPanel key={selectedTask.id} task={selectedTask} onClose={() => setSelectedTask(null)} onMarkDone={() => { setSelectedTask(null); router.refresh(); }} onUpdate={() => router.refresh()} />
-        </div>
-      )}
     </div>
   );
 }

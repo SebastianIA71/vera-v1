@@ -134,7 +134,7 @@ export default function PropertiesClient({
                     const bc = taskBorderColor(t);
                     const stale = t.lastActionAt ? Math.floor((Date.now() - new Date(t.lastActionAt).getTime()) / 86400000) : 0;
                     return (
-                      <div key={t.id} onClick={() => setSelected(t)} style={{
+                      <div key={t.id} onClick={() => router.push(`/tasks/${t.id}`)} style={{
                         display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px',
                         cursor: 'pointer', borderBottom: '.5px solid var(--bg2)',
                         position: 'relative', transition: 'background .1s',
