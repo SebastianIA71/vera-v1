@@ -103,6 +103,7 @@ export default function MobileHome({
   const [showInbox, setShowInbox] = useState(false);
   const [showNewEvent, setShowNewEvent] = useState(false);
   const [newTaskPropId, setNewTaskPropId] = useState<string | null>(null);
+  const [newTaskProjId, setNewTaskProjId] = useState<number | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [statusLine, setStatusLine] = useState('');
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
@@ -523,7 +524,7 @@ export default function MobileHome({
                   </div>
                   <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: 'var(--text3)', flexShrink: 0 }}>{task.prioFinal ?? 0}</span>
                   <button
-                    onClick={(e) => { e.stopPropagation(); setShowNewTask(true); }}
+                    onClick={(e) => { e.stopPropagation(); setNewTaskProjId(proj.id); }}
                     style={{ width: 26, height: 26, borderRadius: 8, background: 'transparent', border: `.5px solid ${proj.color ?? 'var(--bg4)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: proj.color ?? 'var(--text3)', cursor: 'pointer', flexShrink: 0 }}
                     title={`Nueva tarea en ${proj.name}`}
                   >
@@ -559,6 +560,7 @@ export default function MobileHome({
       {showInbox && <InboxMobile items={inboxItems} onClose={() => { setShowInbox(false); router.refresh(); }} />}
       {showNewEvent && <NewEventSheet onClose={() => setShowNewEvent(false)} onCreated={() => setShowNewEvent(false)} />}
       {newTaskPropId && <NewTaskModal defaultPropertyId={newTaskPropId} onClose={() => setNewTaskPropId(null)} onCreated={() => { setNewTaskPropId(null); router.refresh(); }} />}
+      {newTaskProjId && <NewTaskModal defaultProjectId={newTaskProjId} onClose={() => setNewTaskProjId(null)} onCreated={() => { setNewTaskProjId(null); router.refresh(); }} />}
       {selectedTask && (
         <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingBottom: 80 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '.5px solid var(--bg4)' }}>
