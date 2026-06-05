@@ -17,6 +17,25 @@
   --cyan:   #3ecfcf;
 }
 
+[data-theme="light"] {
+  --bg:     #f5f2ec;
+  --bg2:    #edeae3;
+  --bg3:    #e4e0d8;
+  --bg4:    #d5d0c8;
+  --text:   #1a1816;
+  --text2:  #4a4642;
+  --text3:  #7a7470;
+  --text4:  #6e6a66;
+  --gold:   #8a5e0e;
+  --gold2:  #a67728;
+  --green:  #1e8f5a;
+  --red:    #c0392b;
+  --amber:  #c47a00;
+  --blue:   #2b7fc4;
+  --purple: #6d4fc4;
+  --cyan:   #1a9999;
+}
+
 * {
   box-sizing: border-box;
 }

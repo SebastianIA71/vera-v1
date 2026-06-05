@@ -10,6 +10,7 @@ import { getGreeting, personaSearchUrl, taskBorderColor } from '@/lib/utils';
 import { APP_VERSION } from '@/lib/version';
 
 const CaptureSheet  = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
+const ThemeToggle   = dynamic(() => import('@/components/ThemeToggle'), { ssr: false });
 const InboxMobile   = dynamic(() => import('@/components/inbox/InboxMobile'), { ssr: false });
 const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
 const NewTaskModal  = dynamic(() => import('@/components/tasks/NewTaskModal'), { ssr: false });
@@ -181,7 +182,7 @@ export default function MobileHome({
         {/* Top row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
-            <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" /></svg>
+            <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="var(--gold2)" /></svg>
             VERA
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>{APP_VERSION}</span>
             {clockStr && (
@@ -189,6 +190,7 @@ export default function MobileHome({
             )}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ThemeToggle size="sm" />
             <button
               onClick={() => router.push('/settings')}
               style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', cursor: 'pointer' }}
