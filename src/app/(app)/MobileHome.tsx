@@ -487,7 +487,7 @@ export default function MobileHome({
             <SectionLabel label="Real Estate" link="→" onLinkClick={() => router.push('/properties')} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {topTaskByProperty.map(({ prop, task }) => (
-                <div key={prop.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${prop.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => router.push(`/tasks/${task.id}`)}>
+                <div key={prop.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${prop.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => setSelectedTask(task)}>
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{prop.icon ?? '🏠'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: prop.color ?? 'var(--text3)', letterSpacing: '.12em', marginBottom: 2 }}>{prop.name.toUpperCase()}</div>
@@ -513,7 +513,7 @@ export default function MobileHome({
             <SectionLabel label="Projects" link="→" onLinkClick={() => router.push('/projects')} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {topTaskByProject.map(({ proj, task }) => (
-                <div key={proj.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${proj.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => router.push(`/tasks/${task.id}`)}>
+                <div key={proj.id} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderLeft: `2px solid ${proj.color ?? 'var(--text3)'}`, borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }} onClick={() => setSelectedTask(task)}>
                   <span style={{ fontSize: 14, flexShrink: 0 }}>{proj.icon ?? '◆'}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: proj.color ?? 'var(--text3)', letterSpacing: '.12em', marginBottom: 2 }}>{proj.name.toUpperCase()}</div>
