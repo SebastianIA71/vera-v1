@@ -151,7 +151,7 @@ export default function MobileHome({
         ? Math.ceil((new Date(nextTrip.endDate).getTime() - new Date(nextTrip.startDate).getTime()) / 86400000)
         : null;
       const durationStr = duration ? ` · ${duration}D` : '';
-      parts.push(`${nextTrip.title.toUpperCase()} · ${nextTrip.daysTo}D${durationStr}`);
+      parts.push(`${transportEmojis}${transportEmojis ? ' ' : ''}${nextTrip.title.toUpperCase()} · ${nextTrip.daysTo}D${durationStr}`);
     }
     setStatusLine(parts.join(' · '));
   }, [weightLogs, nextTrip]);
@@ -234,13 +234,8 @@ export default function MobileHome({
             {'.'}
           </div>
           {statusLine && (
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', color: 'var(--text2)', marginTop: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', color: 'var(--text2)', marginTop: 12 }}>
               {statusLine}
-              {nextTrip && nextTrip.transport && (
-                <span style={{ fontSize: 24, lineHeight: 1, display: 'flex', gap: 3 }}>
-                  {transportIcons(nextTrip.transport)}
-                </span>
-              )}
             </div>
           )}
         </div>
@@ -260,7 +255,7 @@ export default function MobileHome({
                 borderLeft: `2px solid ${taskBorderColor(t.prioFinal ?? 0, t.lastActionAt)}`,
                 borderRadius: 14, padding: '13px 13px 13px 14px', marginBottom: 7,
                 display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer'
-              }} onClick={() => router.push(`/tasks`)}>
+              }} onClick={() => setSelectedTask(t)}>
                 <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 13, color: 'var(--gold)', minWidth: 20, paddingTop: 1 }}>{t.prioFinal}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, lineHeight: 1.35, color: 'var(--text)' }}>{t.title}</div>

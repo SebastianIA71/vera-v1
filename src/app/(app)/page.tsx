@@ -25,12 +25,12 @@ export default async function AppRootPage() {
       .where(and(ne(tasks.status, 'archived'), ne(tasks.status, 'done'), isNotNull(tasks.projectId)))
       .orderBy(desc(tasks.prioFinal))
       .limit(50),
-    // Query dedicada para urgentes
+    // Query dedicada para urgentes (prio >= 8)
     db.select().from(tasks)
       .where(and(
         ne(tasks.status, 'archived'),
         ne(tasks.status, 'done'),
-        or(gte(tasks.prio, 7), gte(tasks.prioFinal, 7)),
+        or(gte(tasks.prio, 8), gte(tasks.prioFinal, 8)),
       ))
       .orderBy(desc(tasks.prioFinal), desc(tasks.prio))
       .limit(10),
@@ -41,7 +41,7 @@ export default async function AppRootPage() {
   // Merge: urgentTasksDb cubre prio alto aunque prioFinal=0; allTasks cubre prioFinal alto
   const urgentMap = new Map<number, typeof allTasks[0]>();
   urgentTasksDb.forEach(t => urgentMap.set(t.id, t));
-  allTasks.filter(t => Math.max(t.prioFinal ?? 0, t.prio ?? 0) >= 7 && t.status !== 'done')
+  allTasks.filter(t => Math.max(t.prioFinal ?? 0, t.prio ?? 0) >= 8 && t.status !== 'done')
     .forEach(t => urgentMap.set(t.id, t));
   const allUrgent = [...urgentMap.values()]
     .sort((a, b) => Math.max(b.prioFinal ?? 0, b.prio ?? 0) - Math.max(a.prioFinal ?? 0, a.prio ?? 0));
