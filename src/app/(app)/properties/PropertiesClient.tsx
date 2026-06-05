@@ -35,28 +35,17 @@ export default function PropertiesClient({
   properties: Property[];
 }) {
   const router = useRouter();
-  const [selected, setSelected] = useState<Task | null>(null);
   const [tasks, setTasks] = useState<Task[]>(allTasks);
   const [activeProp, setActiveProp] = useState(properties[0]?.id ?? '');
   const [newTaskPropId, setNewTaskPropId] = useState<string | null>(null);
 
   const markDone = (id: number) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t));
-    if (selected?.id === id) setSelected(null);
   };
 
   return (
     <>
     <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}
-      rightSlot={selected && (
-        <TaskDetailPanel
-          key={selected.id}
-          task={selected}
-          onClose={() => setSelected(null)}
-          onMarkDone={markDone}
-          onUpdate={(id, data) => setTasks(prev => prev.map(t => t.id === id ? { ...t, ...data } : t))}
-        />
-      )}
     >
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ padding: '14px 20px 12px', borderBottom: '.5px solid var(--bg4)', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexShrink: 0 }}>
@@ -134,7 +123,7 @@ export default function PropertiesClient({
                     const bc = taskBorderColor(t);
                     const stale = t.lastActionAt ? Math.floor((Date.now() - new Date(t.lastActionAt).getTime()) / 86400000) : 0;
                     return (
-                      <div key={t.id} onClick={() => setSelected(t)} style={{
+                      <div key={t.id} onClick={() => router.push(`/tasks/${t.id}`)} style={{
                         display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px',
                         cursor: 'pointer', borderBottom: '.5px solid var(--bg2)',
                         position: 'relative', transition: 'background .1s',
@@ -143,7 +132,7 @@ export default function PropertiesClient({
                         onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--bg2)'; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                       >
-                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: selected?.id === t.id ? 'var(--gold2)' : bc }} />
+                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: bc }} />
                         <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 12, color: 'var(--gold)', minWidth: 16, textAlign: 'right', flexShrink: 0 }}>{t.prioFinal ?? 0}</div>
                         <div style={{ width: 14, height: 14, borderRadius: '50%', border: '.5px solid var(--text3)', flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>

@@ -148,7 +148,7 @@ function ProjectDetail({ project, tasks, onEdit, onTaskCreated, onTaskUpdate, on
                   ACTIVAS · {projTasks.length}
                 </div>
                 {projTasks.map(t => (
-                  <div key={t.id} onClick={() => setSelectedTask(t)} style={{
+                  <div key={t.id} onClick={() => router.push(`/tasks/${t.id}`)} style={{
                     display: 'flex', alignItems: 'center', gap: 12, padding: '10px 24px',
                     cursor: 'pointer', borderBottom: '.5px solid var(--bg2)',
                     transition: 'background .1s',
