@@ -407,7 +407,7 @@ export default function DashboardClient({
 
         {/* LEFT PANEL — nav + briefing */}
         <div style={{ width: 260, flexShrink: 0, borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <DesktopNav inboxCount={initialInboxCount} activeOverride="dashboard" counts={{ tasks: kpis.tasksActive, trips: kpis.tripsCount, properties: kpis.propsCount, projects: kpis.projectsCount, agents: 6 }} />
+          <DesktopNav activeOverride="dashboard" counts={{ tasks: kpis.tasksActive, trips: kpis.tripsCount, properties: kpis.propsCount, projects: kpis.projectsCount, agents: 6 }} />
           <div style={{ height: '.5px', background: 'var(--bg4)', margin: '4px 16px' }} />
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px 20px' }}>
             <DailyBriefing compact={true} />

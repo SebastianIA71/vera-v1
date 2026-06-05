@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
-import { inbox } from '@/lib/db/schema';
-import { inArray } from 'drizzle-orm';
+import { inbox, tasks } from '@/lib/db/schema';
+import { inArray, ne, and } from 'drizzle-orm';
 import FAB from '@/components/capture/FAB';
 import { MobileNav } from '@/components/MobileNav';
 import LayoutClient from './LayoutClient';
@@ -8,8 +8,12 @@ import LayoutClient from './LayoutClient';
 export const dynamic = 'force-dynamic';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const inboxItems = await db.select({ id: inbox.id, processed: inbox.processed, createdAt: inbox.createdAt }).from(inbox).limit(200);
+  const [inboxItems, taskItems] = await Promise.all([
+    db.select({ id: inbox.id, processed: inbox.processed, createdAt: inbox.createdAt }).from(inbox).limit(200),
+    db.select({ id: tasks.id }).from(tasks).where(and(ne(tasks.status, 'done'), ne(tasks.status, 'archived'))),
+  ]);
   const inboxCount = inboxItems.filter(i => !i.processed).length;
+  const tasksCount = taskItems.length;
 
   // Auto-cleanup: borrar items procesados con más de 48h de antigüedad
   const cutoff = new Date(Date.now() - 48 * 3600000);
@@ -22,9 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      {/* Update banner (client component) */}
-      <LayoutClient>
-        {/* Contenido principal */}
+      <LayoutClient tasksCount={tasksCount} inboxCount={inboxCount}>
         <main className="main-content">
           {children}
         </main>

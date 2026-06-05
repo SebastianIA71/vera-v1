@@ -64,7 +64,7 @@ export default function DesktopShell({
 
       {/* LAYOUT */}
       <div className="desktop-shell-layout" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <DesktopNav urgentCount={urgentCount} inboxCount={inboxCount} />
+        <DesktopNav />
 
         {/* CONTENIDO */}
         <div className="desktop-shell-content" style={{ flex: 1, display: 'flex', overflow: 'hidden', minWidth: 0 }}>

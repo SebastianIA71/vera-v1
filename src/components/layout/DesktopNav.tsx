@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
+import { useNavCounts } from '@/components/NavCountsContext';
 
 function NavIcon({ icon }: { icon: string }) {
   const s = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
@@ -68,18 +69,15 @@ function NavItem({ icon, label, active, badge, badgeColor = 'var(--red)', onClic
 }
 
 export default function DesktopNav({
-  urgentCount = 0,
-  inboxCount = 0,
   activeOverride,
   counts = {},
 }: {
-  urgentCount?: number;
-  inboxCount?: number;
   activeOverride?: string;
   counts?: { tasks?: number; trips?: number; properties?: number; projects?: number; agents?: number };
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { tasksCount, inboxCount } = useNavCounts();
 
   const isActive = (path: string) => {
     if (activeOverride) return activeOverride === path;
@@ -106,7 +104,7 @@ export default function DesktopNav({
       }}
     >
       <NavItem icon="command"  label="COMMAND"    active={isActive('/dashboard')} onClick={() => router.push('/dashboard')} />
-      <NavItem icon="tasks"    label="TAREAS"      active={isActive('/tasks')}      badge={urgentCount > 0 ? urgentCount : undefined} badgeColor="var(--red)"   onClick={() => router.push('/tasks')} />
+      <NavItem icon="tasks"    label="TAREAS"      active={isActive('/tasks')}      badge={tasksCount  > 0 ? tasksCount  : undefined} badgeColor="var(--red)"   onClick={() => router.push('/tasks')} />
       <NavItem icon="inbox"    label="INBOX"       active={isActive('/inbox')}      badge={inboxCount  > 0 ? inboxCount  : undefined} badgeColor="var(--amber)" onClick={() => router.push('/inbox')} />
       <NavItem icon="trips"    label="EVENTOS"     active={isActive('/trips')}      onClick={() => router.push('/trips')} />
       <NavItem icon="props"    label="PROPIEDADES" active={isActive('/properties')} onClick={() => router.push('/properties')} />

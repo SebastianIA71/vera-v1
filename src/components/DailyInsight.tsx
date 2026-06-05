@@ -20,7 +20,7 @@ function IdeaCard({ idea }: { idea: Idea }) {
         {idea.title}
       </div>
       <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 10,
-        color: 'rgba(255,255,255,0.55)', lineHeight: 1.3, overflow: 'hidden',
+        color: 'var(--text2)', lineHeight: 1.3, overflow: 'hidden',
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
         {idea.description}
       </div>
