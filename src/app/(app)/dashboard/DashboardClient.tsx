@@ -18,6 +18,7 @@ const NewProjectSheet  = dynamic(() => import('@/components/projects/NewProjectS
 const NewTaskModal     = dynamic(() => import('@/components/tasks/NewTaskModal'), { ssr: false });
 const DailyInsight     = dynamic(() => import('@/components/DailyInsight'), { ssr: false });
 const DailyBriefing    = dynamic(() => import('@/components/DailyBriefing'), { ssr: false });
+const ThemeToggle      = dynamic(() => import('@/components/ThemeToggle'), { ssr: false });
 
 /* ─── Types ─────────────────────────────────────────── */
 type AgentId = 'voice' | 'prio' | 'alert' | 'search' | 'executor' | 'solution';
@@ -364,7 +365,7 @@ export default function DashboardClient({
         <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '9px', fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: '15px', letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" />
+              <path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="var(--gold2)" />
             </svg>
             VERA
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '10px', letterSpacing: '.14em', color: 'var(--gold2)', fontWeight: 400 }}>{APP_VERSION}</span>
@@ -387,6 +388,7 @@ export default function DashboardClient({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <ThemeToggle />
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', border: '.5px solid var(--bg4)', borderRadius: '999px', fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.14em', color: 'var(--green)' }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--green)', display: 'inline-block', animation: 'blink 2s ease-in-out infinite' }} />
             ACTIVO
