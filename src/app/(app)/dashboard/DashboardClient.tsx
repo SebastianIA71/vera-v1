@@ -59,13 +59,14 @@ function AgentIcon({ icon }: { icon: string }) {
 }
 
 /* ─── Right Panel ───────────────────────────────────── */
-function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkDone }: {
+function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkDone, router }: {
   tasks: Task[];
   inboxCount: number;
   nextTrip: { title: string; daysTo: number } | null;
   nextEvent: { title: string; daysTo: number; startDate: string } | null;
   allEvents: { startDate: Date | null; type: string }[];
   onMarkDone: (id: number) => void;
+  router: any;
 }) {
   const now = new Date();
 
@@ -123,9 +124,9 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
             const prio = task.prioFinal ?? 0;
             const color = prio >= 9 ? 'var(--red)' : prio >= 7 ? 'var(--amber)' : 'var(--text3)';
             return (
-              <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '.5px solid var(--bg2)' }}>
+              <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '.5px solid var(--bg2)', cursor: 'pointer' }} onClick={() => router.push('/tasks')}>
                 <button
-                  onClick={() => onMarkDone(task.id)}
+                  onClick={(e) => { e.stopPropagation(); onMarkDone(task.id); }}
                   style={{ width: 16, height: 16, borderRadius: '50%', border: `.5px solid ${color}`, background: 'transparent', cursor: 'pointer', flexShrink: 0 }}
                 />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -146,7 +147,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
 
         {/* PRÓXIMO EVENTO */}
         {nextEvent && (
-          <div style={{ padding: '8px 18px 12px', borderTop: '.5px solid var(--bg2)' }}>
+          <div style={{ padding: '8px 18px 12px', borderTop: '.5px solid var(--bg2)', cursor: 'pointer' }} onClick={() => router.push('/trips?type=social')}>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--purple)', marginBottom: 6 }}>PRÓXIMO EVENTO</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
@@ -164,7 +165,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
 
         {/* PRÓXIMO VIAJE */}
         {nextTrip && (
-          <div style={{ padding: '8px 18px 12px', borderTop: '.5px solid var(--bg2)' }}>
+          <div style={{ padding: '8px 18px 12px', borderTop: '.5px solid var(--bg2)', cursor: 'pointer' }} onClick={() => router.push('/trips')}>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--blue)', marginBottom: 6 }}>PRÓXIMO VIAJE</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)' }}>{nextTrip.title}</div>
@@ -592,6 +593,7 @@ export default function DashboardClient({
             nextEvent={nextEvent}
             allEvents={allEvents}
             onMarkDone={markDone}
+            router={router}
           />
         ))}
       </div>

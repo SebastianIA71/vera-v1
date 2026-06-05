@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import DesktopShell from '@/components/layout/DesktopShell';
 import TaskDetailPanel, { TaskDetail } from '@/components/tasks/TaskDetailPanel';
@@ -66,6 +67,7 @@ function ProjectDetail({ project, tasks, onEdit, onTaskCreated, onTaskUpdate, on
   onTaskUpdate: (id: number, d: Partial<Task>) => void;
   onMarkDone: (id: number) => void;
 }) {
+  const router = useRouter();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [showNewTask, setShowNewTask]   = useState(false);
   const color = project.color ?? '#9b7fe8';
@@ -146,7 +148,7 @@ function ProjectDetail({ project, tasks, onEdit, onTaskCreated, onTaskUpdate, on
                   ACTIVAS · {projTasks.length}
                 </div>
                 {projTasks.map(t => (
-                  <div key={t.id} onClick={() => setSelectedTask(t)} style={{
+                  <div key={t.id} onClick={() => router.push('/tasks')} style={{
                     display: 'flex', alignItems: 'center', gap: 12, padding: '10px 24px',
                     cursor: 'pointer', borderBottom: '.5px solid var(--bg2)',
                     transition: 'background .1s',
