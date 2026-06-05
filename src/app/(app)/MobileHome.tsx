@@ -87,8 +87,8 @@ export default function MobileHome({
 }: {
   urgentTasks: Task[];
   urgentTotal?: number;
-  nextTrip: { title: string; daysTo: number; startDate: string; endDate?: string; who: string; transport?: string } | null;
-  nextEvent: { title: string; daysTo: number; startDate: string; who: string } | null;
+  nextTrip: { id: number; title: string; daysTo: number; startDate: string; endDate?: string; who: string; transport?: string } | null;
+  nextEvent: { id: number; title: string; daysTo: number; startDate: string; who: string } | null;
   weightLogs: WeightLog[];
   inboxCount: number;
   inboxItems?: InboxItem[];
@@ -290,8 +290,8 @@ export default function MobileHome({
         {/* Weight section */}
         {latestWeight && (
           <div style={{ marginBottom: 28 }}>
-            <SectionLabel label="Weight" meta="14 DÍAS" link="→" onLinkClick={() => router.push('/weight')} />
-            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '16px 16px 12px', cursor: 'pointer' }} onClick={() => router.push('/weight')}>
+            <SectionLabel label="Weight" meta="14 DÍAS" />
+            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '16px 16px 12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
                 <div>
                   <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 32, color: 'var(--text)', lineHeight: 1, letterSpacing: '-.02em' }}>{latestWeight.value}</div>
@@ -338,7 +338,7 @@ export default function MobileHome({
         <div style={{ marginBottom: 28 }}>
           <SectionLabel label="Upcoming Events" link="→" onLinkClick={() => router.push('/trips?type=social')} />
         {nextEvent ? (
-          <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => router.push('/trips?type=social')}>
+          <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => router.push(`/trips/${nextEvent.id}`)}>
             <div>
               <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 14, color: 'var(--text)', lineHeight: 1.2 }}>{nextEvent.title}</div>
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text2)', letterSpacing: '.12em', marginTop: 4 }}>
@@ -364,7 +364,7 @@ export default function MobileHome({
         {nextTrip && (
           <div style={{ marginBottom: 28 }}>
             <SectionLabel label="Upcoming trips" link="→" onLinkClick={() => router.push('/trips')} />
-            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px', cursor: 'pointer' }} onClick={() => router.push('/trips')}>
+            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px', cursor: 'pointer' }} onClick={() => router.push(`/trips/${nextTrip.id}`)}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
