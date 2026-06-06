@@ -15,15 +15,47 @@ function propertyHasEventSoon(propertyId: string | null, allEvents: Event[]): bo
   });
 }
 
+function nextTripDays(allEvents: Event[]): number | null {
+  const now = Date.now();
+  const sorted = allEvents
+    .filter(e => e.type === 'viaje' && e.startDate && e.startDate.getTime() > now)
+    .sort((a, b) => (a.startDate?.getTime() ?? 0) - (b.startDate?.getTime() ?? 0));
+  if (!sorted[0]?.startDate) return null;
+  return Math.ceil((sorted[0].startDate.getTime() - now) / 86400000);
+}
+
 function calcPrioFinal(task: Task, allEvents: Event[]): number {
   const base = task.prioManual ?? task.prio ?? 0;
+  const now = Date.now();
+
+  // Staleness: +1 si >14 días sin acción, +2 si >28 días
   const daysSinceAction = task.lastActionAt
-    ? Math.floor((Date.now() - task.lastActionAt.getTime()) / 86400000)
+    ? Math.floor((now - task.lastActionAt.getTime()) / 86400000)
     : 0;
-  // Discrete staleness: jumps only at day 14 and day 28 thresholds
   const staleness = daysSinceAction >= 28 ? 2 : daysSinceAction >= 14 ? 1 : 0;
+
+  // Season: +2 si hay evento próximo en la misma propiedad
   const season = propertyHasEventSoon(task.propertyId, allEvents) ? 2 : 0;
-  return Math.min(9, base + staleness + season);
+
+  // B.2 — Viaje próximo: +1 a tareas con tag del viaje
+  const daysToTrip = nextTripDays(allEvents);
+  const tags = (task.tags ?? '').toLowerCase();
+  const tripBoost = (daysToTrip !== null && daysToTrip <= 21 && tags.includes('viaje')) ? 1 : 0;
+
+  // B.1 — dueDate urgency: si vence en <7 días, asegurar mínimo 7
+  const dueBoost = (() => {
+    if (!task.dueDate) return 0;
+    const daysUntilDue = Math.ceil((new Date(task.dueDate).getTime() - now) / 86400000);
+    return daysUntilDue >= 0 && daysUntilDue <= 7 ? 1 : 0;
+  })();
+  const dueMínimo = (() => {
+    if (!task.dueDate) return 0;
+    const daysUntilDue = Math.ceil((new Date(task.dueDate).getTime() - now) / 86400000);
+    return daysUntilDue >= 0 && daysUntilDue <= 7 ? 7 : 0;
+  })();
+
+  const raw = Math.min(9, base + staleness + season + tripBoost + dueBoost);
+  return Math.max(raw, dueMínimo);
 }
 
 export async function runPrioAgent(): Promise<{ updated: number }> {

@@ -1,15 +1,18 @@
 import { callClaude } from '@/lib/claude';
 import { db } from '@/lib/db';
-import { tasks, notifications } from '@/lib/db/schema';
+import { tasks, notifications, inbox } from '@/lib/db/schema';
 import { sendPush } from '@/lib/push';
 
-/** Devuelve la query posterior a "VERA", o null si no aparece el trigger */
+/**
+ * Devuelve la query posterior al trigger "JARVIS", o null si no aparece.
+ * Acepta variantes: "jarvis," "¡jarvis" "jarvis:" y combinaciones similares.
+ */
 export function extractAmiVeraQuery(text: string): string | null {
-  const m = text.match(/\bvera\s+([\s\S]+)/i);
+  const m = text.match(/\bjarvis[,!:.\s]+(.+)/i);
   return m ? m[1].trim() : null;
 }
 
-const AMIVERA_SYSTEM = `Eres Vera, asistente personal de Sebastián.
+const AMIVERA_SYSTEM = `Eres Vera, asistente personal de Sebastián (activado via trigger "JARVIS").
 Se ha activado el pipeline autónomo. Investiga y responde con total autonomía.
 No hay restricciones de formato, longitud ni estructura — decide qué profundidad darle, cómo organizar la información y qué incluir.
 
@@ -66,7 +69,15 @@ export async function runAmiVeraPipeline(rawQuery: string): Promise<void> {
 
   await sendPush(notifTitle.slice(0, 50), notifSummary.slice(0, 100)).catch(() => {});
 
-  // Paso 4 — Tarea general (sin propiedad, source 'vera+')
+  // Paso 4a — Guardar en inbox para que siempre sea visible (aunque push no llegue)
+  await db.insert(inbox).values({
+    content: `[JARVIS] ${taskTitle}: ${notifSummary}`,
+    source: 'jarvis',
+    type: 'note',
+    processed: false,
+  }).catch(() => {});
+
+  // Paso 4b — Tarea general (sin propiedad, source 'vera+')
   await db.insert(tasks).values({
     title:      taskTitle.slice(0, 80),
     detail:     rawQuery.slice(0, 200),

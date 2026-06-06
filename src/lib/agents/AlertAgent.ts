@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { tasks, events, weightLog, agentLog } from '@/lib/db/schema';
+import { tasks, events, weightLog, contracts, agentLog } from '@/lib/db/schema';
 import { ne, desc } from 'drizzle-orm';
 import { sendPush } from '@/lib/push';
 
@@ -8,9 +8,12 @@ export async function runAlertAgent(): Promise<{ alerts: number }> {
   const now = new Date();
   let alertCount = 0;
 
-  const allTasks = await db.select().from(tasks).where(ne(tasks.status, 'archived'));
-  const allEvents = await db.select().from(events);
-  const weights = await db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(1);
+  const [allTasks, allEvents, weights, allContracts] = await Promise.all([
+    db.select().from(tasks).where(ne(tasks.status, 'archived')),
+    db.select().from(events),
+    db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(1),
+    db.select().from(contracts),
+  ]);
 
   // 1. Tareas stale (prio >= 4, sin acción > 14 días)
   const staleTasks = allTasks.filter(t => {
@@ -61,9 +64,27 @@ export async function runAlertAgent(): Promise<{ alerts: number }> {
     if (sent) alertCount++;
   }
 
+  // 4. C.2 — Contratos que vencen en < 45 días
+  const soonContracts = allContracts.filter(c => {
+    if (!c.active || !c.endDate) return false;
+    const daysToEnd = Math.ceil((new Date(c.endDate).getTime() - now.getTime()) / 86400000);
+    return daysToEnd >= 0 && daysToEnd <= (c.alertDaysBefore ?? 45);
+  });
+
+  for (const contract of soonContracts.slice(0, 2)) {
+    const daysToEnd = Math.ceil((new Date(contract.endDate!).getTime() - now.getTime()) / 86400000);
+    const sent = await sendPush(
+      `Vera · ${contract.name}`,
+      `Vence en ${daysToEnd} días. Revisar renegociación.`,
+      `contract_${contract.id}`,
+      168, // cooldown 7 días
+    );
+    if (sent) alertCount++;
+  }
+
   await db.insert(agentLog).values({
     agentId: 'alert', action: 'check',
-    input: `${allTasks.length} tareas`,
+    input: `${allTasks.length} tareas, ${allContracts.length} contratos`,
     output: `${alertCount} alertas enviadas`,
     status: 'ok', durationMs: Date.now() - startTime,
   }).catch(() => {});

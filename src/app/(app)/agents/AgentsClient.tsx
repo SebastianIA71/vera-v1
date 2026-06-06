@@ -223,12 +223,28 @@ function AlertPanel() {
       )}
 
       {perm === 'granted' && (
-        <button
-          onPointerDown={e => { e.preventDefault(); testPush(); }}
-          style={{ ...BTN, border: '.5px solid var(--red)', color: 'var(--red)' }}
-        >
-          ENVIAR TEST PUSH
-        </button>
+        <>
+          <button
+            onPointerDown={e => { e.preventDefault(); testPush(); }}
+            style={{ ...BTN, border: '.5px solid var(--red)', color: 'var(--red)' }}
+          >
+            ENVIAR TEST PUSH
+          </button>
+          <button
+            onPointerDown={async e => {
+              e.preventDefault();
+              setTestMsg('Ejecutando alertas…');
+              const res = await fetch('/api/cron/alerts', {
+                headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET ?? ''}` },
+              });
+              const d = await res.json().catch(() => ({}));
+              setTestMsg(res.ok ? `✓ ${d.alerts ?? 0} alertas enviadas` : 'Error al ejecutar (¿CRON_SECRET?)');
+            }}
+            style={{ ...BTN, border: '.5px solid var(--amber)', color: 'var(--amber)' }}
+          >
+            EJECUTAR ALERTAS AHORA
+          </button>
+        </>
       )}
 
       {perm === 'denied' && (
@@ -419,11 +435,18 @@ function ExecutorPanel() {
       <div style={{ background: 'var(--bg3)', borderRadius: 10, padding: '14px' }}>
         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text4)', marginBottom: 6 }}>PARA: {draft.to}</div>
         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text2)', marginBottom: 10 }}>ASUNTO: {draft.subject}</div>
-        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: '#c8c6be', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{draft.body}</div>
+        {/* F.1 — Editor inline editable */}
+        <textarea
+          value={draft.body}
+          onChange={e => setDraft(d => d ? { ...d, body: e.target.value } : d)}
+          style={{ width: '100%', background: 'transparent', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '8px 10px', color: 'var(--text)', fontFamily: 'var(--font-dm-sans)', fontSize: 13, lineHeight: 1.6, resize: 'vertical', minHeight: 160, outline: 'none', boxSizing: 'border-box' }}
+          onFocus={e => (e.target.style.borderColor = 'var(--green)')}
+          onBlur={e => (e.target.style.borderColor = 'var(--bg4)')}
+        />
       </div>
       {notice && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--amber)' }}>{notice}</div>}
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={() => setDraft(null)} style={{ ...BTN, flex: 1, border: '.5px solid var(--bg4)', color: 'var(--text2)', padding: '12px 8px' }}>EDITAR</button>
+        <button onClick={() => setDraft(null)} style={{ ...BTN, flex: 1, border: '.5px solid var(--bg4)', color: 'var(--text2)', padding: '12px 8px' }}>← VOLVER</button>
         {!notice && <button onClick={send} disabled={sending} style={{ ...BTN, flex: 2, border: '.5px solid var(--green)', color: 'var(--green)', padding: '12px 8px' }}>{sending ? '···' : 'CONFIRMAR →'}</button>}
       </div>
     </div>

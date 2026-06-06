@@ -45,12 +45,76 @@ function daysUntil(date: Date | null | undefined): number | null {
   return Math.ceil((new Date(date).getTime() - Date.now()) / 86400000);
 }
 
+type SolutionOption = { type: string; label: string; steps: string[]; materials?: string; cost: string; time: string; difficulty: string };
+type SearchResult   = { title: string; url: string; description: string; summary?: string };
+
 export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }: Props) {
   const { toast } = useToast();
   const [notes, setNotes] = useState(task.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [loadingVeraPlus, setLoadingVeraPlus] = useState(false);
+
+  // — Soluciones inline —
+  const [showSolution, setShowSolution]       = useState(false);
+  const [solutionQuery, setSolutionQuery]     = useState(task.title);
+  const [solutionResult, setSolutionResult]   = useState<SolutionOption[] | null>(null);
+  const [loadingSolution, setLoadingSolution] = useState(false);
+
+  const runSolution = useCallback(async () => {
+    if (!solutionQuery.trim() || loadingSolution) return;
+    setLoadingSolution(true);
+    setSolutionResult(null);
+    try {
+      const res = await fetch('/api/agents/solution', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ problem: solutionQuery }),
+      });
+      const d = await res.json();
+      if (d.options) setSolutionResult(d.options);
+      else toast('No se pudo generar solución', 'error');
+    } catch { toast('Error al conectar con el agente', 'error'); }
+    setLoadingSolution(false);
+  }, [solutionQuery, loadingSolution, toast]);
+
+  const createTaskFromStep = useCallback(async (step: string) => {
+    await fetch('/api/tasks', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: step, prio: 5, propertyId: task.propertyId ?? null }),
+    });
+    toast('Tarea creada');
+  }, [task.propertyId, toast]);
+
+  // — Búsqueda inline —
+  const [showSearch, setShowSearch]       = useState(false);
+  const [searchQuery, setSearchQuery]     = useState(task.title);
+  const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
+  const [loadingSearch, setLoadingSearch] = useState(false);
+
+  const runSearch = useCallback(async () => {
+    if (!searchQuery.trim() || loadingSearch) return;
+    setLoadingSearch(true);
+    setSearchResults(null);
+    try {
+      const res = await fetch('/api/agents/search', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: searchQuery }),
+      });
+      const d = await res.json();
+      if (d.results) setSearchResults(d.results);
+      else if (d.notice) toast(d.notice, 'info');
+      else toast('Error en la búsqueda', 'error');
+    } catch { toast('Error al conectar con el agente', 'error'); }
+    setLoadingSearch(false);
+  }, [searchQuery, loadingSearch, toast]);
+
+  const createTaskFromResult = useCallback(async (title: string, url: string) => {
+    await fetch('/api/tasks', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: title.slice(0, 120), prio: 5, propertyId: task.propertyId ?? null, detail: url }),
+    });
+    toast('Tarea creada');
+  }, [task.propertyId, toast]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isDone = task.status === 'done' || task.status === 'archived';
@@ -220,6 +284,89 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
           {task.createdAt && <div>CREADA: <span style={{ color: 'var(--text2)' }}>{new Date(task.createdAt).toLocaleDateString('es-ES')}</span></div>}
           {task.tags && <div>TAGS: <span style={{ color: 'var(--text2)' }}>{task.tags}</span></div>}
         </div>
+
+        {/* Acciones de agente */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <button onClick={() => { setShowSolution(s => !s); setShowSearch(false); }}
+            style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: `.5px solid ${showSolution ? 'var(--purple)' : 'var(--bg4)'}`, background: showSolution ? 'var(--purple-subtle)' : 'transparent', color: showSolution ? 'var(--purple)' : 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', cursor: 'pointer' }}>
+            💡 Soluciones
+          </button>
+          <button onClick={() => { setShowSearch(s => !s); setShowSolution(false); }}
+            style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: `.5px solid ${showSearch ? 'var(--blue)' : 'var(--bg4)'}`, background: showSearch ? 'var(--blue-subtle)' : 'transparent', color: showSearch ? 'var(--blue)' : 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', cursor: 'pointer' }}>
+            🔍 Buscar
+          </button>
+        </div>
+
+        {/* Panel soluciones */}
+        {showSolution && (
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input value={solutionQuery} onChange={e => setSolutionQuery(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && runSolution()}
+                style={{ flex: 1, background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '8px 10px', color: 'var(--text)', fontFamily: 'var(--font-dm-sans)', fontSize: 12, outline: 'none' }}
+                onFocus={e => (e.target.style.borderColor = 'var(--purple)')}
+                onBlur={e => (e.target.style.borderColor = 'var(--bg4)')}
+              />
+              <button onClick={runSolution} disabled={loadingSolution}
+                style={{ padding: '8px 14px', borderRadius: 8, border: '.5px solid var(--purple)', background: 'transparent', color: 'var(--purple)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, cursor: loadingSolution ? 'default' : 'pointer', opacity: loadingSolution ? 0.5 : 1 }}>
+                {loadingSolution ? '···' : '→'}
+              </button>
+            </div>
+            {solutionResult?.map((opt, i) => (
+              <div key={i} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '10px 12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 7 }}>
+                  <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 12, color: 'var(--purple)' }}>{opt.label}</span>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)' }}>{opt.cost} · {opt.time}</span>
+                </div>
+                {opt.steps.map((step, j) => (
+                  <div key={j} style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginBottom: 5 }}>
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text4)', flexShrink: 0, marginTop: 1 }}>{j + 1}.</span>
+                    <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)', flex: 1, lineHeight: 1.4 }}>{step}</span>
+                    <button onClick={() => createTaskFromStep(step)} title="Crear tarea"
+                      style={{ background: 'none', border: '.5px solid var(--bg4)', borderRadius: 5, padding: '2px 7px', cursor: 'pointer', color: 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 9, flexShrink: 0, letterSpacing: '.08em' }}>+</button>
+                  </div>
+                ))}
+                {opt.materials && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text4)', letterSpacing: '.08em', marginTop: 6, lineHeight: 1.4 }}>📦 {opt.materials}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Panel búsqueda */}
+        {showSearch && (
+          <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && runSearch()}
+                style={{ flex: 1, background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '8px 10px', color: 'var(--text)', fontFamily: 'var(--font-dm-sans)', fontSize: 12, outline: 'none' }}
+                onFocus={e => (e.target.style.borderColor = 'var(--blue)')}
+                onBlur={e => (e.target.style.borderColor = 'var(--bg4)')}
+              />
+              <button onClick={runSearch} disabled={loadingSearch}
+                style={{ padding: '8px 14px', borderRadius: 8, border: '.5px solid var(--blue)', background: 'transparent', color: 'var(--blue)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, cursor: loadingSearch ? 'default' : 'pointer', opacity: loadingSearch ? 0.5 : 1 }}>
+                {loadingSearch ? '···' : '→'}
+              </button>
+            </div>
+            {searchResults?.map((r, i) => (
+              <div key={i} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '10px 12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 5 }}>
+                  <a href={r.url} target="_blank" rel="noopener noreferrer"
+                    style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 12, color: 'var(--blue)', textDecoration: 'none', flex: 1, lineHeight: 1.3 }}>
+                    {r.title}
+                  </a>
+                  <button onClick={() => createTaskFromResult(r.title, r.url)} title="Crear tarea"
+                    style={{ background: 'none', border: '.5px solid var(--bg4)', borderRadius: 5, padding: '2px 7px', cursor: 'pointer', color: 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 9, flexShrink: 0, letterSpacing: '.08em' }}>+</button>
+                </div>
+                {(r.summary ?? r.description) && (
+                  <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, color: 'var(--text3)', lineHeight: 1.4 }}>{r.summary ?? r.description}</div>
+                )}
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text4)', marginTop: 5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {r.url.replace(/^https?:\/\//, '').split('/')[0]}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* FAB */}
