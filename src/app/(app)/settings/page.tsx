@@ -6,6 +6,90 @@ import DesktopShell from '@/components/layout/DesktopShell';
 import { useHomeSections, DEFAULT_SECTIONS, SECTION_LABELS, type SectionId } from '@/hooks/useHomeSections';
 import { APP_VERSION } from '@/lib/version';
 
+function BookmarkletSection() {
+  const [origin, setOrigin] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => { setOrigin(window.location.origin); }, []);
+
+  const bookmarklet = origin
+    ? `javascript:(function(){var u=encodeURIComponent(location.href);var t=encodeURIComponent(document.title);location.href='${origin}/share?url='+u+'%26title='+t;})();`
+    : '';
+
+  const copy = () => {
+    navigator.clipboard.writeText(bookmarklet).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const STEP: React.CSSProperties = {
+    display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 10,
+  };
+  const NUM: React.CSSProperties = {
+    width: 20, height: 20, borderRadius: '50%', background: 'var(--bg4)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)',
+  };
+  const STEP_TEXT: React.CSSProperties = {
+    fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text2)', lineHeight: 1.5,
+  };
+
+  return (
+    <div style={{ marginBottom: 28 }}>
+      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.22em', color: 'var(--text3)', marginBottom: 14 }}>
+        CAPTURA IOS · BOOKMARKLET
+      </div>
+      <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 12, padding: '16px 18px' }}>
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: 'var(--text)', marginBottom: 4 }}>
+          Enviar a Vera desde Safari
+        </div>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em', marginBottom: 16, lineHeight: 1.5 }}>
+          Un marcador que captura la URL y título de cualquier página web al inbox de Vera. Alternativa al Share Sheet en iOS.
+        </div>
+
+        {/* Código del bookmarklet */}
+        <div style={{ background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '10px 14px', marginBottom: 10, wordBreak: 'break-all', fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--gold2)', lineHeight: 1.6 }}>
+          {bookmarklet || '···'}
+        </div>
+        <button onClick={copy} style={{
+          width: '100%', padding: '10px', borderRadius: 8,
+          background: 'transparent', border: `.5px solid ${copied ? 'var(--green)' : 'var(--gold2)'}`,
+          color: copied ? 'var(--green)' : 'var(--gold)',
+          fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', cursor: 'pointer', marginBottom: 18,
+        }}>
+          {copied ? '✓ COPIADO' : 'COPIAR BOOKMARKLET →'}
+        </button>
+
+        {/* Instrucciones de instalación */}
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', color: 'var(--text3)', marginBottom: 10 }}>
+          CÓMO INSTALARLO EN SAFARI IOS
+        </div>
+        <div style={STEP}>
+          <div style={NUM}>1</div>
+          <div style={STEP_TEXT}>En Safari, abre cualquier página web (ej. google.com)</div>
+        </div>
+        <div style={STEP}>
+          <div style={NUM}>2</div>
+          <div style={STEP_TEXT}>Pulsa Compartir ↑ → <strong style={{ color: 'var(--text)' }}>Añadir a favoritos</strong> → guarda el marcador</div>
+        </div>
+        <div style={STEP}>
+          <div style={NUM}>3</div>
+          <div style={STEP_TEXT}>Pulsa el icono de libro (☰) en Safari → Favoritos → mantén pulsado el marcador recién creado → <strong style={{ color: 'var(--text)' }}>Editar</strong></div>
+        </div>
+        <div style={STEP}>
+          <div style={NUM}>4</div>
+          <div style={STEP_TEXT}>Cambia el <strong style={{ color: 'var(--text)' }}>nombre</strong> a <em>"Enviar a Vera"</em> y borra la <strong style={{ color: 'var(--text)' }}>URL</strong> → pega el código copiado → Guardar</div>
+        </div>
+        <div style={{ ...STEP, marginBottom: 0 }}>
+          <div style={NUM}>5</div>
+          <div style={STEP_TEXT}>Desde cualquier página web, abre Favoritos → <strong style={{ color: 'var(--gold2)' }}>Enviar a Vera</strong> → capturado ✓</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 type Credential = {
   id: number;
   deviceName: string | null;
@@ -166,6 +250,9 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+
+        {/* Captura iOS — Bookmarklet */}
+        <BookmarkletSection />
 
         {/* Seguridad */}
         <div style={{ marginBottom: 28 }}>
