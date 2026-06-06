@@ -111,6 +111,13 @@ em.anchor {
   border-radius: 4px;
 }
 
+/* Task row checkbox — visible on hover in desktop */
+@media (min-width: 769px) {
+  div:hover > .task-checkbox-hover {
+    opacity: 1 !important;
+  }
+}
+
 /* Loading dots */
 .loading-dots::after {
   content: '···';

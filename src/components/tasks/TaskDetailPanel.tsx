@@ -80,6 +80,11 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
     toast('Marcada como hecha ✓');
   };
 
+  const copyLink = useCallback(() => {
+    const url = `${window.location.origin}/tasks/${task.id}`;
+    navigator.clipboard.writeText(url).then(() => toast('Enlace copiado', 'info'));
+  }, [task.id, toast]);
+
 
   const s8 = (col?: string) => ({
     fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.24em',
@@ -95,6 +100,16 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
             ← LISTA
           </button>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button
+              onClick={copyLink}
+              title="Copiar enlace a esta tarea"
+              style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', letterSpacing: '.1em' }}
+            >
+              <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
+            </button>
             <button
               onClick={() => setShowEditModal(true)}
               title="Editar datos de la tarea"

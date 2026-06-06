@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { startRegistration } from '@simplewebauthn/browser';
 import DesktopShell from '@/components/layout/DesktopShell';
 import { useHomeSections, DEFAULT_SECTIONS, SECTION_LABELS, type SectionId } from '@/hooks/useHomeSections';
+import { APP_VERSION } from '@/lib/version';
 
 type Credential = {
   id: number;
@@ -248,6 +249,24 @@ export default function SettingsPage() {
                 {message}
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Versión de la app */}
+        <div style={{ paddingTop: 16, borderTop: '.5px solid var(--bg4)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 14, color: 'var(--text)', letterSpacing: '.08em' }}>
+                VERA <span style={{ color: 'var(--gold2)' }}>{APP_VERSION}</span>
+              </div>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.12em', marginTop: 4 }}>
+                Next.js + Turso + Anthropic
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--green)', display: 'inline-block' }} />
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: '.12em' }}>TURSO</span>
+            </div>
           </div>
         </div>
       </div>
