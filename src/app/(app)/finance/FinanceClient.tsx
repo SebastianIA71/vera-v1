@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import DesktopShell from '@/components/layout/DesktopShell';
 import MobilePageHeader from '@/components/layout/MobilePageHeader';
@@ -257,6 +257,115 @@ function FinanceForm({ initial, onSave, onDelete, onCancel, saving }: {
 }
 
 /* ─── Main ────────────────────────────────────────── */
+const CATS = ['mantenimiento','suministros','reforma','compra','otro'] as const;
+const CAT_COLORS: Record<string, string> = { mantenimiento:'var(--amber)', suministros:'var(--blue)', reforma:'var(--purple)', compra:'var(--green)', otro:'var(--text3)' };
+const PROPS = [{ id:'flat', label:'Flat' }, { id:'sarapita', label:'Sarapita' }, { id:'willys', label:"Willy's" }];
+
+type Expense = { id:number; propertyId:string|null; amount:number; description:string; category:string|null; date:string };
+
+function GastosSection({ isMobile }: { isMobile: boolean }) {
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterProp, setFilterProp] = useState('');
+  const [amount, setAmount] = useState('');
+  const [desc, setDesc] = useState('');
+  const [cat, setCat] = useState<string>('otro');
+  const [propId, setPropId] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().slice(0,10));
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState<number|null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const url = filterProp ? `/api/expenses?propertyId=${filterProp}` : '/api/expenses';
+    const d = await fetch(url).then(r => r.json()).catch(() => []);
+    setExpenses(d); setLoading(false);
+  }, [filterProp]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const save = async () => {
+    if (!amount || !desc) return;
+    setSaving(true);
+    await fetch('/api/expenses', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ amount: Number(amount), description: desc, category: cat, propertyId: propId||null, date }) });
+    setAmount(''); setDesc('');
+    await load();
+    setSaving(false);
+  };
+
+  const del = async (id: number) => {
+    setDeleting(id);
+    await fetch(`/api/expenses/${id}`, { method:'DELETE' });
+    setExpenses(e => e.filter(x => x.id !== id));
+    setDeleting(null);
+  };
+
+  // Totales por propiedad del mes actual
+  const nowMonth = new Date().toISOString().slice(0,7);
+  const monthExp = expenses.filter(e => e.date.startsWith(nowMonth));
+  const byProp: Record<string, number> = {};
+  monthExp.forEach(e => { const k = e.propertyId ?? 'general'; byProp[k] = (byProp[k]||0) + e.amount; });
+
+  const INP: React.CSSProperties = { background:'var(--bg3)', border:'.5px solid var(--bg4)', borderRadius:8, padding:'9px 12px', color:'var(--text)', fontFamily:'var(--font-dm-sans)', fontSize:14, outline:'none', width:'100%', boxSizing:'border-box' as const };
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
+      {/* Resumen del mes */}
+      {Object.keys(byProp).length > 0 && (
+        <div style={{ display:'flex', gap:8, padding:'12px 16px', borderBottom:'.5px solid var(--bg4)', flexWrap:'wrap' }}>
+          {Object.entries(byProp).map(([k,v]) => (
+            <div key={k} style={{ background:'var(--bg2)', border:'.5px solid var(--bg4)', borderRadius:10, padding:'8px 14px', minWidth:90, textAlign:'center' }}>
+              <div style={{ fontFamily:'var(--font-syne)', fontWeight:600, fontSize:18, color:'var(--gold)', lineHeight:1 }}>{v.toFixed(0)}€</div>
+              <div style={{ fontFamily:'var(--font-dm-mono)', fontSize:9, color:'var(--text3)', letterSpacing:'.12em', marginTop:3 }}>{k.toUpperCase()}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Formulario rápido */}
+      <div style={{ padding:'12px 16px', borderBottom:'.5px solid var(--bg4)', display:'flex', flexDirection:'column', gap:8 }}>
+        <div style={{ display:'flex', gap:8 }}>
+          <input value={amount} onChange={e=>setAmount(e.target.value)} placeholder="€" type="number" step="0.01" style={{...INP, width:80, flexShrink:0}} onFocus={e=>(e.target.style.borderColor='var(--gold2)')} onBlur={e=>(e.target.style.borderColor='var(--bg4)')} />
+          <input value={desc} onChange={e=>setDesc(e.target.value)} placeholder="Descripción" style={INP} onFocus={e=>(e.target.style.borderColor='var(--gold2)')} onBlur={e=>(e.target.style.borderColor='var(--bg4)')} onKeyDown={e=>e.key==='Enter'&&save()} />
+        </div>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+          {PROPS.map(p => <button key={p.id} onClick={()=>setPropId(p.id===propId?'':p.id)} style={{ padding:'4px 10px', borderRadius:20, border:`.5px solid ${propId===p.id?'var(--gold2)':'var(--bg4)'}`, background:propId===p.id?'var(--gold-subtle)':'transparent', color:propId===p.id?'var(--gold2)':'var(--text3)', fontFamily:'var(--font-dm-mono)', fontSize:9, letterSpacing:'.12em', cursor:'pointer' }}>{p.label.toUpperCase()}</button>)}
+          <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{...INP, width:'auto', flex:1, padding:'4px 8px', fontSize:12, colorScheme:'dark'}} />
+        </div>
+        <div style={{ display:'flex', gap:5, flexWrap:'wrap' }}>
+          {CATS.map(c => <button key={c} onClick={()=>setCat(c)} style={{ padding:'3px 9px', borderRadius:20, border:`.5px solid ${cat===c?CAT_COLORS[c]:'var(--bg4)'}`, background:cat===c?CAT_COLORS[c]+'18':'transparent', color:cat===c?CAT_COLORS[c]:'var(--text3)', fontFamily:'var(--font-dm-mono)', fontSize:9, letterSpacing:'.1em', cursor:'pointer' }}>{c.toUpperCase()}</button>)}
+        </div>
+        <button onClick={save} disabled={saving||!amount||!desc} style={{ padding:'9px', borderRadius:8, border:'.5px solid var(--gold2)', background:'transparent', color:'var(--gold)', fontFamily:'var(--font-dm-mono)', fontSize:10, letterSpacing:'.16em', cursor:'pointer', opacity:(!amount||!desc)?0.4:1 }}>
+          {saving?'···':'+ AÑADIR GASTO'}
+        </button>
+      </div>
+
+      {/* Filtro */}
+      <div style={{ display:'flex', gap:6, padding:'10px 16px', borderBottom:'.5px solid var(--bg4)' }}>
+        {[{id:'',label:'TODOS'},...PROPS].map(p=><button key={p.id} onClick={()=>setFilterProp(p.id)} style={{ padding:'4px 10px', borderRadius:20, border:`.5px solid ${filterProp===p.id?'var(--gold2)':'var(--bg4)'}`, background:filterProp===p.id?'var(--gold-subtle)':'transparent', color:filterProp===p.id?'var(--gold2)':'var(--text3)', fontFamily:'var(--font-dm-mono)', fontSize:9, letterSpacing:'.12em', cursor:'pointer' }}>{p.label.toUpperCase()}</button>)}
+      </div>
+
+      {/* Lista */}
+      <div style={{ flex:1, overflowY:'auto', padding:'0 16px 80px' }}>
+        {loading ? <div style={{ padding:24, textAlign:'center', fontFamily:'var(--font-dm-mono)', fontSize:11, color:'var(--text3)', letterSpacing:'.14em' }}>···</div> :
+         expenses.length === 0 ? <div style={{ padding:32, textAlign:'center', fontFamily:'var(--font-dm-mono)', fontSize:11, color:'var(--text3)', letterSpacing:'.14em' }}>SIN GASTOS</div> :
+         expenses.map(e => (
+          <div key={e.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 0', borderBottom:'.5px solid var(--bg4)' }}>
+            <div style={{ width:8, height:8, borderRadius:'50%', background:CAT_COLORS[e.category??'otro'], flexShrink:0 }} />
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontFamily:'var(--font-dm-sans)', fontSize:13, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{e.description}</div>
+              <div style={{ fontFamily:'var(--font-dm-mono)', fontSize:9, color:'var(--text3)', letterSpacing:'.08em' }}>{e.date} {e.propertyId ? `· ${e.propertyId}` : ''}</div>
+            </div>
+            <div style={{ fontFamily:'var(--font-syne)', fontWeight:600, fontSize:16, color:'var(--text)', flexShrink:0 }}>{e.amount.toFixed(2)}€</div>
+            <button onClick={()=>del(e.id)} disabled={deleting===e.id} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text3)', fontSize:14, padding:'2px 6px', opacity:deleting===e.id?0.3:1 }}>×</button>
+          </div>
+         ))
+        }
+      </div>
+    </div>
+  );
+}
+
 export default function FinanceClient({ initialRecords }: { initialRecords: FinanceRecord[] }) {
   const router = useRouter();
   const [records, setRecords] = useState(initialRecords);
@@ -264,6 +373,7 @@ export default function FinanceClient({ initialRecords }: { initialRecords: Fina
   const [saving, setSaving] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const [activeTab, setActiveTab] = useState<'registros'|'gastos'>('registros');
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 769);
@@ -321,8 +431,20 @@ export default function FinanceClient({ initialRecords }: { initialRecords: Fina
     <div style={{ width: isMobile ? '100%' : 420, flexShrink: 0, borderRight: isMobile ? 'none' : '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {isMobile && <MobilePageHeader title="Finanzas" />}
 
+      {/* ── Tab selector ── */}
+      <div style={{ display:'flex', gap:6, padding:'12px 18px 0', borderBottom:'.5px solid var(--bg4)', flexShrink:0 }}>
+        {(['registros','gastos'] as const).map(t => (
+          <button key={t} onClick={()=>setActiveTab(t)} style={{ padding:'7px 16px', borderRadius:'8px 8px 0 0', border:`.5px solid ${activeTab===t?'var(--gold2)':'var(--bg4)'}`, borderBottom:activeTab===t?'.5px solid var(--bg)':'none', background:activeTab===t?'var(--bg)':'transparent', color:activeTab===t?'var(--gold2)':'var(--text3)', fontFamily:'var(--font-dm-mono)', fontSize:10, letterSpacing:'.16em', cursor:'pointer', marginBottom:-1 }}>
+            {t.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Gastos tab ── */}
+      {activeTab === 'gastos' && <GastosSection isMobile={isMobile} />}
+
       {/* ── Header métricas ── */}
-      <div style={{ padding: '14px 18px 0', flexShrink: 0 }}>
+      {activeTab === 'registros' && <><div style={{ padding: '14px 18px 0', flexShrink: 0 }}>
         {!isMobile && (
           <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 16, color: 'var(--text)', letterSpacing: '-.01em', marginBottom: 12 }}>
             Finanzas <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>mensuales</em>
@@ -395,6 +517,7 @@ export default function FinanceClient({ initialRecords }: { initialRecords: Fina
           );
         })}
       </div>
+      </>}
     </div>
   );
 

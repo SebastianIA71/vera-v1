@@ -221,6 +221,27 @@ export const financeRecords = sqliteTable('finance_records', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
 });
 
+export const expenses = sqliteTable('expenses', {
+  id:          integer('id').primaryKey({ autoIncrement: true }),
+  propertyId:  text('property_id').references(() => properties.id),
+  projectId:   integer('project_id').references(() => projects.id),
+  amount:      real('amount').notNull(),
+  description: text('description').notNull(),
+  category:    text('category').default('otro'), // mantenimiento|suministros|reforma|compra|otro
+  date:        text('date').notNull(),           // YYYY-MM-DD
+  createdAt:   integer('created_at', { mode: 'timestamp' }).defaultNow(),
+});
+
+export const attachments = sqliteTable('attachments', {
+  id:        integer('id').primaryKey({ autoIncrement: true }),
+  taskId:    integer('task_id').notNull().references(() => tasks.id),
+  url:       text('url').notNull(),
+  filename:  text('filename').notNull(),
+  mimeType:  text('mime_type'),
+  sizeBytes: integer('size_bytes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow(),
+});
+
 export type EventMeta = {
   destination?: string;
   budget?: { total: number; currency: string; spent: number };

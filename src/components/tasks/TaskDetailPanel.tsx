@@ -48,6 +48,78 @@ function daysUntil(date: Date | null | undefined): number | null {
 type SolutionOption = { type: string; label: string; steps: string[]; materials?: string; cost: string; time: string; difficulty: string };
 type SearchResult   = { title: string; url: string; description: string; summary?: string };
 
+type Attachment = { id: number; filename: string; url: string; mimeType: string | null; sizeBytes: number | null };
+
+function AttachmentsSection({ taskId }: { taskId: number }) {
+  const [items, setItems] = useState<Attachment[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const load = async () => {
+    const d = await fetch(`/api/tasks/${taskId}/attachments`).then(r => r.json()).catch(() => []);
+    setItems(d);
+  };
+
+  useEffect(() => { if (open) load(); }, [open]);
+
+  const upload = async (file: File) => {
+    setUploading(true);
+    const fd = new FormData(); fd.append('file', file);
+    const res = await fetch(`/api/tasks/${taskId}/attachments`, { method: 'POST', body: fd });
+    if (res.ok) { const a = await res.json(); setItems(prev => [a, ...prev]); }
+    setUploading(false);
+  };
+
+  const del = async (id: number) => {
+    await fetch(`/api/attachments/${id}`, { method: 'DELETE' });
+    setItems(prev => prev.filter(a => a.id !== id));
+  };
+
+  const isImg = (mime: string | null) => mime?.startsWith('image/');
+  const fmtSize = (b: number | null) => b ? b > 1048576 ? `${(b/1048576).toFixed(1)}MB` : `${(b/1024).toFixed(0)}KB` : '';
+
+  return (
+    <div style={{ margin: '0 16px 8px', border: '.5px solid var(--bg4)', borderRadius: 10, overflow: 'hidden' }}>
+      <button onClick={() => setOpen(o => !o)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg2)', border: 'none', cursor: 'pointer' }}>
+        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--text3)' }}>
+          📎 ADJUNTOS{items.length > 0 ? ` (${items.length})` : ''}
+        </span>
+        <span style={{ color: 'var(--text3)', fontSize: 11 }}>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div style={{ background: 'var(--bg3)', padding: '10px 14px', borderTop: '.5px solid var(--bg4)' }}>
+          <input ref={inputRef} type="file" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }} />
+          <button onClick={() => inputRef.current?.click()} disabled={uploading} style={{ width: '100%', padding: '8px', borderRadius: 8, border: '.5px solid var(--text3)', background: 'transparent', color: uploading ? 'var(--text3)' : 'var(--text2)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', cursor: 'pointer', marginBottom: items.length > 0 ? 10 : 0 }}>
+            {uploading ? '···' : '+ SUBIR ARCHIVO'}
+          </button>
+          {!process.env.NEXT_PUBLIC_BLOB_ENABLED && items.length === 0 && !uploading && (
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.1em', marginTop: 4 }}>
+              Requiere BLOB_READ_WRITE_TOKEN en Vercel
+            </div>
+          )}
+          {items.map(a => (
+            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '.5px solid var(--bg4)' }}>
+              {isImg(a.mimeType) ? (
+                <a href={a.url} target="_blank" rel="noopener noreferrer">
+                  <img src={a.url} alt={a.filename} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 5, flexShrink: 0 }} />
+                </a>
+              ) : (
+                <div style={{ width: 40, height: 40, borderRadius: 5, background: 'var(--bg4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>📄</div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', textDecoration: 'none' }}>{a.filename}</a>
+                {a.sizeBytes && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)' }}>{fmtSize(a.sizeBytes)}</div>}
+              </div>
+              <button onClick={() => del(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 14, padding: '2px 4px' }}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }: Props) {
   const { toast } = useToast();
   const [notes, setNotes] = useState(task.notes ?? '');
@@ -368,6 +440,9 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
           </div>
         )}
       </div>
+
+      {/* Adjuntos */}
+      <AttachmentsSection taskId={task.id} />
 
       {/* FAB */}
       {!isDone && (

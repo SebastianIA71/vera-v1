@@ -33,6 +33,31 @@ export async function runAutoMigrations(): Promise<void> {
       )`,
     },
     {
+      id:  'create.expenses',
+      sql: `CREATE TABLE IF NOT EXISTS expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        property_id TEXT REFERENCES properties(id),
+        project_id INTEGER REFERENCES projects(id),
+        amount REAL NOT NULL,
+        description TEXT NOT NULL,
+        category TEXT DEFAULT 'otro',
+        date TEXT NOT NULL,
+        created_at INTEGER
+      )`,
+    },
+    {
+      id:  'create.attachments',
+      sql: `CREATE TABLE IF NOT EXISTS attachments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_id INTEGER NOT NULL REFERENCES tasks(id),
+        url TEXT NOT NULL,
+        filename TEXT NOT NULL,
+        mime_type TEXT,
+        size_bytes INTEGER,
+        created_at INTEGER
+      )`,
+    },
+    {
       id:  'tasks.recurrence',
       sql: 'ALTER TABLE tasks ADD COLUMN recurrence TEXT',
     },
