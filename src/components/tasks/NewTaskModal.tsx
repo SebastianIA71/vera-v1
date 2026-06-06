@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useToast } from '@/components/ui/Toast';
 
 type Task = { id: number; title: string; propertyId?: string | null; prio?: number | null; prioFinal?: number | null; status?: string | null };
 type Property = { id: string; name: string; color: string | null; icon: string | null };
@@ -26,7 +27,9 @@ export default function NewTaskModal({
   defaultPropertyId?: string;
   defaultProjectId?: number;
 }) {
+  const { toast } = useToast();
   const [title, setTitle]           = useState('');
+  const [titleError, setTitleError] = useState(false);
   const [prio, setPrio]             = useState(5);
   const [propertyId, setPropertyId] = useState(defaultPropertyId ?? '');
   const [projectId, setProjectId]   = useState<number | null>(defaultProjectId ?? null);
@@ -53,17 +56,23 @@ export default function NewTaskModal({
       .catch(() => {});
   }, []);
 
-  const canSave = title.trim().length > 0;
-
   const save = async () => {
-    if (!canSave || saving) return;
+    if (saving) return;
+    if (!title.trim()) { setTitleError(true); return; }
+    setTitleError(false);
     setSaving(true);
     const res = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, prio, propertyId: propertyId || null, projectId: projectId ?? null, tags: tripTitle ?? null, dueDate: dueDate ? new Date(dueDate) : null }),
     });
-    if (res.ok) { const task = await res.json(); onCreated(task); }
+    if (res.ok) {
+      const task = await res.json();
+      onCreated(task);
+      toast('Tarea creada');
+    } else {
+      toast('Error al crear la tarea', 'error');
+    }
     setSaving(false);
     onClose();
   };
@@ -79,8 +88,20 @@ export default function NewTaskModal({
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div>
-            <label style={LABEL}>TÍTULO</label>
-            <input autoFocus value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} placeholder="Qué hay que hacer..." style={INPUT} />
+            <label style={{ ...LABEL, color: titleError ? 'var(--red)' : undefined }}>TÍTULO</label>
+            <input
+              autoFocus
+              value={title}
+              onChange={e => { setTitle(e.target.value); if (titleError) setTitleError(false); }}
+              onKeyDown={e => e.key === 'Enter' && save()}
+              placeholder="Qué hay que hacer..."
+              style={{ ...INPUT, borderColor: titleError ? 'var(--red)' : undefined }}
+            />
+            {titleError && (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--red)', letterSpacing: '.1em', marginTop: 4 }}>
+                El título es obligatorio
+              </div>
+            )}
           </div>
 
           <div>
@@ -95,7 +116,7 @@ export default function NewTaskModal({
                 <button key={n} onClick={() => setPrio(n)} style={{
                   width: 36, height: 36, borderRadius: 8, cursor: 'pointer',
                   border: `.5px solid ${prio === n ? (n >= 8 ? 'var(--red)' : n >= 6 ? 'var(--amber)' : 'var(--gold2)') : 'var(--bg4)'}`,
-                  background: prio === n ? 'rgba(196,168,106,0.1)' : 'transparent',
+                  background: prio === n ? 'var(--gold-subtle)' : 'transparent',
                   color: prio === n ? 'var(--text)' : 'var(--text3)',
                   fontFamily: 'var(--font-dm-mono)', fontSize: 13,
                 }}>{n}</button>
@@ -109,7 +130,7 @@ export default function NewTaskModal({
               <button onClick={() => setPropertyId('')} style={{
                 padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
                 border: `.5px solid ${propertyId === '' ? 'var(--gold2)' : 'var(--bg4)'}`,
-                background: propertyId === '' ? 'rgba(196,168,106,0.12)' : 'transparent',
+                background: propertyId === '' ? 'var(--gold-subtle)' : 'transparent',
                 color: propertyId === '' ? 'var(--gold2)' : 'var(--text3)',
                 fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em',
               }}>NINGUNA</button>
@@ -135,13 +156,13 @@ export default function NewTaskModal({
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <button onClick={() => setProjectId(null)} style={{
                   padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
-                  border: `.5px solid ${projectId === null ? '#9b7fe8' : 'var(--bg4)'}`,
-                  background: projectId === null ? '#9b7fe81e' : 'transparent',
-                  color: projectId === null ? '#9b7fe8' : 'var(--text3)',
+                  border: `.5px solid ${projectId === null ? 'var(--purple)' : 'var(--bg4)'}`,
+                  background: projectId === null ? 'var(--purple-subtle)' : 'transparent',
+                  color: projectId === null ? 'var(--purple)' : 'var(--text3)',
                   fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em',
                 }}>NINGUNO</button>
                 {projList.map(p => {
-                  const col = p.color ?? '#9b7fe8';
+                  const col = p.color ?? 'var(--purple)';
                   const sel = projectId === p.id;
                   return (
                     <button key={p.id} onClick={() => setProjectId(p.id)} style={{
@@ -164,7 +185,7 @@ export default function NewTaskModal({
                 <button onClick={() => setTripTitle(null)} style={{
                   padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
                   border: `.5px solid ${tripTitle === null ? 'var(--blue)' : 'var(--bg4)'}`,
-                  background: tripTitle === null ? 'rgba(91,168,232,0.12)' : 'transparent',
+                  background: tripTitle === null ? 'var(--blue-subtle)' : 'transparent',
                   color: tripTitle === null ? 'var(--blue)' : 'var(--text3)',
                   fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em',
                 }}>NINGUNO</button>
@@ -172,7 +193,7 @@ export default function NewTaskModal({
                   <button key={t.id} onClick={() => setTripTitle(tripTitle === t.title ? null : t.title)} style={{
                     padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
                     border: `.5px solid ${tripTitle === t.title ? 'var(--blue)' : 'var(--bg4)'}`,
-                    background: tripTitle === t.title ? 'rgba(91,168,232,0.12)' : 'transparent',
+                    background: tripTitle === t.title ? 'var(--blue-subtle)' : 'transparent',
                     color: tripTitle === t.title ? 'var(--blue)' : 'var(--text3)',
                     fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em',
                   }}>{t.title.toUpperCase()}</button>
@@ -181,14 +202,15 @@ export default function NewTaskModal({
             </div>
           )}
 
-          <button onClick={save} disabled={!canSave || saving} style={{
+          <button onClick={save} disabled={saving} style={{
             width: '100%', padding: '14px', borderRadius: 10,
-            background: canSave ? 'var(--gold2)' : 'var(--bg3)', border: 'none',
-            color: canSave ? 'var(--bg)' : 'var(--text3)',
+            background: 'var(--gold2)', border: 'none',
+            color: 'var(--bg)',
             fontFamily: 'var(--font-dm-mono)', fontSize: 12, letterSpacing: '.2em',
-            cursor: canSave ? 'pointer' : 'default', transition: 'all .15s', marginTop: 4,
+            cursor: saving ? 'default' : 'pointer', transition: 'all .15s', marginTop: 4,
+            opacity: saving ? 0.6 : 1,
           }}>
-            {saving ? 'GUARDANDO...' : 'CREAR TAREA'}
+            {saving ? 'GUARDANDO···' : 'CREAR TAREA'}
           </button>
         </div>
       </div>

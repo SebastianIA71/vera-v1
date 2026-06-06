@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import EditTaskModal from './EditTaskModal';
+import { useToast } from '@/components/ui/Toast';
 
 export type TaskDetail = {
   id: number;
@@ -45,6 +46,7 @@ function daysUntil(date: Date | null | undefined): number | null {
 }
 
 export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }: Props) {
+  const { toast } = useToast();
   const [notes, setNotes] = useState(task.notes ?? '');
   const [saving, setSaving] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -75,6 +77,7 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
       body: JSON.stringify({ status: 'done' }),
     });
     onMarkDone(task.id);
+    toast('Marcada como hecha ✓');
   };
 
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useToast } from '@/components/ui/Toast';
 
 type Task = {
   id: number;
@@ -36,7 +37,9 @@ export default function EditTaskModal({
   onClose: () => void;
   onUpdated: (t: Task) => void;
 }) {
+  const { toast } = useToast();
   const [title, setTitle] = useState(task.title);
+  const [titleError, setTitleError] = useState(false);
   const [detail, setDetail] = useState(task.detail ?? '');
   const [prio, setPrio] = useState(task.prioFinal ?? task.prio ?? 5);
   const [propertyId, setPropertyId] = useState(task.propertyId ?? '');
@@ -60,10 +63,10 @@ export default function EditTaskModal({
       .catch(() => {});
   }, []);
 
-  const canSave = title.trim().length > 0;
-
   const save = async () => {
-    if (!canSave || saving) return;
+    if (saving) return;
+    if (!title.trim()) { setTitleError(true); return; }
+    setTitleError(false);
     setSaving(true);
     const res = await fetch(`/api/tasks/${task.id}`, {
       method: 'PUT',
@@ -83,6 +86,9 @@ export default function EditTaskModal({
     if (res.ok) {
       const updated = await res.json();
       onUpdated(updated);
+      toast('Tarea actualizada');
+    } else {
+      toast('Error al guardar', 'error');
     }
     setSaving(false);
     onClose();
@@ -99,8 +105,20 @@ export default function EditTaskModal({
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div>
-            <label style={LABEL}>TÍTULO</label>
-            <input autoFocus value={title} onChange={e => setTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} placeholder="Qué hay que hacer..." style={INPUT} />
+            <label style={{ ...LABEL, color: titleError ? 'var(--red)' : undefined }}>TÍTULO</label>
+            <input
+              autoFocus
+              value={title}
+              onChange={e => { setTitle(e.target.value); if (titleError) setTitleError(false); }}
+              onKeyDown={e => e.key === 'Enter' && save()}
+              placeholder="Qué hay que hacer..."
+              style={{ ...INPUT, borderColor: titleError ? 'var(--red)' : undefined }}
+            />
+            {titleError && (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--red)', letterSpacing: '.1em', marginTop: 4 }}>
+                El título es obligatorio
+              </div>
+            )}
           </div>
 
           <div>
@@ -121,7 +139,7 @@ export default function EditTaskModal({
                     borderRadius: 8,
                     cursor: 'pointer',
                     border: `.5px solid ${prio === n ? (n >= 8 ? 'var(--red)' : n >= 6 ? 'var(--amber)' : 'var(--gold2)') : 'var(--bg4)'}`,
-                    background: prio === n ? 'rgba(196,168,106,0.1)' : 'transparent',
+                    background: prio === n ? 'var(--gold-subtle)' : 'transparent',
                     color: prio === n ? 'var(--text)' : 'var(--text3)',
                     fontFamily: 'var(--font-dm-mono)',
                     fontSize: 13,
@@ -257,7 +275,7 @@ export default function EditTaskModal({
           </button>
           <button
             onClick={save}
-            disabled={!canSave || saving}
+            disabled={saving}
             style={{
               flex: 1,
               padding: 12,
@@ -268,11 +286,11 @@ export default function EditTaskModal({
               fontFamily: 'var(--font-dm-mono)',
               fontSize: 11,
               letterSpacing: '.2em',
-              cursor: canSave && !saving ? 'pointer' : 'default',
-              opacity: canSave && !saving ? 1 : 0.5,
+              cursor: saving ? 'default' : 'pointer',
+              opacity: saving ? 0.6 : 1,
             }}
           >
-            {saving ? 'GUARDANDO...' : 'GUARDAR'}
+            {saving ? 'GUARDANDO···' : 'GUARDAR'}
           </button>
         </div>
       </div>

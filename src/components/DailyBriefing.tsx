@@ -94,7 +94,7 @@ export default function DailyBriefing({ compact = false }: { compact?: boolean }
             {titleData.title}
           </span>
           {titleData.lang && (
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em' }}>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.1em' }}>
               {titleData.lang}
             </span>
           )}
@@ -116,17 +116,19 @@ export default function DailyBriefing({ compact = false }: { compact?: boolean }
 
       <div style={{
         background: 'var(--bg2)', border: '.5px solid var(--bg4)',
-        borderLeft: '2px solid rgba(196,168,106,0.3)',
+        borderLeft: '2px solid var(--gold-ring)',
         borderRadius: compact ? 8 : 14,
         padding: compact ? '10px 12px' : '14px 16px',
       }}>
         {loading && (
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)' }}>
-            GENERANDO···
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '2px 0' }}>
+            <div className="skeleton" style={{ height: 11, width: '92%' }} />
+            <div className="skeleton" style={{ height: 11, width: '78%' }} />
+            <div className="skeleton" style={{ height: 11, width: '85%' }} />
           </div>
         )}
         {!loading && !briefing && (
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.1em' }}>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.1em' }}>
             Sin briefing disponible.
           </div>
         )}

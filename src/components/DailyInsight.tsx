@@ -19,13 +19,13 @@ function IdeaCard({ idea }: { idea: Idea }) {
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
         {idea.title}
       </div>
-      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 10,
+      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11,
         color: 'var(--text2)', lineHeight: 1.3, overflow: 'hidden',
         display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
         {idea.description}
       </div>
       {idea.url && (
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7,
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11,
           color: 'var(--blue)', letterSpacing: '.06em', marginTop: 1,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {idea.url.replace(/^https?:\/\//, '').split('/')[0]}
@@ -59,7 +59,7 @@ export default function DailyInsight() {
           Pick
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, color: 'var(--text3)', letterSpacing: '.1em' }}>
+          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.1em' }}>
             {data?.mode === 'ai' && 'VERA'}
             {data?.mode === 'search' && 'WEB'}
           </span>
@@ -83,9 +83,9 @@ export default function DailyInsight() {
         borderRadius: 10, padding: '10px 10px 8px' }}>
 
         {loading && (
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9,
-            letterSpacing: '.18em', color: 'var(--text3)', padding: '8px 0' }}>
-            BUSCANDO···
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, padding: '4px 0' }}>
+            <div className="skeleton" style={{ height: 10, width: '88%' }} />
+            <div className="skeleton" style={{ height: 10, width: '65%' }} />
           </div>
         )}
 
@@ -109,13 +109,13 @@ export default function DailyInsight() {
                   {data.taskTitle}
                 </span>
               </div>
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9,
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11,
                 color: 'var(--text3)', flexShrink: 0 }}>p{data.taskPrio}</span>
             </div>
 
             {(data.ideas ?? []).length === 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center', padding: '4px 0' }}>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9,
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11,
                   color: 'var(--text3)', letterSpacing: '.1em' }}>
                   Sin perspectivas.
                 </div>
