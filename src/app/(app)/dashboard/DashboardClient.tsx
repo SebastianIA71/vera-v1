@@ -18,6 +18,7 @@ const NewProjectSheet  = dynamic(() => import('@/components/projects/NewProjectS
 const NewTaskModal     = dynamic(() => import('@/components/tasks/NewTaskModal'), { ssr: false });
 const DailyInsight     = dynamic(() => import('@/components/DailyInsight'), { ssr: false });
 const DailyBriefing    = dynamic(() => import('@/components/DailyBriefing'), { ssr: false });
+const SongOfDay        = dynamic(() => import('@/components/SongOfDay'), { ssr: false });
 const ThemeToggle      = dynamic(() => import('@/components/ThemeToggle'), { ssr: false });
 
 /* ─── Types ─────────────────────────────────────────── */
@@ -411,6 +412,7 @@ export default function DashboardClient({
           <div style={{ height: '.5px', background: 'var(--bg4)', margin: '4px 16px' }} />
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px 20px' }}>
             <DailyBriefing compact={true} />
+            <SongOfDay compact={true} />
           </div>
         </div>
 

@@ -21,6 +21,7 @@ const InboxMobile         = dynamic(() => import('@/components/inbox/InboxMobile
 const NewEventSheet       = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
 const NewTaskModal        = dynamic(() => import('@/components/tasks/NewTaskModal'), { ssr: false });
 const VeraPick            = dynamic(() => import('@/components/VeraPick'), { ssr: false });
+const SongOfDay           = dynamic(() => import('@/components/SongOfDay'), { ssr: false });
 const FinanceSparklineHeader = dynamic(
   () => import('@/components/finance/FinanceSparklineHeader').then(m => ({ default: m.FinanceSparklineHeader })),
   { ssr: false }
@@ -55,6 +56,7 @@ export default function MobileHome({
 
         <HomeHeader />
         <HomeGreeting nextTrip={nextTrip} weightLogs={weightLogs} />
+        <SongOfDay />
 
         {isVisible('now') && urgentTasks.length > 0 && (
           <NowSection urgentTasks={urgentTasks} urgentTotal={urgentTotal} doneTodayCount={isVisible('done') ? doneTodayCount : 0} />
