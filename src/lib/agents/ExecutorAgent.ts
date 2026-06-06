@@ -6,18 +6,13 @@ export type WhatsAppDraft = {
   body: string;
 };
 
-export type WhatsAppResult =
-  | { mode: 'ready'; draft: WhatsAppDraft }
-  | { mode: 'copy'; draft: WhatsAppDraft; notice: string }
-  | { mode: 'no_ai'; notice: string };
-
 export async function draftWhatsApp(input: {
   to: string;
   context: string;
   tone?: string;
-}): Promise<WhatsAppResult> {
+}): Promise<{ draft: WhatsAppDraft } | { notice: string }> {
   if (!capabilities.ai.available) {
-    return { mode: 'no_ai', notice: 'Sin IA — redacta manualmente.' };
+    return { notice: 'Sin IA — redacta manualmente.' };
   }
 
   const tone = input.tone ?? 'natural';
@@ -33,30 +28,7 @@ Devuelve SOLO el cuerpo del mensaje en español. Máximo 300 caracteres. Conciso
   );
 
   const body = result.ok ? result.text : input.context.slice(0, 300);
-  const draft: WhatsAppDraft = { to: input.to, body };
-
-  if (!capabilities.whatsapp) {
-    return { mode: 'copy', draft, notice: 'Twilio no configurado — copia y envía manualmente.' };
-  }
-
-  return { mode: 'ready', draft };
-}
-
-export async function sendWhatsApp(draft: WhatsAppDraft): Promise<{ ok: boolean; sid?: string }> {
-  if (!capabilities.whatsapp) return { ok: false };
-
-  try {
-    const twilio = (await import('twilio')).default;
-    const client = twilio(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!);
-    const msg = await client.messages.create({
-      from: process.env.TWILIO_WHATSAPP_FROM ?? 'whatsapp:+14155238886',
-      to: `whatsapp:${draft.to}`,
-      body: draft.body,
-    });
-    return { ok: true, sid: msg.sid };
-  } catch {
-    return { ok: false };
-  }
+  return { draft: { to: input.to, body } };
 }
 
 export type EmailDraft = {
@@ -78,10 +50,7 @@ export async function draftEmail(input: {
   tone?: string;
 }): Promise<ExecutorResult> {
   if (!capabilities.ai.available) {
-    return {
-      mode: 'no_ai',
-      notice: 'Sin IA — redacta manualmente.',
-    };
+    return { mode: 'no_ai', notice: 'Sin IA — redacta manualmente.' };
   }
 
   const tone = (input.tone ?? 'natural') as EmailDraft['tone'];
@@ -98,13 +67,7 @@ Máximo 150 palabras. Concreto y sin relleno.`;
   );
 
   const body = result.ok ? result.text : `${input.context}\n\nSaludos,\nSebastián`;
-
-  const draft: EmailDraft = {
-    to: input.to,
-    subject: input.subject,
-    body,
-    tone,
-  };
+  const draft: EmailDraft = { to: input.to, subject: input.subject, body, tone };
 
   if (!capabilities.email) {
     return { mode: 'copy', draft, notice: 'Sin Resend configurado — copia el texto y envía manualmente.' };

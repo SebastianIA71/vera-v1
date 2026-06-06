@@ -540,8 +540,6 @@ function WhatsAppSubPanel() {
   const [loading, setLoading] = useState(false);
   const [draft, setDraft] = useState<{ body: string; to: string } | null>(null);
   const [notice, setNotice] = useState('');
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
 
   const generate = async () => {
     setLoading(true); setNotice('');
@@ -551,13 +549,13 @@ function WhatsAppSubPanel() {
     if (d.notice) setNotice(d.notice);
     setLoading(false);
   };
-  const send = async () => {
-    if (!draft) return; setSending(true);
-    const r = await fetch('/api/agents/executor/whatsapp/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) });
-    const d = await r.json(); if (d.ok) setSent(true); else setNotice('Error al enviar.'); setSending(false);
-  };
 
-  if (sent) return <div style={{ textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 14, color: 'var(--green)', padding: 16 }}>✓ WHATSAPP ENVIADO</div>;
+  const openWhatsApp = () => {
+    if (!draft) return;
+    const num = draft.to.replace(/[^0-9]/g, '');
+    const url = `https://wa.me/${num}?text=${encodeURIComponent(draft.body)}`;
+    window.open(url, '_blank');
+  };
 
   if (draft) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -571,7 +569,7 @@ function WhatsAppSubPanel() {
       {notice && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--amber)' }}>{notice}</div>}
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={() => { setDraft(null); setNotice(''); }} style={{ ...BTN, flex: 1, border: '.5px solid var(--bg4)', color: 'var(--text2)', padding: '12px 8px' }}>← VOLVER</button>
-        {!notice && <button onClick={send} disabled={sending} style={{ ...BTN, flex: 2, border: '.5px solid var(--green)', color: 'var(--green)', padding: '12px 8px' }}>{sending ? '···' : 'CONFIRMAR →'}</button>}
+        <button onClick={openWhatsApp} style={{ ...BTN, flex: 2, border: '.5px solid var(--green)', color: 'var(--green)', padding: '12px 8px' }}>ABRIR EN WHATSAPP →</button>
       </div>
     </div>
   );
@@ -580,7 +578,6 @@ function WhatsAppSubPanel() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
       <input value={to} onChange={e => setTo(e.target.value)} placeholder="+34 XXX XXX XXX" style={INPUT} />
       <textarea value={context} onChange={e => setContext(e.target.value)} placeholder="¿Qué quieres decir?" style={{ ...INPUT, resize: 'none', minHeight: 80 }} />
-      {/* Tono */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
         {(['natural', 'formal', 'casual'] as const).map(t => (
           <button key={t} onClick={() => setTone(t)} style={{
