@@ -14,6 +14,8 @@ type Task = {
   status?: string | null;
   tags?: string | null;
   dueDate?: Date | null;
+  recurrence?: string | null;
+  recurrenceInterval?: number | null;
 };
 
 type Property = { id: string; name: string; color: string | null; icon: string | null };
@@ -46,6 +48,8 @@ export default function EditTaskModal({
   const [projectId, setProjectId] = useState<number | null>(task.projectId ?? null);
   const [tags, setTags] = useState(task.tags ?? '');
   const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '');
+  const [recurrence, setRecurrence] = useState<string>(task.recurrence ?? '');
+  const [recurrenceInterval, setRecurrenceInterval] = useState<string>(String(task.recurrenceInterval ?? 7));
   const [saving, setSaving] = useState(false);
   const [propList, setPropList] = useState<Property[]>([]);
   const [projList, setProjList] = useState<{ id: number; name: string; color: string | null }[]>([]);
@@ -81,6 +85,8 @@ export default function EditTaskModal({
         projectId: projectId ?? null,
         tags: tags || null,
         dueDate: dueDate ? new Date(dueDate) : null,
+        recurrence: recurrence || null,
+        recurrenceInterval: recurrence === 'custom' ? Number(recurrenceInterval) : null,
       }),
     });
     if (res.ok) {
@@ -252,6 +258,47 @@ export default function EditTaskModal({
           <div>
             <label style={LABEL}>FECHA LÍMITE (opcional)</label>
             <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} style={{ ...INPUT, colorScheme: 'dark' }} />
+          </div>
+
+          <div>
+            <label style={LABEL}>RECURRENCIA</label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {[
+                { value: '', label: 'NINGUNA' },
+                { value: 'daily', label: 'DIARIA' },
+                { value: 'weekly', label: 'SEMANAL' },
+                { value: 'monthly', label: 'MENSUAL' },
+                { value: 'custom', label: 'CUSTOM' },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setRecurrence(opt.value)}
+                  style={{
+                    padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
+                    border: `.5px solid ${recurrence === opt.value ? 'var(--cyan)' : 'var(--bg4)'}`,
+                    background: recurrence === opt.value ? 'rgba(62,207,207,0.12)' : 'transparent',
+                    color: recurrence === opt.value ? 'var(--cyan)' : 'var(--text3)',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em',
+                  }}
+                >{opt.label}</button>
+              ))}
+            </div>
+            {recurrence === 'custom' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em' }}>CADA</span>
+                <input
+                  type="number" min={1} max={365} value={recurrenceInterval}
+                  onChange={e => setRecurrenceInterval(e.target.value)}
+                  style={{ ...INPUT, width: 70, textAlign: 'center', padding: '8px' }}
+                />
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em' }}>DÍAS</span>
+              </div>
+            )}
+            {recurrence && (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: '.1em', marginTop: 6, opacity: 0.7 }}>
+                Al marcar como hecha, Vera creará automáticamente la siguiente
+              </div>
+            )}
           </div>
         </div>
 

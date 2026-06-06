@@ -32,6 +32,14 @@ export async function runAutoMigrations(): Promise<void> {
         created_at INTEGER, updated_at INTEGER
       )`,
     },
+    {
+      id:  'tasks.recurrence',
+      sql: 'ALTER TABLE tasks ADD COLUMN recurrence TEXT',
+    },
+    {
+      id:  'tasks.recurrence_interval',
+      sql: 'ALTER TABLE tasks ADD COLUMN recurrence_interval INTEGER',
+    },
   ];
 
   for (const m of migrations) {

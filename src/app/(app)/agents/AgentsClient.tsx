@@ -8,7 +8,7 @@ import { APP_VERSION } from '@/lib/version';
 import type { AgentStats } from '@/app/api/agents/status/route';
 
 /* ─── Tipos y constantes ─────────────────────────────────── */
-type AgentId = 'prio' | 'alert' | 'search' | 'executor' | 'solution' | 'voice' | 'jarvis' | 'contacts';
+type AgentId = 'prio' | 'alert' | 'search' | 'executor' | 'solution' | 'voice' | 'jarvis' | 'contacts' | 'draft';
 
 const AGENTS: { id: AgentId; label: string; color: string; icon: string; desc: string; cron?: string }[] = [
   { id: 'alert',    label: 'Alert',    color: 'var(--red)',    icon: '🔔', desc: 'Push · stale · contratos · viajes', cron: '7:00h diario' },
@@ -19,6 +19,7 @@ const AGENTS: { id: AgentId; label: string; color: string; icon: string; desc: s
   { id: 'executor', label: 'Executor', color: 'var(--green)',  icon: '📧', desc: 'Email + WhatsApp draft + envío' },
   { id: 'voice',    label: 'Voice',    color: 'var(--gold2)',  icon: '🎤', desc: 'Captura de voz → inbox' },
   { id: 'jarvis',   label: 'Jarvis',   color: 'var(--gold)',   icon: '✦',  desc: 'Pipeline autónomo' },
+  { id: 'draft',    label: 'IAfont',   color: 'var(--cyan)',   icon: '✍️',  desc: 'Borradores Substack · LinkedIn · X' },
 ];
 
 const BTN: React.CSSProperties = {
@@ -177,6 +178,7 @@ function AgentCard({
           {agent.id === 'executor' && <ExecutorPanel />}
           {agent.id === 'voice'    && <VoiceInfoPanel />}
           {agent.id === 'jarvis'   && <JarvisInfoPanel />}
+          {agent.id === 'draft'    && <DraftPanel />}
         </div>
       )}
     </div>
@@ -676,6 +678,93 @@ function JarvisInfoPanel() {
       <div style={{ marginBottom: 6 }}>Di <strong style={{ color: 'var(--cyan)' }}>"Jarvis, [consulta]"</strong> en la captura de voz para activar el pipeline autónomo.</div>
       <div style={{ marginBottom: 6 }}>Claude Sonnet investiga con autonomía total, crea una tarea y envía push + guarda en Inbox.</div>
       <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em', color: 'var(--text4)' }}>Ejemplo: "Jarvis, busca el precio de un compresor de aire para Willy's"</div>
+    </div>
+  );
+}
+
+/* ── IAfont Draft ── */
+type PostDraft = { title: string; hook: string; sections: { heading: string; content: string }[]; cta: string; format: string };
+
+function DraftPanel() {
+  const [idea, setIdea] = useState('');
+  const [format, setFormat] = useState<'substack' | 'linkedin' | 'thread'>('substack');
+  const [loading, setLoading] = useState(false);
+  const [draft, setDraft] = useState<PostDraft | null>(null);
+  const [notice, setNotice] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const generate = async () => {
+    if (!idea.trim()) return;
+    setLoading(true); setNotice(''); setDraft(null);
+    const r = await fetch('/api/agents/draft-post', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idea, format }) });
+    const d = await r.json();
+    if (d.draft) setDraft(d.draft);
+    else setNotice(d.notice ?? 'Error generando borrador');
+    setLoading(false);
+  };
+
+  const fullText = draft ? [
+    draft.title,
+    '',
+    draft.hook,
+    '',
+    ...draft.sections.flatMap(s => [s.heading ? `## ${s.heading}` : '', s.content, '']),
+    draft.cta,
+  ].join('\n') : '';
+
+  const copy = () => {
+    navigator.clipboard.writeText(fullText).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  };
+
+  if (draft) return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--cyan)', textTransform: 'uppercase' }}>{draft.format}</span>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button onClick={copy} style={{ ...BTN, padding: '5px 12px', border: `.5px solid ${copied ? 'var(--green)' : 'var(--cyan)'}`, color: copied ? 'var(--green)' : 'var(--cyan)', width: 'auto' }}>
+            {copied ? '✓ COPIADO' : 'COPIAR'}
+          </button>
+          <button onClick={() => setDraft(null)} style={{ ...BTN, padding: '5px 12px', border: '.5px solid var(--bg4)', color: 'var(--text3)', width: 'auto' }}>← NUEVA</button>
+        </div>
+      </div>
+      {/* Título */}
+      <div style={{ background: 'var(--bg2)', borderLeft: '3px solid var(--cyan)', borderRadius: 10, padding: '12px 14px' }}>
+        <div style={{ fontFamily: 'var(--font-syne)', fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 8 }}>{draft.title}</div>
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text2)', lineHeight: 1.6, fontStyle: 'italic' }}>{draft.hook}</div>
+      </div>
+      {/* Secciones */}
+      {draft.sections.map((s, i) => (
+        <div key={i} style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 14px' }}>
+          {s.heading && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--cyan)', letterSpacing: '.14em', marginBottom: 6 }}>{s.heading.toUpperCase()}</div>}
+          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>{s.content}</div>
+        </div>
+      ))}
+      {/* CTA */}
+      <div style={{ background: 'var(--bg2)', border: '.5px solid var(--cyan)44', borderRadius: 10, padding: '10px 14px', fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--cyan)', lineHeight: 1.5 }}>
+        {draft.cta}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 2 }}>
+        {(['substack', 'linkedin', 'thread'] as const).map(f => (
+          <button key={f} onClick={() => setFormat(f)} style={{
+            flex: 1, padding: '6px 4px', borderRadius: 8,
+            border: `.5px solid ${format === f ? 'var(--cyan)' : 'var(--bg4)'}`,
+            background: format === f ? 'rgba(62,207,207,0.12)' : 'transparent', cursor: 'pointer',
+            fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em',
+            color: format === f ? 'var(--cyan)' : 'var(--text3)',
+          }}>{f.toUpperCase()}</button>
+        ))}
+      </div>
+      <textarea value={idea} onChange={e => setIdea(e.target.value)} placeholder="Idea o tema del post..." style={{ ...INPUT, resize: 'none', minHeight: 80 }} />
+      {notice && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--red)' }}>{notice}</div>}
+      <button onClick={generate} disabled={loading || !idea.trim()} style={{ ...BTN, border: '.5px solid var(--cyan)', color: 'var(--cyan)' }}>
+        {loading ? '···' : 'GENERAR BORRADOR →'}
+      </button>
     </div>
   );
 }
