@@ -57,7 +57,7 @@ function NumInput({ label, value, onChange, color = 'var(--gold2)' }: {
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)' }}>
+      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)' }}>
         {label}
       </div>
       <input
@@ -84,7 +84,7 @@ function Group({ label, color, children }: { label: string; color: string; child
   return (
     <div style={{ marginBottom: 14 }}>
       <div style={{
-        fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.26em',
+        fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.26em',
         color, borderBottom: `.5px solid ${color}33`, paddingBottom: 5, marginBottom: 8,
       }}>
         {label}
@@ -101,7 +101,7 @@ function CalcDisplay({ calcs }: { calcs: { A:number; B:number; C:number; D:numbe
   const { A, B, C, D, E } = calcs;
   return (
     <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 12, padding: '14px 16px', marginTop: 12 }}>
-      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.26em', color: 'var(--text4)', marginBottom: 12 }}>
+      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.26em', color: 'var(--text4)', marginBottom: 12 }}>
         CALCULADOS — SÓLO LECTURA
       </div>
 
@@ -109,16 +109,16 @@ function CalcDisplay({ calcs }: { calcs: { A:number; B:number; C:number; D:numbe
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
         {[['A', fmt(A), 'VB+XC', 'var(--gold2)'], ['B', fmt(B), 'VB+XC+PS+PM', 'var(--gold)'], ['C', fmt(C), 'LF+RS+GH+MH/2', 'var(--amber)']].map(([lbl, val, hint, col]) => (
           <div key={lbl} style={{ textAlign: 'center', padding: '8px 6px', borderRadius: 8, background: 'var(--bg3)', border: `.5px solid ${col}22` }}>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: col as string, letterSpacing: '.2em', marginBottom: 3 }}>{lbl}</div>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: col as string, letterSpacing: '.2em', marginBottom: 3 }}>{lbl}</div>
             <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 22, color: col as string, lineHeight: 1 }}>{val}</div>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, color: 'var(--text3)', marginTop: 3 }}>{hint}</div>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', marginTop: 3 }}>{hint}</div>
           </div>
         ))}
       </div>
 
       {/* D — protagonista */}
-      <div style={{ textAlign: 'center', padding: '14px 12px', borderRadius: 10, background: 'rgba(196,168,106,0.06)', border: '.5px solid rgba(196,168,106,0.25)', marginBottom: 8 }}>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.2em', marginBottom: 4 }}>
+      <div style={{ textAlign: 'center', padding: '14px 12px', borderRadius: 10, background: 'var(--gold-subtle)', border: '.5px solid var(--gold-ring)', marginBottom: 8 }}>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.2em', marginBottom: 4 }}>
           D · (A+B+C) / 1000
         </div>
         <div style={{ fontFamily: '"Arial Black", Arial, sans-serif', fontWeight: 900, fontSize: 52, color: 'var(--gold)', lineHeight: 1, letterSpacing: '-.03em' }}>
@@ -128,7 +128,7 @@ function CalcDisplay({ calcs }: { calcs: { A:number; B:number; C:number; D:numbe
 
       {/* E */}
       <div style={{ textAlign: 'center', padding: '8px 12px', borderRadius: 8, background: 'var(--bg3)', border: '.5px solid var(--green)22' }}>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--green)', letterSpacing: '.2em', marginBottom: 3 }}>E · DO+MO+SO</div>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: '.2em', marginBottom: 3 }}>E · DO+MO+SO</div>
         <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 26, color: 'var(--green)', lineHeight: 1 }}>{fmt(E)}</div>
       </div>
     </div>
@@ -177,14 +177,14 @@ function FinanceForm({ initial, onSave, onDelete, onCancel, saving }: {
         <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 16, color: 'var(--text)' }}>
           {isNew ? <em style={{ color: 'var(--gold)', fontStyle: 'italic' }}>Nuevo</em> : fmtDate(form.date)}
         </div>
-        <button onClick={onCancel} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer' }}>
+        <button onClick={onCancel} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer' }}>
           ← LISTA
         </button>
       </div>
 
       {/* Fecha */}
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', marginBottom: 5 }}>FECHA</div>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)', marginBottom: 5 }}>FECHA</div>
         <input
           type="date"
           value={form.date}
@@ -354,8 +354,8 @@ export default function FinanceClient({ initialRecords }: { initialRecords: Fina
         {records.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 180, gap: 8 }}>
             <div style={{ fontFamily: 'var(--font-syne)', fontSize: 28, color: 'var(--gold)' }}>✦</div>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.2em', color: 'var(--text3)', textAlign: 'center' }}>SIN REGISTROS</div>
-            <button onClick={handleSeed} disabled={seeding} style={{ marginTop: 6, padding: '7px 14px', borderRadius: 8, border: '.5px solid var(--text3)', background: 'transparent', color: 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', cursor: 'pointer' }}>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.2em', color: 'var(--text3)', textAlign: 'center' }}>SIN REGISTROS</div>
+            <button onClick={handleSeed} disabled={seeding} style={{ marginTop: 6, padding: '7px 14px', borderRadius: 8, border: '.5px solid var(--text3)', background: 'transparent', color: 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', cursor: 'pointer' }}>
               CARGAR DATOS DEL EXCEL →
             </button>
           </div>
@@ -385,7 +385,7 @@ export default function FinanceClient({ initialRecords }: { initialRecords: Fina
                   {fmtD(D)}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 12, fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.08em' }}>
+              <div style={{ display: 'flex', gap: 12, fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text4)', letterSpacing: '.08em' }}>
                 <span>A <span style={{ color: 'var(--text2)' }}>{(r.calcA??0).toFixed(1)}</span></span>
                 <span>B <span style={{ color: 'var(--gold2)' }}>{(r.calcB??0).toFixed(1)}</span></span>
                 <span>C <span style={{ color: 'var(--amber)' }}>{(r.calcC??0).toFixed(0)}</span></span>

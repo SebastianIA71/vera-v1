@@ -119,7 +119,7 @@ export default function NewEventSheet({ onClose, onCreated, onUpdated, type: def
 
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, backdropFilter: 'blur(2px)' }} />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 200, backdropFilter: 'blur(2px)' }} />
 
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,

@@ -142,7 +142,7 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
               }}>
                 {label}
                 {count !== null && count > 0 && (
-                  <span style={{ display: 'inline-block', background: 'var(--red)', color: '#fff', fontSize: 8, padding: '1px 4px', borderRadius: 999, marginLeft: 5 }}>{count}</span>
+                  <span style={{ display: 'inline-block', background: 'var(--red)', color: '#fff', fontSize: 10, padding: '1px 4px', borderRadius: 999, marginLeft: 5 }}>{count}</span>
                 )}
               </button>
             ))}
@@ -153,7 +153,7 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
           {filtered.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 200, gap: 8 }}>
               <div style={{ fontFamily: 'var(--font-syne)', fontSize: 32, color: 'var(--gold)' }}>✦</div>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text3)' }}>INBOX VACÍO</div>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.2em', color: 'var(--text3)' }}>INBOX VACÍO</div>
             </div>
           ) : filtered.map(item => (
             <div key={item.id} onClick={() => selectItem(item)} style={{
@@ -171,7 +171,7 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: srcColor(item.source), display: 'inline-block' }} />
                   {(item.source ?? 'manual').toUpperCase()}
                 </div>
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text4)' }}>
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', color: 'var(--text4)' }}>
                   {fmtTime(item.createdAt)}
                 </span>
               </div>
@@ -180,7 +180,7 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
               </div>
               {item.suggestedPropertyId && (
                 <div style={{ marginTop: 6 }}>
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', padding: '2px 6px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--gold2)' }}>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', padding: '2px 6px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--gold2)' }}>
                     {item.suggestedPropertyId.toUpperCase()}
                   </span>
                 </div>
@@ -198,7 +198,7 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
               <button onClick={() => setSelected(null)} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer' }}>
                 ← LISTA
               </button>
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', color: 'var(--text4)' }}>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.14em', color: 'var(--text4)' }}>
                 {fmtTime(selected.createdAt)}
               </span>
             </div>
@@ -213,7 +213,7 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
           <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Contenido original */}
             <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 12, padding: 16 }}>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: 'var(--text4)', marginBottom: 8 }}>CAPTURA ORIGINAL</div>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.24em', color: 'var(--text4)', marginBottom: 8 }}>CAPTURA ORIGINAL</div>
               <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 16, lineHeight: 1.5, color: 'var(--text)' }}>{selected.content}</div>
             </div>
 
@@ -221,7 +221,7 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
             {!selected.processed && (
               <div style={{ background: 'transparent', border: '.5px solid #2d2640', borderRadius: 12, padding: '14px 16px', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,rgba(155,127,232,.05),transparent 60%)', pointerEvents: 'none' }} />
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: 'var(--purple)', marginBottom: 12 }}>CLASIFICAR COMO TAREA</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.24em', color: 'var(--purple)', marginBottom: 12 }}>CLASIFICAR COMO TAREA</div>
 
                 <div style={{ marginBottom: 12 }}>
                   <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)', marginBottom: 6 }}>TÍTULO</div>

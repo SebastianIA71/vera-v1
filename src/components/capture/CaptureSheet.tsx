@@ -157,7 +157,7 @@ export default function CaptureSheet({ onClose }: Props) {
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 200,
-        background: 'rgba(0,0,0,.6)',
+        background: 'var(--overlay)',
         display: 'flex', flexDirection: 'column', justifyContent: 'flex-end',
       }}
       onClick={e => e.target === e.currentTarget && (reset(), onClose())}

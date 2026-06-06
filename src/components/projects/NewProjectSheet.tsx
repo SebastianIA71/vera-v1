@@ -62,11 +62,11 @@ export default function NewProjectSheet({
 
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, backdropFilter: 'blur(2px)' }} />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 200, backdropFilter: 'blur(2px)' }} />
       <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--bg2)', borderTop: '.5px solid var(--bg4)', borderRadius: '16px 16px 0 0', padding: '20px 22px 40px', zIndex: 201, maxHeight: '90dvh', overflowY: 'auto' }}>
         <div style={{ width: 36, height: 3, borderRadius: 2, background: 'var(--bg4)', margin: '0 auto 20px' }} />
         <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', marginBottom: 24 }}>
-          {isEdit ? 'Editar' : 'Nuevo'} <em style={{ fontStyle: 'italic', color: '#9b7fe8' }}>proyecto</em>
+          {isEdit ? 'Editar' : 'Nuevo'} <em style={{ fontStyle: 'italic', color: 'var(--purple)' }}>proyecto</em>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div><label style={LABEL}>NOMBRE</label><input autoFocus value={form.name} onChange={e => set('name', e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} placeholder="Nombre del proyecto..." style={INPUT} /></div>

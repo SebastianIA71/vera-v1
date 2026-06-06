@@ -45,9 +45,9 @@ function SectionLabel({ label, color, meta, link, onLinkClick }: { label: string
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
       <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 15, letterSpacing: '.22em', color: color ?? 'var(--gold2)', textTransform: 'uppercase' }}>{label}</span>
-      {meta && <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.12em' }}>{meta}</span>}
+      {meta && <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text4)', letterSpacing: '.12em' }}>{meta}</span>}
       {link && (
-        <button onClick={onLinkClick} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '.1em' }}>
+        <button onClick={onLinkClick} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '.1em' }}>
           {link}
         </button>
       )}
@@ -184,9 +184,9 @@ export default function MobileHome({
           <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
             <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="var(--gold2)" /></svg>
             VERA
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>{APP_VERSION}</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', color: 'var(--gold2)', fontWeight: 400 }}>{APP_VERSION}</span>
             {clockStr && (
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.08em', color: 'var(--text3)', fontWeight: 400 }}>{clockStr}</span>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.08em', color: 'var(--text3)', fontWeight: 400 }}>{clockStr}</span>
             )}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -234,7 +234,7 @@ export default function MobileHome({
               href={personaSearchUrl(persona)}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: 'var(--text2)', fontWeight: 300, textDecoration: 'none', borderBottom: '.5px solid rgba(255,255,255,0.12)' }}
+              style={{ color: 'var(--text2)', fontWeight: 300, textDecoration: 'none', borderBottom: '.5px solid var(--border-subtle)' }}
             >{persona}</a>
             {'.'}
           </div>
@@ -283,7 +283,7 @@ export default function MobileHome({
             <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 28, color: 'var(--gold)', lineHeight: 1, minWidth: 32 }}>{inboxCount}</div>
             <div>
               <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)' }}>capturas sin procesar</div>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', color: 'var(--text2)', marginTop: 4 }}>INBOX</div>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', color: 'var(--text2)', marginTop: 4 }}>INBOX</div>
             </div>
             <span style={{ marginLeft: 'auto', color: 'var(--text2)', fontSize: 16 }}>→</span>
           </div>
@@ -299,7 +299,7 @@ export default function MobileHome({
                   <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 32, color: 'var(--text)', lineHeight: 1, letterSpacing: '-.02em' }}>{latestWeight.value}</div>
                   <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text2)', marginTop: 4, letterSpacing: '.1em' }}>KG · HOY</div>
                 </div>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', padding: '4px 8px', borderRadius: 999, border: '.5px solid var(--bg4)', color: trendColor }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.14em', padding: '4px 8px', borderRadius: 999, border: '.5px solid var(--bg4)', color: trendColor }}>
                   <span style={{ width: 5, height: 5, borderRadius: '50%', background: trendColor, display: 'inline-block' }} />
                   {weightTrend}
                 </div>
@@ -343,16 +343,16 @@ export default function MobileHome({
           <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => router.push(`/trips/${nextEvent.id}`)}>
             <div>
               <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 14, color: 'var(--text)', lineHeight: 1.2 }}>{nextEvent.title}</div>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text2)', letterSpacing: '.12em', marginTop: 4 }}>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text2)', letterSpacing: '.12em', marginTop: 4 }}>
                 {new Date(nextEvent.startDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase()}
               </div>
-              {nextEvent.who && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 2 }}>{nextEvent.who.toUpperCase()}</div>}
+              {nextEvent.who && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 2 }}>{nextEvent.who.toUpperCase()}</div>}
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 12 }}>
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: nextEvent.daysTo <= 0 ? 13 : 22, color: 'var(--purple)', lineHeight: 1 }}>
                 {nextEvent.daysTo <= 0 ? 'HOY' : nextEvent.daysTo}
               </div>
-              {nextEvent.daysTo > 0 && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.1em' }}>DÍAS</div>}
+              {nextEvent.daysTo > 0 && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.1em' }}>DÍAS</div>}
             </div>
           </div>
         ) : (
@@ -378,17 +378,17 @@ export default function MobileHome({
                     <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 16, color: 'var(--text)', letterSpacing: '-.01em' }}>{nextTrip.title}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text2)', letterSpacing: '.12em' }}>
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text2)', letterSpacing: '.12em' }}>
                       {new Date(nextTrip.startDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase()}
                     </span>
                     {nextTrip.endDate && (
-                      <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.08em' }}>
+                      <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.08em' }}>
                         · {Math.ceil((new Date(nextTrip.endDate).getTime() - new Date(nextTrip.startDate).getTime()) / 86400000)}D
                       </span>
                     )}
                   </div>
                   {nextTrip.who && (
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 2 }}>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 2 }}>
                       {nextTrip.who.toUpperCase()}
                     </div>
                   )}
@@ -397,7 +397,7 @@ export default function MobileHome({
                   <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: nextTrip.daysTo <= 0 ? 13 : 26, color: 'var(--blue)', lineHeight: 1, textAlign: 'right' }}>
                     {nextTrip.daysTo <= 0 ? 'HOY' : nextTrip.daysTo}
                   </div>
-                  {nextTrip.daysTo > 0 && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.18em', color: 'var(--text2)', marginTop: 2, textAlign: 'right' }}>DÍAS</div>}
+                  {nextTrip.daysTo > 0 && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text2)', marginTop: 2, textAlign: 'right' }}>DÍAS</div>}
                 </div>
               </div>
             </div>
@@ -546,7 +546,7 @@ export default function MobileHome({
             {financeRecords && financeRecords.length > 0
               ? <FinanceSparklineHeader records={financeRecords} />
               : (
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.2em', color: 'var(--text3)', textAlign: 'center', padding: '16px 0' }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.2em', color: 'var(--text3)', textAlign: 'center', padding: '16px 0' }}>
                   SIN DATOS · CARGA EL EXCEL EN /FINANCE
                 </div>
               )

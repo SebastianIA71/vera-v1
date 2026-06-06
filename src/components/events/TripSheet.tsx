@@ -134,7 +134,7 @@ export default function TripSheet({ onClose, onSaved, trip }: Props) {
 
   return (
     <>
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, backdropFilter: 'blur(2px)' }} />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 200, backdropFilter: 'blur(2px)' }} />
 
       <div style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
@@ -154,10 +154,10 @@ export default function TripSheet({ onClose, onSaved, trip }: Props) {
             <button key={s} onClick={() => { if (i < step || (i === 1 && canNext0) || i === 0) setStep(i); }}
               style={{
                 flex: 1, padding: '6px 4px', borderRadius: 6,
-                background: step === i ? 'rgba(196,168,106,0.12)' : 'transparent',
+                background: step === i ? 'var(--gold-subtle)' : 'transparent',
                 border: `.5px solid ${step === i ? 'var(--gold2)' : 'var(--bg4)'}`,
                 color: step === i ? 'var(--gold2)' : step > i ? 'var(--text2)' : 'var(--text3)',
-                fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', cursor: 'pointer',
+                fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.14em', cursor: 'pointer',
               }}
             >{s}</button>
           ))}
@@ -194,10 +194,10 @@ export default function TripSheet({ onClose, onSaved, trip }: Props) {
                   <button key={opt} onClick={() => setWho(who === opt.toLowerCase() ? '' : opt.toLowerCase())}
                     style={{
                       padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
-                      background: who === opt.toLowerCase() ? 'rgba(196,168,106,0.12)' : 'transparent',
+                      background: who === opt.toLowerCase() ? 'var(--gold-subtle)' : 'transparent',
                       border: `.5px solid ${who === opt.toLowerCase() ? 'var(--gold2)' : 'var(--bg4)'}`,
                       color: who === opt.toLowerCase() ? 'var(--gold2)' : 'var(--text3)',
-                      fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em',
+                      fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em',
                     }}>{opt.toUpperCase()}</button>
                 ))}
               </div>
@@ -226,7 +226,7 @@ export default function TripSheet({ onClose, onSaved, trip }: Props) {
                       prev.includes(opt.id) ? prev.filter(x => x !== opt.id) : [...prev, opt.id]
                     )} style={{
                       flex: 1, minWidth: 48, padding: '10px 4px', borderRadius: 8, textAlign: 'center',
-                      background: selected ? 'rgba(196,168,106,.1)' : 'var(--bg3)',
+                      background: selected ? 'var(--gold-subtle)' : 'var(--bg3)',
                       border: `.5px solid ${selected ? 'var(--gold2)' : 'var(--bg4)'}`,
                       fontSize: 18, cursor: 'pointer', fontFamily: 'var(--font-dm-mono)',
                     }}>{opt.icon}</button>
@@ -260,10 +260,10 @@ export default function TripSheet({ onClose, onSaved, trip }: Props) {
                 {STATUS_OPTIONS.map(opt => (
                   <button key={opt.id} onClick={() => setStatus(opt.id)} style={{
                     padding: '9px', borderRadius: 8, cursor: 'pointer',
-                    background: status === opt.id ? 'rgba(196,168,106,.1)' : 'var(--bg3)',
+                    background: status === opt.id ? 'var(--gold-subtle)' : 'var(--bg3)',
                     border: `.5px solid ${status === opt.id ? 'var(--gold2)' : 'var(--bg4)'}`,
                     color: status === opt.id ? 'var(--gold2)' : 'var(--text2)',
-                    fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em',
                   }}>{opt.label.toUpperCase()}</button>
                 ))}
               </div>

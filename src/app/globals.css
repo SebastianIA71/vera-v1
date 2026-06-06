@@ -1,39 +1,58 @@
 :root {
-  --bg:     #07080a;
-  --bg2:    #0d0f12;
-  --bg3:    #131619;
-  --bg4:    #1a1d22;
-  --text:   #eceae2;
-  --text2:  #b2b1bc;
-  --text3:  #8a8994;
-  --text4:  #9e9d97;
-  --gold:   #e8d5a3;
-  --gold2:  #c4a86a;
-  --green:  #4ecb8d;
-  --red:    #e05c5c;
-  --amber:  #e8a020;
-  --blue:   #5ba8e8;
-  --purple: #9b7fe8;
-  --cyan:   #3ecfcf;
+  --bg:            #07080a;
+  --bg2:           #0d0f12;
+  --bg3:           #131619;
+  --bg4:           #1a1d22;
+  --text:          #eceae2;
+  --text2:         #b2b1bc;
+  --text3:         #8a8994;
+  --text4:         #9e9d97;
+  --gold:          #e8d5a3;
+  --gold2:         #c4a86a;
+  --green:         #4ecb8d;
+  --red:           #e05c5c;
+  --amber:         #e8a020;
+  --blue:          #5ba8e8;
+  --purple:        #9b7fe8;
+  --cyan:          #3ecfcf;
+  /* Tokens semánticos — no usar valores literales en componentes */
+  --border-subtle: rgba(255,255,255,0.12);
+  --border-medium: rgba(255,255,255,0.20);
+  --overlay:       rgba(0,0,0,0.60);
+  --gold-subtle:   rgba(196,168,106,0.10);
+  --gold-ring:     rgba(196,168,106,0.18);
+  --danger-bg:     rgba(255,0,64,0.12);
+  --danger-border: rgba(255,0,64,0.40);
+  --purple-subtle: rgba(155,127,232,0.08);
+  --purple-border: rgba(155,127,232,0.25);
 }
 
 [data-theme="light"] {
-  --bg:     #f5f2ec;
-  --bg2:    #edeae3;
-  --bg3:    #e4e0d8;
-  --bg4:    #d5d0c8;
-  --text:   #1a1816;
-  --text2:  #4a4642;
-  --text3:  #7a7470;
-  --text4:  #6e6a66;
-  --gold:   #8a5e0e;
-  --gold2:  #a67728;
-  --green:  #1e8f5a;
-  --red:    #c0392b;
-  --amber:  #c47a00;
-  --blue:   #2b7fc4;
-  --purple: #6d4fc4;
-  --cyan:   #1a9999;
+  --bg:            #f5f2ec;
+  --bg2:           #edeae3;
+  --bg3:           #e4e0d8;
+  --bg4:           #d5d0c8;
+  --text:          #1a1816;
+  --text2:         #4a4642;
+  --text3:         #7a7470;
+  --text4:         #6e6a66;
+  --gold:          #8a5e0e;
+  --gold2:         #a67728;
+  --green:         #1e8f5a;
+  --red:           #c0392b;
+  --amber:         #c47a00;
+  --blue:          #2b7fc4;
+  --purple:        #6d4fc4;
+  --cyan:          #1a9999;
+  --border-subtle: rgba(0,0,0,0.12);
+  --border-medium: rgba(0,0,0,0.20);
+  --overlay:       rgba(0,0,0,0.50);
+  --gold-subtle:   rgba(166,119,40,0.10);
+  --gold-ring:     rgba(166,119,40,0.18);
+  --danger-bg:     rgba(200,0,50,0.12);
+  --danger-border: rgba(200,0,50,0.40);
+  --purple-subtle: rgba(109,79,196,0.08);
+  --purple-border: rgba(109,79,196,0.25);
 }
 
 * {

@@ -254,23 +254,23 @@ export default function InboxMobile({ items: initialItems, onClose }: Props) {
           </div>
 
           {/* Clasificación Vera */}
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.22em', color: 'var(--purple)', marginTop: 14, marginBottom: 8 }}>✦ VERA CLASIFICA</div>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.22em', color: 'var(--purple)', marginTop: 14, marginBottom: 8 }}>✦ VERA CLASIFICA</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {current.suggestedPropertyId && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em', padding: '4px 9px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--gold2)' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', padding: '4px 9px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--gold2)' }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--purple)', display: 'inline-block' }} />
                 {current.suggestedPropertyId.toUpperCase()}
               </span>
             )}
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em', padding: '4px 9px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--gold2)' }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#e8a020', display: 'inline-block' }} />
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', padding: '4px 9px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--gold2)' }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--amber)', display: 'inline-block' }} />
               PRIO {editPrio}
             </span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em', padding: '4px 9px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--gold2)' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', padding: '4px 9px', borderRadius: 999, border: '.5px solid var(--bg4)', color: 'var(--gold2)' }}>
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--blue)', display: 'inline-block' }} />
               TAREA
             </span>
-            <button onClick={() => setAdjusting(a => !a)} style={{ display: 'inline-flex', alignItems: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em', padding: '4px 9px', borderRadius: 999, border: '.5px dashed var(--bg4)', color: 'var(--text2)', background: 'none', cursor: 'pointer' }}>
+            <button onClick={() => setAdjusting(a => !a)} style={{ display: 'inline-flex', alignItems: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', padding: '4px 9px', borderRadius: 999, border: '.5px dashed var(--bg4)', color: 'var(--text2)', background: 'none', cursor: 'pointer' }}>
               {adjusting ? '← HECHO' : '+ AJUSTAR'}
             </button>
           </div>

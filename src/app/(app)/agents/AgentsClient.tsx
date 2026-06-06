@@ -107,7 +107,7 @@ export default function AgentsClient({
                 <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18 }}>{sec.label}</div>
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 12, letterSpacing: '.12em', color: 'var(--text3)', marginTop: 3 }}>{sec.desc}</div>
                 {agentStatus[sec.id]?.lastRun && (
-                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text3)', marginTop: 4 }}>
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', color: 'var(--text3)', marginTop: 4 }}>
                     ÚLTIMA EJECUCIÓN · {formatLastRun(agentStatus[sec.id].lastRun!)}
                   </div>
                 )}
@@ -333,7 +333,7 @@ function SearchPanel() {
             {(r.summary ?? r.description) && (
               <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: '#c8c6be', lineHeight: 1.4, marginBottom: 4 }}>{r.summary ?? r.description}</div>
             )}
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.url}</div>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.url}</div>
           </a>
         );
       })}
@@ -417,11 +417,11 @@ function ExecutorPanel() {
   if (draft) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ background: 'var(--bg3)', borderRadius: 10, padding: '14px' }}>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', marginBottom: 6 }}>PARA: {draft.to}</div>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text2)', marginBottom: 10 }}>ASUNTO: {draft.subject}</div>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text4)', marginBottom: 6 }}>PARA: {draft.to}</div>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text2)', marginBottom: 10 }}>ASUNTO: {draft.subject}</div>
         <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: '#c8c6be', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{draft.body}</div>
       </div>
-      {notice && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--amber)' }}>{notice}</div>}
+      {notice && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--amber)' }}>{notice}</div>}
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={() => setDraft(null)} style={{ ...BTN, flex: 1, border: '.5px solid var(--bg4)', color: 'var(--text2)', padding: '12px 8px' }}>EDITAR</button>
         {!notice && <button onClick={send} disabled={sending} style={{ ...BTN, flex: 2, border: '.5px solid var(--green)', color: 'var(--green)', padding: '12px 8px' }}>{sending ? '···' : 'CONFIRMAR →'}</button>}

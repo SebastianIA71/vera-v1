@@ -43,15 +43,15 @@ function ProjectCard({ project, selected, tasks, onClick }: { project: Project; 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
         <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
         <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.name}</span>
-        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.12em', color: sm.color, flexShrink: 0 }}>{sm.label}</span>
+        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', color: sm.color, flexShrink: 0 }}>{sm.label}</span>
       </div>
       <div style={{ display: 'flex', gap: 10, paddingLeft: 16 }}>
         {project.description && (
-          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.06em', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.06em', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {project.description}
           </span>
         )}
-        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: count > 0 ? 'var(--gold2)' : 'var(--text4)', flexShrink: 0 }}>
+        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', color: count > 0 ? 'var(--gold2)' : 'var(--text4)', flexShrink: 0 }}>
           {count} tarea{count !== 1 ? 's' : ''}
         </span>
       </div>
@@ -81,7 +81,7 @@ function ProjectDetail({ project, tasks, onEdit, onTaskCreated, onTaskUpdate, on
     return (
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         <div style={{ flex: 1, overflowY: 'auto', padding: '14px 20px' }}>
-          <button onClick={() => setSelectedTask(null)} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 12, padding: 0 }}>
+          <button onClick={() => setSelectedTask(null)} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', marginBottom: 12, padding: 0 }}>
             ← {project.name.toUpperCase()}
           </button>
         </div>
@@ -233,16 +233,16 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
             <div style={{ padding: '14px 18px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
                 <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em' }}>
-                  Proyectos <em style={{ fontStyle: 'italic', color: '#9b7fe8' }}>activos</em>
+                  Proyectos <em style={{ fontStyle: 'italic', color: 'var(--purple)' }}>activos</em>
                 </div>
-                <button onClick={() => setShowNew(true)} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', padding: '5px 10px', border: '.5px solid #9b7fe844', borderRadius: 8, background: '#9b7fe812', color: '#9b7fe8', cursor: 'pointer' }}>
+                <button onClick={() => setShowNew(true)} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', padding: '5px 10px', border: '.5px solid var(--purple-border)', borderRadius: 8, background: 'var(--purple-subtle)', color: 'var(--purple)', cursor: 'pointer' }}>
                   + NUEVO
                 </button>
               </div>
               {/* Tabs */}
               <div style={{ display: 'flex', gap: 0, background: 'var(--bg3)', borderRadius: 8, padding: 2 }}>
                 {(['active','done'] as const).map(t => (
-                  <button key={t} onClick={() => setTab(t)} style={{ flex: 1, padding: '5px 8px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', background: tab === t ? 'var(--bg4)' : 'transparent', color: tab === t ? 'var(--text)' : 'var(--text3)', transition: 'all .15s' }}>
+                  <button key={t} onClick={() => setTab(t)} style={{ flex: 1, padding: '5px 8px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', background: tab === t ? 'var(--bg4)' : 'transparent', color: tab === t ? 'var(--text)' : 'var(--text3)', transition: 'all .15s' }}>
                     {t === 'active' ? 'ACTIVOS' : 'FINALIZADOS'}
                   </button>
                 ))}
@@ -252,8 +252,8 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {filteredProjects.length === 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 200, gap: 8 }}>
-                  <div style={{ fontFamily: 'var(--font-syne)', fontSize: 28, color: '#9b7fe844' }}>✦</div>
-                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)' }}>SIN PROYECTOS</div>
+                  <div style={{ fontFamily: 'var(--font-syne)', fontSize: 28, color: 'var(--purple-border)' }}>✦</div>
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)' }}>SIN PROYECTOS</div>
                 </div>
               ) : (
                 filteredProjects.map(p => (
@@ -277,9 +277,9 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
             />
           ) : (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-              <div style={{ fontFamily: 'var(--font-syne)', fontSize: 36, color: '#9b7fe844' }}>✦</div>
+              <div style={{ fontFamily: 'var(--font-syne)', fontSize: 36, color: 'var(--purple-border)' }}>✦</div>
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.2em', color: 'var(--text3)' }}>SELECCIONA UN PROYECTO</div>
-              <button onClick={() => setShowNew(true)} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', padding: '8px 16px', borderRadius: 10, border: '.5px solid #9b7fe844', background: 'transparent', color: '#9b7fe8', cursor: 'pointer', marginTop: 8 }}>
+              <button onClick={() => setShowNew(true)} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', padding: '8px 16px', borderRadius: 10, border: '.5px solid var(--purple-border)', background: 'transparent', color: 'var(--purple)', cursor: 'pointer', marginTop: 8 }}>
                 + NUEVO PROYECTO
               </button>
             </div>

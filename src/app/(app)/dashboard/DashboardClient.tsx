@@ -112,7 +112,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
       overflow: 'hidden',
     }}>
       <div style={{ padding: '12px 18px 8px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.22em', color: 'var(--text3)' }}>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.22em', color: 'var(--text3)' }}>
           PUNCH LIST
         </div>
       </div>
@@ -135,7 +135,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
                     {task.title}
                   </div>
                   {task.propertyId && (
-                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--gold2)', letterSpacing: '.1em', marginTop: 1 }}>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--gold2)', letterSpacing: '.1em', marginTop: 1 }}>
                       {task.propertyId.toUpperCase()}
                     </div>
                   )}
@@ -149,11 +149,11 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
         {/* PRÓXIMO EVENTO */}
         {nextEvent && (
           <div style={{ padding: '8px 18px 12px', borderTop: '.5px solid var(--bg2)', cursor: 'pointer' }} onClick={() => router.push('/trips?type=social')}>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--purple)', marginBottom: 6 }}>PRÓXIMO EVENTO</div>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.2em', color: 'var(--purple)', marginBottom: 6 }}>PRÓXIMO EVENTO</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)' }}>{nextEvent.title}</div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', marginTop: 2 }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
                   {new Date(nextEvent.startDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase()}
                 </div>
               </div>
@@ -167,7 +167,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
         {/* PRÓXIMO VIAJE */}
         {nextTrip && (
           <div style={{ padding: '8px 18px 12px', borderTop: '.5px solid var(--bg2)', cursor: 'pointer' }} onClick={() => router.push('/trips')}>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--blue)', marginBottom: 6 }}>PRÓXIMO VIAJE</div>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.2em', color: 'var(--blue)', marginBottom: 6 }}>PRÓXIMO VIAJE</div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)' }}>{nextTrip.title}</div>
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: nextTrip.daysTo <= 0 ? 13 : 18, color: 'var(--blue)', lineHeight: 1 }}>
@@ -179,12 +179,12 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
 
         {/* MINI CALENDAR */}
         <div style={{ padding: '8px 18px 12px', borderTop: '.5px solid var(--bg2)' }}>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--text3)', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.2em', color: 'var(--text3)', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>{MONTH_NAMES[now.getMonth()]} {now.getFullYear()}</span>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, textAlign: 'center' }}>
             {DAY_NAMES.map(d => (
-              <div key={d} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 7, color: 'var(--text3)', letterSpacing: '.06em', padding: '2px 0' }}>{d}</div>
+              <div key={d} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.06em', padding: '2px 0' }}>{d}</div>
             ))}
             {Array.from({ length: TOTAL_CELLS }, (_, i) => {
               const dayNum = startDay + i;
@@ -196,7 +196,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
                 <div key={`cell-${i}`} style={{
                   fontFamily: 'var(--font-dm-mono)', fontSize: 9, padding: '4px 2px 8px', lineHeight: 1,
                   borderRadius: 2, position: 'relative',
-                  background: isToday ? 'rgba(196,168,106,0.12)' : 'transparent',
+                  background: isToday ? 'var(--gold-subtle)' : 'transparent',
                   color: isToday ? 'var(--gold2)' : isCurrentMonth ? 'var(--text)' : 'var(--text3)',
                   fontWeight: isToday ? 500 : 400,
                   textAlign: 'center',
@@ -350,7 +350,7 @@ export default function DashboardClient({
   };
 
   const statusColor = (s: string) => s === 'running' ? 'var(--gold2)' : s === 'active' ? 'var(--green)' : s === 'error' ? 'var(--red)' : 'var(--text3)';
-  const nodeBorderColor = (s: string) => s === 'running' ? 'var(--gold2)' : s === 'active' ? 'var(--green)' : 'rgba(255,255,255,0.15)';
+  const nodeBorderColor = (s: string) => s === 'running' ? 'var(--gold2)' : s === 'active' ? 'var(--green)' : 'var(--border-medium)';
   const nodeIconColor = (s: string) => s === 'running' ? 'var(--gold2)' : s === 'active' ? 'var(--green)' : 'var(--text2)';
 
   const urgentNow  = tasks.filter(t => (t.prioFinal ?? 0) >= 8 && t.status !== 'done' && t.status !== 'archived').length;
@@ -430,9 +430,9 @@ export default function DashboardClient({
                   href={personaSearchUrl(persona)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ color: 'var(--text2)', fontWeight: 300, textDecoration: 'none', borderBottom: '.5px solid rgba(255,255,255,0.15)', cursor: 'pointer', transition: 'color .15s, border-color .15s' }}
+                  style={{ color: 'var(--text2)', fontWeight: 300, textDecoration: 'none', borderBottom: '.5px solid var(--border-subtle)', cursor: 'pointer', transition: 'color .15s, border-color .15s' }}
                   onMouseEnter={e => { (e.target as HTMLAnchorElement).style.color = 'var(--text)'; (e.target as HTMLAnchorElement).style.borderBottomColor = 'var(--text2)'; }}
-                  onMouseLeave={e => { (e.target as HTMLAnchorElement).style.color = 'var(--text2)'; (e.target as HTMLAnchorElement).style.borderBottomColor = 'rgba(255,255,255,0.15)'; }}
+                  onMouseLeave={e => { (e.target as HTMLAnchorElement).style.color = 'var(--text2)'; (e.target as HTMLAnchorElement).style.borderBottomColor = 'var(--border-subtle)'; }}
                 >{persona}</a>.
               </div>
             </div>
