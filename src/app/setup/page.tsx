@@ -248,17 +248,22 @@ export default function SetupPage() {
                 Vera está{' '}
                 <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>lista.</em>
               </p>
-              <p
-                style={{
-                  fontFamily: 'var(--font-dm-mono)',
-                  fontSize: '9px',
-                  letterSpacing: '.2em',
-                  color: 'var(--text2)',
-                  textAlign: 'center',
-                }}
-              >
+              <p style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.2em', color: 'var(--text2)', textAlign: 'center' }}>
                 PIN GUARDADO · ACCESO ASEGURADO
               </p>
+
+              {/* Código de recuperación */}
+              <div style={{ width: '100%', marginTop: 8, background: 'var(--bg2)', border: '.5px solid var(--amber)', borderRadius: 12, padding: '14px 16px' }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--amber)', marginBottom: 8 }}>
+                  ⚠ CÓDIGO DE RECUPERACIÓN
+                </div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 14, color: 'var(--text)', letterSpacing: '.14em', marginBottom: 10, wordBreak: 'break-all', userSelect: 'all' }}>
+                  {pin.split('').map((_, i) => String.fromCharCode(65 + parseInt(pin[i]) * 2 + i)).join('')}-{pin.split('').reverse().join('')}
+                </div>
+                <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
+                  Guarda este código en un lugar seguro. Si olvidas el PIN, úsalo para restablecer el acceso.
+                </div>
+              </div>
             </div>
 
             <button

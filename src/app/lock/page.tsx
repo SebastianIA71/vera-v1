@@ -450,19 +450,17 @@ export default function LockPage() {
           </button>
         )}
 
-        {/* Footer */}
-        <div
-          style={{
-            textAlign: 'center',
-            fontFamily: 'var(--font-dm-mono)',
-            fontSize: '8px',
-            letterSpacing: '.3em',
-            color: 'var(--text3)',
-            marginTop: 'auto',
-            paddingTop: '8px',
-          }}
-        >
-          VERA · MEMORY POWERED BY CLAUDE
+        {/* Recovery + Footer */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginTop: 'auto', paddingTop: 8 }}>
+          <a
+            href="/setup"
+            style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--text3)', textDecoration: 'none', borderBottom: '.5px solid var(--border-subtle)' }}
+          >
+            ¿Olvidaste el PIN? →
+          </a>
+          <div style={{ textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.3em', color: 'var(--text3)' }}>
+            VERA · MEMORY POWERED BY CLAUDE
+          </div>
         </div>
       </div>
     </div>
