@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import DesktopShell from '@/components/layout/DesktopShell';
 import MobilePageHeader from '@/components/layout/MobilePageHeader';
 import { urlB64ToUint8Array } from '@/lib/utils';
@@ -8,16 +8,17 @@ import { APP_VERSION } from '@/lib/version';
 import type { AgentStats } from '@/app/api/agents/status/route';
 
 /* ─── Tipos y constantes ─────────────────────────────────── */
-type AgentId = 'prio' | 'alert' | 'search' | 'executor' | 'solution' | 'voice' | 'jarvis';
+type AgentId = 'prio' | 'alert' | 'search' | 'executor' | 'solution' | 'voice' | 'jarvis' | 'contacts';
 
 const AGENTS: { id: AgentId; label: string; color: string; icon: string; desc: string; cron?: string }[] = [
   { id: 'alert',    label: 'Alert',    color: 'var(--red)',    icon: '🔔', desc: 'Push · stale · contratos · viajes', cron: '7:00h diario' },
   { id: 'prio',     label: 'Prio',     color: 'var(--amber)',  icon: '⚡', desc: 'Recalcula prioridades',              cron: '6:30h diario' },
+  { id: 'contacts', label: 'Contacts', color: 'var(--purple)', icon: '👥', desc: 'Seguimiento social' },
   { id: 'search',   label: 'Search',   color: 'var(--blue)',   icon: '🔍', desc: 'Brave Search + Claude' },
-  { id: 'solution', label: 'Solution', color: 'var(--purple)', icon: '💡', desc: 'DIY · mixta · profesional' },
+  { id: 'solution', label: 'Solution', color: 'var(--cyan)',   icon: '💡', desc: 'DIY · mixta · profesional' },
   { id: 'executor', label: 'Executor', color: 'var(--green)',  icon: '📧', desc: 'Email draft + envío' },
   { id: 'voice',    label: 'Voice',    color: 'var(--gold2)',  icon: '🎤', desc: 'Captura de voz → inbox' },
-  { id: 'jarvis',   label: 'Jarvis',   color: 'var(--cyan)',   icon: '✦',  desc: 'Pipeline autónomo' },
+  { id: 'jarvis',   label: 'Jarvis',   color: 'var(--gold)',   icon: '✦',  desc: 'Pipeline autónomo' },
 ];
 
 const BTN: React.CSSProperties = {
@@ -170,6 +171,7 @@ function AgentCard({
         <div style={{ background: 'var(--bg3)', borderTop: `.5px solid ${agent.color}33`, padding: 16 }}>
           {agent.id === 'alert'    && <AlertPanel />}
           {agent.id === 'prio'     && <PrioPanel />}
+          {agent.id === 'contacts' && <ContactsPanel />}
           {agent.id === 'search'   && <SearchPanel />}
           {agent.id === 'solution' && <SolutionPanel />}
           {agent.id === 'executor' && <ExecutorPanel />}
@@ -514,6 +516,71 @@ function VoiceInfoPanel() {
     <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text3)', lineHeight: 1.7 }}>
       <div style={{ marginBottom: 6 }}>Captura voz → Claude clasifica → guarda en <strong>Inbox</strong>.</div>
       <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em', color: 'var(--text4)' }}>Activo en todas las pantallas via FAB gold ↘</div>
+    </div>
+  );
+}
+
+/* ── Contacts ── */
+function ContactsPanel() {
+  const [contacts, setContacts] = useState<{ id: number; name: string; frequencyDays: number | null; lastContactAt: string | null }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState('');
+  const router = typeof window !== 'undefined' ? { push: (p: string) => { window.location.href = p; } } : null;
+
+  useEffect(() => {
+    fetch('/api/contacts').then(r => r.json()).then(d => { setContacts(d); setLoading(false); }).catch(() => setLoading(false));
+  }, []);
+
+  const ping = async (id: number, name: string) => {
+    await fetch(`/api/contacts/${id}/ping`, { method: 'POST' });
+    setContacts(prev => prev.map(c => c.id === id ? { ...c, lastContactAt: new Date().toISOString() } : c));
+    setMsg(`✓ Registrado contacto con ${name}`);
+    setTimeout(() => setMsg(''), 3000);
+  };
+
+  const now = Date.now();
+  const sorted = [...contacts].sort((a, b) => {
+    const da = a.lastContactAt ? Math.floor((now - new Date(a.lastContactAt).getTime()) / 86400000) / (a.frequencyDays ?? 30) : 999;
+    const db2 = b.lastContactAt ? Math.floor((now - new Date(b.lastContactAt).getTime()) / 86400000) / (b.frequencyDays ?? 30) : 999;
+    return db2 - da;
+  });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {msg && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--green)', letterSpacing: '.12em' }}>{msg}</div>}
+      {loading ? (
+        <div className="skeleton" style={{ height: 40, borderRadius: 8 }} />
+      ) : sorted.length === 0 ? (
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text4)', letterSpacing: '.14em', textAlign: 'center', padding: '12px 0' }}>
+          SIN CONTACTOS — <button onClick={() => window.location.href = '/contacts'} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--purple)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.14em', textDecoration: 'underline' }}>AÑADIR →</button>
+        </div>
+      ) : (
+        sorted.slice(0, 5).map(c => {
+          const days = c.lastContactAt ? Math.floor((now - new Date(c.lastContactAt).getTime()) / 86400000) : null;
+          const freq = c.frequencyDays ?? 30;
+          const overdue = days === null || days >= freq;
+          const color = overdue ? 'var(--red)' : days >= freq * 0.75 ? 'var(--amber)' : 'var(--green)';
+          return (
+            <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--bg2)', borderRadius: 10, padding: '10px 12px', border: `.5px solid ${overdue ? color + '55' : 'var(--bg4)'}` }}>
+              <div style={{ width: 30, height: 30, borderRadius: '50%', background: color + '22', border: `.5px solid ${color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 13, color, flexShrink: 0 }}>
+                {c.name.charAt(0).toUpperCase()}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color, letterSpacing: '.08em' }}>
+                  {days === null ? 'sin registrar' : days === 0 ? 'hoy' : `hace ${days}d`} · c/{freq}d
+                </div>
+              </div>
+              <button onClick={() => ping(c.id, c.name)} style={{ padding: '5px 10px', borderRadius: 7, border: `.5px solid ${color}`, background: 'transparent', color, fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em', cursor: 'pointer' }}>
+                ✓ HOY
+              </button>
+            </div>
+          );
+        })
+      )}
+      <button onClick={() => window.location.href = '/contacts'} style={{ ...BTN, border: '.5px solid var(--purple)', color: 'var(--purple)', marginTop: 4 }}>
+        VER TODOS →
+      </button>
     </div>
   );
 }

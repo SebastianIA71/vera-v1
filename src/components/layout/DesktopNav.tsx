@@ -14,6 +14,7 @@ function NavIcon({ icon }: { icon: string }) {
     projects: <svg viewBox="0 0 24 24" width={18} height={18} {...s}><rect x="2" y="3" width="6" height="6" rx="1"/><rect x="9" y="3" width="13" height="2.5" rx="1"/><rect x="2" y="10.5" width="6" height="6" rx="1"/><rect x="9" y="10.5" width="13" height="2.5" rx="1"/><rect x="2" y="18" width="6" height="3" rx="1"/><rect x="9" y="18" width="13" height="2.5" rx="1"/></svg>,
     finance:  <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M17 8.5C15.5 7 13.5 6 11.5 6C7.9 6 5 8.9 5 12.5S7.9 19 11.5 19c2 0 4-1 5.5-2.5"/><line x1="3" y1="11" x2="13" y2="11"/><line x1="3" y1="14" x2="13" y2="14"/></svg>,
     agents:   <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z"/></svg>,
+    contacts: <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
     settings: <svg viewBox="0 0 24 24" width={18} height={18} {...s}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9z"/></svg>,
     logout:   <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
   };
@@ -113,6 +114,7 @@ export default function DesktopNav({
       <div style={{ height: .5, background: 'var(--bg4)', margin: '6px 14px' }} />
 
       <NavItem icon="finance"  label="FINANZAS"    active={isActive('/finance')}    onClick={() => router.push('/finance')} />
+      <NavItem icon="contacts" label="CONTACTOS"   active={isActive('/contacts')}   onClick={() => router.push('/contacts')} />
       <NavItem icon="agents"   label="AGENTES"     active={isActive('/agents')}     onClick={() => router.push('/agents')} />
 
       <div style={{ marginTop: 'auto' }}>

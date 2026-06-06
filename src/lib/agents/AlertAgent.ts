@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { tasks, events, weightLog, contracts, agentLog } from '@/lib/db/schema';
 import { ne, desc } from 'drizzle-orm';
 import { sendPush } from '@/lib/push';
+import { runContactAgent } from './ContactAgent';
 
 export async function runAlertAgent(): Promise<{ alerts: number }> {
   const startTime = Date.now();
@@ -81,6 +82,10 @@ export async function runAlertAgent(): Promise<{ alerts: number }> {
     );
     if (sent) alertCount++;
   }
+
+  // 5. Contactos sociales pendientes
+  const { alerts: contactAlerts } = await runContactAgent().catch(() => ({ alerts: 0 }));
+  alertCount += contactAlerts;
 
   await db.insert(agentLog).values({
     agentId: 'alert', action: 'check',
