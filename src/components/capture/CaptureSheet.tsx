@@ -71,14 +71,35 @@ export default function CaptureSheet({ onClose }: Props) {
 
   const { state, interim, elapsedStr, start, stop, reset } = useVoice(handleTranscript);
 
+  // Pre-calentar speechSynthesis al montar (dentro del gesto de usuario que abre el sheet)
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) return;
+    const silent = new SpeechSynthesisUtterance(' ');
+    silent.volume = 0;
+    window.speechSynthesis.speak(silent);
+  }, []);
+
   // Respuesta hablada al recibir resultado
   useEffect(() => {
     if (!result || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    const synth = window.speechSynthesis;
     const text = result.amivera ? 'Jarvis procesando' : result.title;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'es-ES'; u.rate = 0.92; u.volume = 0.85;
-    window.speechSynthesis.speak(u);
+
+    const doSpeak = () => {
+      synth.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'es-ES'; u.rate = 0.92; u.volume = 0.85;
+      const voices = synth.getVoices();
+      const esVoice = voices.find(v => v.lang.startsWith('es'));
+      if (esVoice) u.voice = esVoice;
+      synth.speak(u);
+    };
+
+    if (synth.getVoices().length === 0) {
+      synth.addEventListener('voiceschanged', doSpeak, { once: true });
+    } else {
+      doSpeak();
+    }
   }, [result]);
 
   // Auto-save countdown when result appears
