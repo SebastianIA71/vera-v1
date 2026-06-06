@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
 
 const TripDetailPanel = dynamic(() => import('@/components/events/TripDetail'), { ssr: false });
@@ -24,6 +25,94 @@ const STATUS_LABELS: Record<string, { label: string; color: string; border: stri
   ready:    { label: 'LISTO',     color: 'var(--green)', border: '#1a3328'     },
   active:   { label: 'EN CURSO',  color: 'var(--blue)',  border: '#1a2a3a'     },
 };
+
+type PackingCategory = { name: string; items: string[] };
+
+function PackingSection({ trip }: { trip: Trip }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<PackingCategory[]>([]);
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [notice, setNotice] = useState('');
+
+  const generate = async () => {
+    setLoading(true); setNotice('');
+    const r = await fetch('/api/agents/packing', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: trip.title,
+        startDate: trip.startDate,
+        endDate: trip.endDate,
+        who: trip.who,
+        notes: trip.notes,
+      }),
+    });
+    const d = await r.json();
+    if (d.categories) setCategories(d.categories);
+    else setNotice(d.notice ?? 'Error');
+    setLoading(false);
+  };
+
+  const toggle = (key: string) => setChecked(c => ({ ...c, [key]: !c[key] }));
+  const total = categories.reduce((s, c) => s + c.items.length, 0);
+  const done  = Object.values(checked).filter(Boolean).length;
+
+  return (
+    <div style={{ margin: '0 16px 24px', border: '.5px solid var(--bg4)', borderRadius: 12, overflow: 'hidden' }}>
+      <button
+        onClick={() => { setOpen(o => !o); if (!open && categories.length === 0) generate(); }}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', background: 'var(--bg2)', border: 'none', cursor: 'pointer' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 16 }}>🎒</span>
+          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.14em', color: 'var(--text2)' }}>EQUIPAJE IA</span>
+          {categories.length > 0 && (
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: done === total ? 'var(--green)' : 'var(--text3)', letterSpacing: '.1em' }}>
+              {done}/{total}
+            </span>
+          )}
+        </div>
+        <span style={{ color: 'var(--text3)', fontSize: 12 }}>{open ? '▲' : '▼'}</span>
+      </button>
+
+      {open && (
+        <div style={{ padding: '12px 16px', background: 'var(--bg3)', borderTop: '.5px solid var(--bg4)' }}>
+          {loading && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--gold2)', letterSpacing: '.14em', padding: '8px 0' }}>···</div>}
+          {notice && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--red)' }}>{notice}</div>}
+          {categories.map(cat => (
+            <div key={cat.name} style={{ marginBottom: 14 }}>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.2em', color: 'var(--text3)', marginBottom: 6 }}>{cat.name}</div>
+              {cat.items.map(item => {
+                const key = `${cat.name}:${item}`;
+                return (
+                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0', cursor: 'pointer', borderBottom: '.5px solid var(--bg4)' }}>
+                    <span style={{
+                      width: 18, height: 18, borderRadius: 5, flexShrink: 0,
+                      border: `.5px solid ${checked[key] ? 'var(--green)' : 'var(--bg4)'}`,
+                      background: checked[key] ? 'var(--green)' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 11, color: 'var(--bg)',
+                    }} onClick={() => toggle(key)}>
+                      {checked[key] ? '✓' : ''}
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: checked[key] ? 'var(--text3)' : 'var(--text)', textDecoration: checked[key] ? 'line-through' : 'none' }}>
+                      {item}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          ))}
+          {categories.length > 0 && (
+            <button onClick={generate} style={{ marginTop: 8, background: 'none', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '7px 14px', color: 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', cursor: 'pointer' }}>
+              ↻ REGENERAR
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TripDetailPageClient({ trip }: { trip: Trip }) {
   const router = useRouter();
@@ -61,6 +150,7 @@ export default function TripDetailPageClient({ trip }: { trip: Trip }) {
           )}
         </div>
       )}
+      <PackingSection trip={trip} />
     </div>
   );
 }

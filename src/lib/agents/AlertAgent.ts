@@ -3,6 +3,7 @@ import { tasks, events, weightLog, contracts, agentLog, memory } from '@/lib/db/
 import { ne, desc, eq } from 'drizzle-orm';
 import { sendPush } from '@/lib/push';
 import { runContactAgent } from './ContactAgent';
+import { getWillysWeather } from '@/lib/weather';
 
 export async function runAlertAgent(): Promise<{ alerts: number }> {
   const startTime = Date.now();
@@ -90,7 +91,31 @@ export async function runAlertAgent(): Promise<{ alerts: number }> {
     if (sent) alertCount++;
   }
 
-  // 5. Contactos sociales pendientes
+  // 5. Tiempo en Willy's — alerta si hay evento próximo y lluvia prevista
+  const willysEvents = allEvents.filter(e => {
+    if (e.propertyId !== 'willys' && e.type !== 'willys') return false;
+    if (!e.startDate) return false;
+    const daysTo = Math.ceil((new Date(e.startDate).getTime() - now.getTime()) / 86400000);
+    return daysTo >= 0 && daysTo <= 7;
+  });
+
+  if (willysEvents.length > 0) {
+    const forecast = await getWillysWeather(7);
+    const badDays = forecast.filter(d => d.isBad);
+    if (badDays.length > 0) {
+      const eventTitles = willysEvents.map(e => e.title).join(' · ');
+      const weatherDesc = badDays.slice(0, 2).map(d => `${d.date.slice(5)} ${d.description}`).join(', ');
+      const sent = await sendPush(
+        `Vera · Willy's — previsión`,
+        `${eventTitles}: ${weatherDesc} previstos.`,
+        `willys_weather_${badDays[0].date}`,
+        48,
+      );
+      if (sent) alertCount++;
+    }
+  }
+
+  // 7. Contactos sociales pendientes
   const { alerts: contactAlerts } = await runContactAgent().catch(() => ({ alerts: 0 }));
   alertCount += contactAlerts;
 
