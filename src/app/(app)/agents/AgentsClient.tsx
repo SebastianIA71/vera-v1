@@ -1,138 +1,300 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DesktopShell from '@/components/layout/DesktopShell';
 import MobilePageHeader from '@/components/layout/MobilePageHeader';
 import { urlB64ToUint8Array } from '@/lib/utils';
 import { APP_VERSION } from '@/lib/version';
+import type { AgentStats } from '@/app/api/agents/status/route';
 
-type AgentId = 'prio' | 'alert' | 'search' | 'executor' | 'solution';
+/* ─── Tipos y constantes ─────────────────────────────────── */
+type AgentId = 'prio' | 'alert' | 'search' | 'executor' | 'solution' | 'voice' | 'jarvis';
 
-function formatLastRun(iso: string): string {
-  const d = new Date(iso);
-  const diffMs = Date.now() - d.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-  if (diffMins < 2) return 'AHORA MISMO';
-  if (diffMins < 60) return `HACE ${diffMins} MIN`;
-  if (diffHours < 24) return `HACE ${diffHours}H`;
-  return `HACE ${diffDays}D`;
-}
+const AGENTS: { id: AgentId; label: string; color: string; icon: string; desc: string; cron?: string }[] = [
+  { id: 'alert',    label: 'Alert',    color: 'var(--red)',    icon: '🔔', desc: 'Push · stale · contratos · viajes', cron: '7:00h diario' },
+  { id: 'prio',     label: 'Prio',     color: 'var(--amber)',  icon: '⚡', desc: 'Recalcula prioridades',              cron: '6:30h diario' },
+  { id: 'search',   label: 'Search',   color: 'var(--blue)',   icon: '🔍', desc: 'Brave Search + Claude' },
+  { id: 'solution', label: 'Solution', color: 'var(--purple)', icon: '💡', desc: 'DIY · mixta · profesional' },
+  { id: 'executor', label: 'Executor', color: 'var(--green)',  icon: '📧', desc: 'Email draft + envío' },
+  { id: 'voice',    label: 'Voice',    color: 'var(--gold2)',  icon: '🎤', desc: 'Captura de voz → inbox' },
+  { id: 'jarvis',   label: 'Jarvis',   color: 'var(--cyan)',   icon: '✦',  desc: 'Pipeline autónomo' },
+];
 
 const BTN: React.CSSProperties = {
-  width: '100%', padding: '14px 16px', borderRadius: 12,
+  width: '100%', padding: '13px 16px', borderRadius: 10,
   background: 'transparent', cursor: 'pointer',
-  fontFamily: 'var(--font-dm-mono)', fontSize: 12, letterSpacing: '.16em',
-  touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' as unknown as string,
-  textAlign: 'center',
+  fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em',
+  touchAction: 'manipulation', textAlign: 'center',
 };
-
 const INPUT: React.CSSProperties = {
   width: '100%', background: 'var(--bg3)', border: '.5px solid var(--bg4)',
-  borderRadius: 10, padding: '13px 14px', color: 'var(--text)',
-  fontFamily: 'var(--font-dm-sans)', fontSize: 14, outline: 'none',
-  marginBottom: 10,
+  borderRadius: 10, padding: '12px 14px', color: 'var(--text)',
+  fontFamily: 'var(--font-dm-sans)', fontSize: 14, outline: 'none', marginBottom: 10,
 };
 
-export default function AgentsClient({
-  urgentCount, staleCount, inboxCount,
+/* ─── Helpers ────────────────────────────────────────────── */
+function relTime(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(ms / 60000);
+  const h = Math.floor(ms / 3600000);
+  const d = Math.floor(ms / 86400000);
+  if (m < 2)  return 'ahora';
+  if (m < 60) return `hace ${m}m`;
+  if (h < 24) return `hace ${h}h`;
+  return `hace ${d}d`;
+}
+
+/* Mini sparkline SVG (7 barras) */
+function Sparkline({ data, color }: { data: number[]; color: string }) {
+  const max = Math.max(...data, 1);
+  const W = 56; const H = 20; const gap = 2;
+  const barW = (W - gap * 6) / 7;
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
+      {data.map((v, i) => {
+        const h = Math.max(2, (v / max) * H);
+        const x = i * (barW + gap);
+        return (
+          <rect key={i} x={x} y={H - h} width={barW} height={h}
+            fill={v > 0 ? color : 'var(--bg4)'} rx={1} opacity={i === 6 ? 1 : 0.55} />
+        );
+      })}
+    </svg>
+  );
+}
+
+/* Status dot con animación */
+function StatusDot({ status, color }: { status: AgentStats['status']; color: string }) {
+  const isActive = status === 'active' || status === 'running';
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 10, height: 10, flexShrink: 0 }}>
+      {isActive && (
+        <span style={{
+          position: 'absolute', inset: -3, borderRadius: '50%',
+          background: color, opacity: 0.25,
+          animation: 'agentPulse 2s ease-in-out infinite',
+        }} />
+      )}
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: isActive ? color : status === 'error' ? 'var(--red)' : 'var(--bg4)', display: 'block' }} />
+    </span>
+  );
+}
+
+/* ─── Card de agente ─────────────────────────────────────── */
+function AgentCard({
+  agent, stats, expanded, onToggle, isMobile,
 }: {
-  urgentCount: number;
-  staleCount: number;
-  inboxCount: number;
+  agent: typeof AGENTS[0];
+  stats: AgentStats;
+  expanded: boolean;
+  onToggle: () => void;
+  isMobile: boolean;
 }) {
-  const [active, setActive] = useState<AgentId | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const [agentStatus, setAgentStatus] = useState<Record<string, { status: string; lastRun?: string; message?: string }>>({});
+  const isActive = stats.status === 'active' || stats.status === 'running';
+  const borderColor = expanded ? agent.color : isActive ? agent.color + '66' : 'var(--bg4)';
 
-  useEffect(() => {
-    fetch('/api/agents/status')
-      .then(r => r.json())
-      .then(d => setAgentStatus(d))
-      .catch(() => {});
-  }, []);
+  return (
+    <div style={{ borderRadius: 14, border: `.5px solid ${borderColor}`, overflow: 'hidden', transition: 'border-color .2s' }}>
+      {/* Header de la card — siempre visible */}
+      <button
+        onClick={onToggle}
+        style={{
+          width: '100%', background: expanded ? 'var(--bg2)' : 'var(--bg2)', border: 'none',
+          padding: isMobile ? '14px 16px' : '16px 20px', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
+        }}
+      >
+        {/* Status dot */}
+        <StatusDot status={stats.status} color={agent.color} />
 
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 769);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
-  }, []);
-
-  const toggle = (id: AgentId) => setActive(prev => prev === id ? null : id);
-
-  const sections: { id: AgentId; label: string; color: string; desc: string }[] = [
-    { id: 'alert',    label: 'Alert',    color: 'var(--red)',    desc: 'Push notifications · tareas stale' },
-    { id: 'prio',     label: 'Prio',     color: 'var(--amber)',  desc: 'Recalcular prioridades' },
-    { id: 'search',   label: 'Search',   color: 'var(--blue)',   desc: 'Brave Search + Claude' },
-    { id: 'solution', label: 'Solution', color: 'var(--purple)', desc: 'DIY · mixta · profesional' },
-    { id: 'executor', label: 'Executor', color: 'var(--green)',  desc: 'Borrador de email + envío' },
-  ];
-
-  const content = (
-    <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '0' : '0 24px 80px', maxWidth: isMobile ? undefined : 800 }}>
-
-      {isMobile && <MobilePageHeader title="Agentes" />}
-
-      {/* Header desktop */}
-      <div style={{ padding: '20px 20px 14px', borderBottom: '.5px solid var(--bg4)' }}>
-        <div>
-          <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 26, color: 'var(--text)', lineHeight: 1.1 }}>
-            Agentes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Vera</em>
+        {/* Icon + Name */}
+        <span style={{ fontSize: isMobile ? 18 : 20, flexShrink: 0, lineHeight: 1 }}>{agent.icon}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: isMobile ? 15 : 16, color: isActive ? agent.color : 'var(--text)' }}>
+              {agent.label}
+            </span>
+            {agent.cron && (
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.12em' }}>
+                {agent.cron}
+              </span>
+            )}
           </div>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 4 }}>{APP_VERSION}</div>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em', marginTop: 2 }}>
+            {agent.desc}
+          </div>
+          {/* Last action text — visible sin expandir */}
+          {stats.lastOutput && (
+            <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, color: 'var(--text2)', marginTop: 5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {stats.lastOutput}
+            </div>
+          )}
         </div>
-      </div>
 
-      {/* Agent list */}
-      <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {sections.map(sec => (
-          <div key={sec.id}>
-            {/* Toggle button — grande para tacto fácil */}
-            <button
-              onClick={() => toggle(sec.id)}
-              style={{
-                ...BTN,
-                border: `.5px solid ${active === sec.id ? sec.color : 'var(--bg4)'}`,
-                color: active === sec.id ? sec.color : 'var(--text)',
-                display: 'flex', alignItems: 'center', gap: 12,
-                background: active === sec.id ? `rgba(0,0,0,.15)` : 'var(--bg2)',
-                borderRadius: active === sec.id ? '12px 12px 0 0' : 12,
-                padding: '16px 18px',
-              }}
-            >
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: sec.color, display: 'inline-block', flexShrink: 0 }} />
-              <div style={{ flex: 1, textAlign: 'left' }}>
-                <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18 }}>{sec.label}</div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 12, letterSpacing: '.12em', color: 'var(--text3)', marginTop: 3 }}>{sec.desc}</div>
-                {agentStatus[sec.id]?.lastRun && (
-                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', color: 'var(--text3)', marginTop: 4 }}>
-                    ÚLTIMA EJECUCIÓN · {formatLastRun(agentStatus[sec.id].lastRun!)}
-                  </div>
-                )}
+        {/* Stats + sparkline */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 5, flexShrink: 0 }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            {/* Today count */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 18, color: stats.todayCount > 0 ? agent.color : 'var(--text4)', lineHeight: 1 }}>
+                {stats.todayCount}
               </div>
-              <span style={{ color: 'var(--text3)', fontSize: 16 }}>{active === sec.id ? '▲' : '▼'}</span>
-            </button>
-
-            {/* Panel expandible */}
-            {active === sec.id && (
-              <div style={{ background: 'var(--bg2)', border: `.5px solid ${sec.color}`, borderTop: 'none', borderRadius: '0 0 12px 12px', padding: '16px' }}>
-                {sec.id === 'alert'    && <AlertPanel />}
-                {sec.id === 'prio'     && <PrioPanel />}
-                {sec.id === 'search'   && <SearchPanel />}
-                {sec.id === 'solution' && <SolutionPanel />}
-                {sec.id === 'executor' && <ExecutorPanel />}
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text4)', letterSpacing: '.1em' }}>HOY</div>
+            </div>
+            {/* Week count */}
+            {!isMobile && (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 18, color: 'var(--text3)', lineHeight: 1 }}>
+                  {stats.weekCount}
+                </div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text4)', letterSpacing: '.1em' }}>7D</div>
               </div>
             )}
           </div>
+          {/* Sparkline */}
+          <Sparkline data={stats.weekActivity} color={agent.color} />
+          {/* Last run */}
+          {stats.lastRun && (
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.08em' }}>
+              {relTime(stats.lastRun)}
+            </div>
+          )}
+        </div>
+
+        {/* Chevron */}
+        <span style={{ color: 'var(--text3)', fontSize: 12, flexShrink: 0, marginLeft: 4 }}>{expanded ? '▲' : '▼'}</span>
+      </button>
+
+      {/* Panel expandible */}
+      {expanded && (
+        <div style={{ background: 'var(--bg3)', borderTop: `.5px solid ${agent.color}33`, padding: 16 }}>
+          {agent.id === 'alert'    && <AlertPanel />}
+          {agent.id === 'prio'     && <PrioPanel />}
+          {agent.id === 'search'   && <SearchPanel />}
+          {agent.id === 'solution' && <SolutionPanel />}
+          {agent.id === 'executor' && <ExecutorPanel />}
+          {agent.id === 'voice'    && <VoiceInfoPanel />}
+          {agent.id === 'jarvis'   && <JarvisInfoPanel />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Componente principal ───────────────────────────────── */
+export default function AgentsClient({ urgentCount, staleCount, inboxCount }: {
+  urgentCount: number; staleCount: number; inboxCount: number;
+}) {
+  const [expanded, setExpanded] = useState<AgentId | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [statsMap, setStatsMap] = useState<Record<string, AgentStats>>({});
+  const [loading, setLoading] = useState(true);
+
+  const loadStats = useCallback(() => {
+    fetch('/api/agents/status')
+      .then(r => r.json())
+      .then(d => { setStatsMap(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    loadStats();
+    // Polling cada 30s
+    const id = setInterval(loadStats, 30000);
+    return () => clearInterval(id);
+  }, [loadStats]);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 769);
+    check(); window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  const totalToday = Object.values(statsMap).reduce((s, a) => s + (a.todayCount ?? 0), 0);
+  const activeCount = Object.values(statsMap).filter(a => a.status === 'active' || a.status === 'running').length;
+
+  const empty: AgentStats = { status: 'idle', todayCount: 0, weekCount: 0, weekActivity: [0,0,0,0,0,0,0] };
+
+  const content = (
+    <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 80 }}>
+      {isMobile && <MobilePageHeader title="Agentes" />}
+
+      {/* ── Header con resumen global ── */}
+      <div style={{ padding: isMobile ? '16px 18px 12px' : '20px 24px 16px', borderBottom: '.5px solid var(--bg4)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div>
+            <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: isMobile ? 22 : 28, color: 'var(--text)', lineHeight: 1.1 }}>
+              Agentes <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Vera</em>
+            </div>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 4 }}>
+              {APP_VERSION} · {AGENTS.length} SISTEMAS
+            </div>
+          </div>
+          <button onClick={loadStats} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 12, padding: '4px 8px' }}>↻</button>
+        </div>
+
+        {/* Métricas globales */}
+        <div style={{ display: 'flex', gap: isMobile ? 12 : 20, marginTop: 14 }}>
+          {[
+            { label: 'HOY', value: loading ? '···' : String(totalToday), color: totalToday > 0 ? 'var(--green)' : 'var(--text3)' },
+            { label: 'ACTIVOS', value: loading ? '···' : String(activeCount), color: activeCount > 0 ? 'var(--gold2)' : 'var(--text3)' },
+          ].map(m => (
+            <div key={m.label} style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '8px 14px', minWidth: 64 }}>
+              <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 22, color: m.color, lineHeight: 1 }}>{m.value}</div>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.14em', marginTop: 3 }}>{m.label}</div>
+            </div>
+          ))}
+
+          {/* Mini status pills de todos los agentes */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', flex: 1 }}>
+            {AGENTS.map(a => {
+              const s = statsMap[a.id] ?? empty;
+              const active = s.status === 'active' || s.status === 'running';
+              return (
+                <button key={a.id} onClick={() => setExpanded(e => e === a.id ? null : a.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    padding: '4px 8px', borderRadius: 999,
+                    border: `.5px solid ${active ? a.color : 'var(--bg4)'}`,
+                    background: active ? a.color + '18' : 'transparent',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em',
+                    color: active ? a.color : 'var(--text4)',
+                  }}
+                >
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: active ? a.color : 'var(--bg4)', display: 'inline-block', animation: active ? 'agentPulse 2s ease-in-out infinite' : 'none' }} />
+                  {a.label.toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Lista de cards ── */}
+      <div style={{ padding: isMobile ? '12px 14px' : '16px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {AGENTS.map(agent => (
+          <AgentCard
+            key={agent.id}
+            agent={agent}
+            stats={statsMap[agent.id] ?? empty}
+            expanded={expanded === agent.id}
+            onToggle={() => setExpanded(e => e === agent.id ? null : agent.id)}
+            isMobile={isMobile}
+          />
         ))}
       </div>
+
+      <style>{`
+        @keyframes agentPulse {
+          0%, 100% { opacity: 0.25; transform: scale(1); }
+          50%       { opacity: 0.5;  transform: scale(1.3); }
+        }
+      `}</style>
     </div>
   );
 
   if (isMobile) return content;
-
   return (
     <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}>
       {content}
@@ -140,118 +302,63 @@ export default function AgentsClient({
   );
 }
 
+/* ═══════════════════════════════════════════════════════════
+   PANELES FUNCIONALES
+═══════════════════════════════════════════════════════════ */
+
 /* ── Alert ── */
 function AlertPanel() {
-  const [perm, setPerm] = useState<string>('cargando…');
+  const [perm, setPerm] = useState('cargando…');
   const [requesting, setRequesting] = useState(false);
-  const [testMsg, setTestMsg] = useState('');
+  const [msg, setMsg] = useState('');
   const [supported, setSupported] = useState(true);
 
   useEffect(() => {
-    if (!('Notification' in window)) {
-      setSupported(false);
-      setPerm('no soportado');
-    } else {
-      setPerm(Notification.permission);
-    }
+    if (!('Notification' in window)) { setSupported(false); setPerm('no soportado'); }
+    else setPerm(Notification.permission);
   }, []);
 
   const requestPerm = async () => {
     if (!supported || requesting) return;
-    setRequesting(true);
-    setPerm('solicitando…');
+    setRequesting(true); setPerm('solicitando…');
     try {
       const p = await Notification.requestPermission();
       setPerm(p);
       if (p !== 'granted') { setRequesting(false); return; }
-
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (vapidKey && 'serviceWorker' in navigator) {
-        try {
-          const reg = await navigator.serviceWorker.ready;
-          let sub = await reg.pushManager.getSubscription();
-          if (!sub) {
-            sub = await reg.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: urlB64ToUint8Array(vapidKey),
-            });
-          }
-          await fetch('/api/push/subscribe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(sub.toJSON()),
-          });
-          setTestMsg('✓ Suscrito a push');
-        } catch (e) {
-          setTestMsg('Error al suscribir: ' + String(e));
-        }
-      } else {
-        setTestMsg(vapidKey ? 'Service Worker no disponible' : 'NEXT_PUBLIC_VAPID_PUBLIC_KEY no configurada');
-      }
-    } catch (e) {
-      setPerm('error');
-      setTestMsg('Error: ' + String(e));
-    }
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8Array(vapidKey) });
+        await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub.toJSON()) });
+        setMsg('✓ Suscrito a push');
+      } else setMsg(vapidKey ? 'Service Worker no disponible' : 'VAPID_PUBLIC_KEY no configurada');
+    } catch (e) { setPerm('error'); setMsg(String(e)); }
     setRequesting(false);
-  };
-
-  const testPush = async () => {
-    setTestMsg('Enviando…');
-    const res = await fetch('/api/push/test', { method: 'POST' });
-    const d = await res.json();
-    setTestMsg(d.ok ? '✓ Push enviado — revisa notificaciones' : (d.notice ?? 'Error. ¿Hay suscripciones registradas?'));
   };
 
   const permColor = perm === 'granted' ? 'var(--green)' : perm === 'denied' ? 'var(--red)' : 'var(--text2)';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ background: 'var(--bg3)', borderRadius: 10, padding: '12px 14px' }}>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', color: 'var(--text3)', marginBottom: 4 }}>ESTADO</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ background: 'var(--bg2)', borderRadius: 8, padding: '10px 12px' }}>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--text3)', marginBottom: 3 }}>NOTIFICACIONES</div>
         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: permColor }}>{perm}</div>
-        {testMsg && <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text2)', marginTop: 8, lineHeight: 1.5 }}>{testMsg}</div>}
+        {msg && <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text2)', marginTop: 6, lineHeight: 1.5 }}>{msg}</div>}
       </div>
-
       {perm !== 'granted' && supported && (
-        <button
-          onPointerDown={e => { e.preventDefault(); requestPerm(); }}
-          disabled={requesting}
-          style={{ ...BTN, border: '.5px solid var(--gold2)', color: requesting ? 'var(--text3)' : 'var(--gold)' }}
-        >
+        <button onPointerDown={e => { e.preventDefault(); requestPerm(); }} disabled={requesting}
+          style={{ ...BTN, border: '.5px solid var(--gold2)', color: requesting ? 'var(--text3)' : 'var(--gold)' }}>
           {requesting ? 'SOLICITANDO…' : 'ACTIVAR NOTIFICACIONES →'}
         </button>
       )}
-
-      {perm === 'granted' && (
-        <>
-          <button
-            onPointerDown={e => { e.preventDefault(); testPush(); }}
-            style={{ ...BTN, border: '.5px solid var(--red)', color: 'var(--red)' }}
-          >
-            ENVIAR TEST PUSH
-          </button>
-          <button
-            onPointerDown={async e => {
-              e.preventDefault();
-              setTestMsg('Ejecutando alertas…');
-              const res = await fetch('/api/cron/alerts', {
-                headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET ?? ''}` },
-              });
-              const d = await res.json().catch(() => ({}));
-              setTestMsg(res.ok ? `✓ ${d.alerts ?? 0} alertas enviadas` : 'Error al ejecutar (¿CRON_SECRET?)');
-            }}
-            style={{ ...BTN, border: '.5px solid var(--amber)', color: 'var(--amber)' }}
-          >
-            EJECUTAR ALERTAS AHORA
-          </button>
-        </>
-      )}
-
-      {perm === 'denied' && (
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', lineHeight: 1.5 }}>
-          Permiso denegado. Ve a Ajustes del navegador → Notificaciones y actívalo manualmente.
-        </div>
-      )}
+      {perm === 'granted' && (<>
+        <button onPointerDown={async e => { e.preventDefault(); setMsg('Enviando…'); const r = await fetch('/api/push/test', { method: 'POST' }); const d = await r.json(); setMsg(d.ok ? '✓ Push enviado' : (d.notice ?? 'Error')); }}
+          style={{ ...BTN, border: '.5px solid var(--red)', color: 'var(--red)' }}>ENVIAR TEST PUSH</button>
+        <button onPointerDown={async e => { e.preventDefault(); setMsg('Ejecutando alertas…'); const r = await fetch('/api/cron/alerts', { headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET ?? ''}` } }); const d = await r.json().catch(() => ({})); setMsg(r.ok ? `✓ ${d.alerts ?? 0} alertas enviadas` : 'Error (¿CRON_SECRET?)'); }}
+          style={{ ...BTN, border: '.5px solid var(--amber)', color: 'var(--amber)' }}>EJECUTAR ALERTAS AHORA</button>
+      </>)}
+      {perm === 'denied' && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', lineHeight: 1.5 }}>Permiso denegado. Actívalo en Ajustes del navegador → Notificaciones.</div>}
     </div>
   );
 }
@@ -260,96 +367,53 @@ function AlertPanel() {
 function PrioPanel() {
   const [state, setState] = useState<'idle' | 'running' | 'done'>('idle');
   const [n, setN] = useState(0);
-
-  const run = async () => {
-    setState('running');
-    const res = await fetch('/api/agents/prio/run', { method: 'POST' });
-    const d = await res.json();
-    setN(d.updated ?? 0); setState('done');
-  };
-
+  const run = async () => { setState('running'); const r = await fetch('/api/agents/prio/run', { method: 'POST' }); const d = await r.json(); setN(d.updated ?? 0); setState('done'); };
   return (
-    <button onClick={() => state === 'idle' && run()} style={{ ...BTN, border: '.5px solid var(--amber)', color: 'var(--amber)' }}>
-      {state === 'idle' ? 'RECALCULAR PRIORIDADES →' : state === 'running' ? '···' : `✓ ${n} tareas actualizadas`}
-    </button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text3)', lineHeight: 1.5 }}>
+        Recalcula <code>prioFinal</code> de todas las tareas activas. Considera: base + antigüedad + proximidad de evento + viaje próximo + dueDate.
+      </div>
+      <button onClick={() => state === 'idle' && run()}
+        style={{ ...BTN, border: '.5px solid var(--amber)', color: 'var(--amber)' }}>
+        {state === 'idle' ? 'RECALCULAR AHORA →' : state === 'running' ? '···' : `✓ ${n} tareas actualizadas`}
+      </button>
+    </div>
   );
 }
 
 /* ── Search ── */
-const BADGE_COLORS: Record<string, string> = {
-  'GOOGLE FLIGHTS': 'var(--blue)', SKYSCANNER: 'var(--blue)',
-  BOOKING: '#4a90d9', RENFE: '#e05c5c', TRAINLINE: '#00a69c',
-  FERRIES: 'var(--cyan)', TRASMEDI: 'var(--cyan)',
-  KAYAK: 'var(--amber)', RENTALCARS: 'var(--amber)', WEB: 'var(--text3)',
-};
-
+const BADGE_COLORS: Record<string, string> = { 'GOOGLE FLIGHTS': 'var(--blue)', SKYSCANNER: 'var(--blue)', BOOKING: '#4a90d9', RENFE: '#e05c5c', TRAINLINE: '#00a69c', WEB: 'var(--text3)' };
 function SearchPanel() {
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<{ title: string; url: string; description?: string; summary?: string; badge?: string; price?: string }[]>([]);
+  const [results, setResults] = useState<{ title: string; url: string; description?: string; summary?: string; badge?: string }[]>([]);
   const [notice, setNotice] = useState('');
   const [asyncMode, setAsyncMode] = useState(false);
-
   const search = async () => {
     if (!q.trim()) return;
     setLoading(true); setNotice(''); setResults([]); setAsyncMode(false);
     try {
-      const res = await fetch('/api/agents/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q }) });
-      const d = await res.json();
-      if (d.mode === 'async') {
-        setAsyncMode(true);
-      } else if (d.mode === 'no_search' || d.mode === 'no_ai') {
-        setNotice(d.notice ?? 'Sin resultados');
-      } else {
-        setResults(d.results ?? []);
-      }
-    } catch {
-      setNotice('Error de conexión.');
-    }
+      const r = await fetch('/api/agents/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: q }) });
+      const d = await r.json();
+      if (d.mode === 'async') setAsyncMode(true);
+      else if (d.mode === 'no_search' || d.mode === 'no_ai') setNotice(d.notice ?? 'Sin resultados');
+      else setResults(d.results ?? []);
+    } catch { setNotice('Error de conexión.'); }
     setLoading(false);
   };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <input
-        value={q} onChange={e => setQ(e.target.value)}
-        onKeyDown={e => e.key === 'Enter' && search()}
-        placeholder="¿Qué buscamos? (ej. vuelo Madrid Barcelona julio)"
-        style={INPUT}
-      />
-      <button onClick={search} disabled={loading || !q.trim()} style={{ ...BTN, border: '.5px solid var(--blue)', color: 'var(--blue)' }}>
-        {loading ? '···' : 'BUSCAR →'}
-      </button>
-
-      {asyncMode && (
-        <div style={{ background: 'rgba(91,168,232,0.07)', border: '.5px solid var(--blue)33', borderRadius: 10, padding: '16px 14px', textAlign: 'center' }}>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.22em', color: 'var(--blue)', marginBottom: 8 }}>BUSCANDO EN BACKGROUND</div>
-          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: '#c8c6be', lineHeight: 1.5 }}>
-            Recibirás una notificación push cuando haya resultados.<br />
-            Los detalles se guardan también como tarea.
-          </div>
-        </div>
-      )}
-
+      <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && search()} placeholder="¿Qué buscamos?" style={INPUT} />
+      <button onClick={search} disabled={loading || !q.trim()} style={{ ...BTN, border: '.5px solid var(--blue)', color: 'var(--blue)' }}>{loading ? '···' : 'BUSCAR →'}</button>
+      {asyncMode && <div style={{ background: 'var(--bg2)', border: '.5px solid var(--blue)44', borderRadius: 8, padding: '12px 14px', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', color: 'var(--blue)' }}>BUSCANDO EN BACKGROUND — recibirás push cuando esté listo</div>}
       {notice && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)' }}>{notice}</div>}
-
       {results.map((r, i) => {
         const bc = r.badge ? (BADGE_COLORS[r.badge] ?? 'var(--text3)') : undefined;
         return (
-          <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', background: 'var(--bg3)', border: `.5px solid ${bc ? bc + '33' : 'var(--bg4)'}`, borderRadius: 10, padding: '12px 14px', textDecoration: 'none' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-              {r.badge && bc && (
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.14em', padding: '2px 6px', borderRadius: 4, background: bc + '22', color: bc, border: `.5px solid ${bc}55`, flexShrink: 0 }}>
-                  {r.badge}
-                </span>
-              )}
-              <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.title}</div>
-            </div>
-            {r.price && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--green)', marginBottom: 4 }}>{r.price}</div>}
-            {(r.summary ?? r.description) && (
-              <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: '#c8c6be', lineHeight: 1.4, marginBottom: 4 }}>{r.summary ?? r.description}</div>
-            )}
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.url}</div>
+          <a key={i} href={r.url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', background: 'var(--bg2)', border: `.5px solid ${bc ? bc + '44' : 'var(--bg4)'}`, borderRadius: 10, padding: '12px 14px', textDecoration: 'none' }}>
+            <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)', marginBottom: 4 }}>{r.title}</div>
+            {(r.summary ?? r.description) && <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text3)', lineHeight: 1.4, marginBottom: 4 }}>{r.summary ?? r.description}</div>}
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.url.replace(/^https?:\/\//, '').split('/')[0]}</div>
           </a>
         );
       })}
@@ -363,36 +427,31 @@ function SolutionPanel() {
   const [loading, setLoading] = useState(false);
   const [options, setOptions] = useState<{ type: string; label: string; steps: string[]; cost: string; time: string; difficulty: string; materials?: string }[]>([]);
   const [notice, setNotice] = useState('');
-
   const solve = async () => {
     if (!problem.trim()) return;
     setLoading(true); setNotice(''); setOptions([]);
     try {
-      const res = await fetch('/api/agents/solution', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ problem }) });
-      if (!res.ok) { setNotice(`Error ${res.status}. Reintenta.`); setLoading(false); return; }
-      const d = await res.json();
-      if (d.mode === 'no_ai') setNotice(d.notice ?? 'Sin IA disponible.');
-      else if (!d.options || d.options.length === 0) setNotice('No se generaron soluciones. Reintenta con más detalle.');
-      else setOptions(d.options);
-    } catch { setNotice('Error de conexión. Reintenta.'); }
+      const r = await fetch('/api/agents/solution', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ problem }) });
+      const d = await r.json();
+      if (d.mode === 'no_ai') setNotice(d.notice ?? 'Sin IA');
+      else setOptions(d.options ?? []);
+    } catch { setNotice('Error de conexión.'); }
     setLoading(false);
   };
-
   const tc = (t: string) => t === 'diy' ? 'var(--green)' : t === 'mixed' ? 'var(--amber)' : 'var(--purple)';
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <textarea value={problem} onChange={e => setProblem(e.target.value)} placeholder="Describe el problema…" style={{ ...INPUT, resize: 'none', minHeight: 80, marginBottom: 0 }} />
-      <button onClick={solve} disabled={loading || !problem.trim()} style={{ ...BTN, border: '.5px solid var(--purple)', color: 'var(--purple)' }}>
-        {loading ? '···' : 'PROPONER SOLUCIONES →'}
-      </button>
+      <button onClick={solve} disabled={loading || !problem.trim()} style={{ ...BTN, border: '.5px solid var(--purple)', color: 'var(--purple)' }}>{loading ? '···' : 'PROPONER SOLUCIONES →'}</button>
       {notice && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)' }}>{notice}</div>}
       {options.map((opt, i) => (
-        <div key={i} style={{ background: 'var(--bg3)', borderLeft: `3px solid ${tc(opt.type)}`, borderRadius: 10, padding: '12px 14px' }}>
-          <div style={{ fontFamily: 'var(--font-syne)', fontSize: 14, color: tc(opt.type), marginBottom: 4 }}>{opt.label}</div>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text4)', marginBottom: 8 }}>{opt.cost} · {opt.time} · {opt.difficulty}</div>
-          {opt.steps.map((s, j) => <div key={j} style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: '#c8c6be', lineHeight: 1.5, marginBottom: 3 }}>• {s}</div>)}
-          {opt.materials && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text2)', marginTop: 6 }}>{opt.materials}</div>}
+        <div key={i} style={{ background: 'var(--bg2)', borderLeft: `3px solid ${tc(opt.type)}`, borderRadius: 10, padding: '12px 14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+            <span style={{ fontFamily: 'var(--font-syne)', fontSize: 14, color: tc(opt.type) }}>{opt.label}</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text4)' }}>{opt.cost} · {opt.time}</span>
+          </div>
+          {opt.steps.map((s, j) => <div key={j} style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 2 }}>• {s}</div>)}
+          {opt.materials && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', marginTop: 6 }}>{opt.materials}</div>}
         </div>
       ))}
     </div>
@@ -409,40 +468,28 @@ function ExecutorPanel() {
   const [notice, setNotice] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
-
   const generate = async () => {
     setLoading(true); setNotice('');
-    const res = await fetch('/api/agents/executor', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to, subject, context, tone: 'natural' }) });
-    const d = await res.json();
+    const r = await fetch('/api/agents/executor', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to, subject, context, tone: 'natural' }) });
+    const d = await r.json();
     if (d.draft) setDraft(d.draft);
     if (d.notice) setNotice(d.notice);
     setLoading(false);
   };
-
   const send = async () => {
-    if (!draft) return;
-    setSending(true);
-    const res = await fetch('/api/agents/executor/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) });
-    const d = await res.json();
-    if (d.ok) setSent(true);
-    setSending(false);
+    if (!draft) return; setSending(true);
+    const r = await fetch('/api/agents/executor/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) });
+    const d = await r.json(); if (d.ok) setSent(true); setSending(false);
   };
-
   if (sent) return <div style={{ textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 14, color: 'var(--green)', padding: 16 }}>✓ EMAIL ENVIADO</div>;
-
   if (draft) return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ background: 'var(--bg3)', borderRadius: 10, padding: '14px' }}>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text4)', marginBottom: 6 }}>PARA: {draft.to}</div>
+      <div style={{ background: 'var(--bg2)', borderRadius: 8, padding: '12px 14px' }}>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text4)', marginBottom: 4 }}>PARA: {draft.to}</div>
         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text2)', marginBottom: 10 }}>ASUNTO: {draft.subject}</div>
-        {/* F.1 — Editor inline editable */}
-        <textarea
-          value={draft.body}
-          onChange={e => setDraft(d => d ? { ...d, body: e.target.value } : d)}
+        <textarea value={draft.body} onChange={e => setDraft(d => d ? { ...d, body: e.target.value } : d)}
           style={{ width: '100%', background: 'transparent', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '8px 10px', color: 'var(--text)', fontFamily: 'var(--font-dm-sans)', fontSize: 13, lineHeight: 1.6, resize: 'vertical', minHeight: 160, outline: 'none', boxSizing: 'border-box' }}
-          onFocus={e => (e.target.style.borderColor = 'var(--green)')}
-          onBlur={e => (e.target.style.borderColor = 'var(--bg4)')}
-        />
+          onFocus={e => (e.target.style.borderColor = 'var(--green)')} onBlur={e => (e.target.style.borderColor = 'var(--bg4)')} />
       </div>
       {notice && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--amber)' }}>{notice}</div>}
       <div style={{ display: 'flex', gap: 8 }}>
@@ -451,17 +498,33 @@ function ExecutorPanel() {
       </div>
     </div>
   );
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
       <input value={to} onChange={e => setTo(e.target.value)} placeholder="Para (email)" style={INPUT} />
       <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Asunto" style={INPUT} />
       <textarea value={context} onChange={e => setContext(e.target.value)} placeholder="¿Qué quieres decir?" style={{ ...INPUT, resize: 'none', minHeight: 80 }} />
-      <button onClick={generate} disabled={loading || !to || !subject || !context} style={{ ...BTN, border: '.5px solid var(--green)', color: 'var(--green)' }}>
-        {loading ? '···' : 'GENERAR BORRADOR →'}
-      </button>
+      <button onClick={generate} disabled={loading || !to || !subject || !context} style={{ ...BTN, border: '.5px solid var(--green)', color: 'var(--green)' }}>{loading ? '···' : 'GENERAR BORRADOR →'}</button>
     </div>
   );
 }
 
+/* ── Voice info ── */
+function VoiceInfoPanel() {
+  return (
+    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text3)', lineHeight: 1.7 }}>
+      <div style={{ marginBottom: 6 }}>Captura voz → Claude clasifica → guarda en <strong>Inbox</strong>.</div>
+      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em', color: 'var(--text4)' }}>Activo en todas las pantallas via FAB gold ↘</div>
+    </div>
+  );
+}
 
+/* ── Jarvis info ── */
+function JarvisInfoPanel() {
+  return (
+    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text3)', lineHeight: 1.7 }}>
+      <div style={{ marginBottom: 6 }}>Di <strong style={{ color: 'var(--cyan)' }}>"Jarvis, [consulta]"</strong> en la captura de voz para activar el pipeline autónomo.</div>
+      <div style={{ marginBottom: 6 }}>Claude Sonnet investiga con autonomía total, crea una tarea y envía push + guarda en Inbox.</div>
+      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em', color: 'var(--text4)' }}>Ejemplo: "Jarvis, busca el precio de un compresor de aire para Willy's"</div>
+    </div>
+  );
+}
