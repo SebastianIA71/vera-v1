@@ -1,6 +1,64 @@
 import { capabilities } from '@/lib/capabilities';
 import { callClaude } from '@/lib/claude';
 
+export type WhatsAppDraft = {
+  to: string;
+  body: string;
+};
+
+export type WhatsAppResult =
+  | { mode: 'ready'; draft: WhatsAppDraft }
+  | { mode: 'copy'; draft: WhatsAppDraft; notice: string }
+  | { mode: 'no_ai'; notice: string };
+
+export async function draftWhatsApp(input: {
+  to: string;
+  context: string;
+  tone?: string;
+}): Promise<WhatsAppResult> {
+  if (!capabilities.ai.available) {
+    return { mode: 'no_ai', notice: 'Sin IA — redacta manualmente.' };
+  }
+
+  const tone = input.tone ?? 'natural';
+  const toneDesc = tone === 'formal' ? 'formal y profesional' : tone === 'casual' ? 'casual y cercano' : 'natural y directo';
+
+  const SYSTEM = `Eres Vera, asistente de Sebastián. Redacta un mensaje de WhatsApp ${toneDesc}.
+Devuelve SOLO el cuerpo del mensaje en español. Máximo 300 caracteres. Conciso, sin saludos genéricos ni firmas.`;
+
+  const result = await callClaude(
+    `Destinatario: ${input.to}\nContexto: ${input.context}`,
+    SYSTEM,
+    200,
+  );
+
+  const body = result.ok ? result.text : input.context.slice(0, 300);
+  const draft: WhatsAppDraft = { to: input.to, body };
+
+  if (!capabilities.whatsapp) {
+    return { mode: 'copy', draft, notice: 'Twilio no configurado — copia y envía manualmente.' };
+  }
+
+  return { mode: 'ready', draft };
+}
+
+export async function sendWhatsApp(draft: WhatsAppDraft): Promise<{ ok: boolean; sid?: string }> {
+  if (!capabilities.whatsapp) return { ok: false };
+
+  try {
+    const twilio = (await import('twilio')).default;
+    const client = twilio(process.env.TWILIO_ACCOUNT_SID!, process.env.TWILIO_AUTH_TOKEN!);
+    const msg = await client.messages.create({
+      from: process.env.TWILIO_WHATSAPP_FROM ?? 'whatsapp:+14155238886',
+      to: `whatsapp:${draft.to}`,
+      body: draft.body,
+    });
+    return { ok: true, sid: msg.sid };
+  } catch {
+    return { ok: false };
+  }
+}
+
 export type EmailDraft = {
   to: string;
   subject: string;

@@ -23,6 +23,7 @@
     "react-dom": "19.2.4",
     "resend": "^6.12.4",
     "svix": "^1.84.1",
+    "twilio": "^6.0.2",
     "web-push": "^3.6.7"
   },
   "devDependencies": {

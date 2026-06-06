@@ -18,5 +18,14 @@
       "url": "/",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "96x96" }]
     }
-  ]
+  ],
+  "share_target": {
+    "action": "/share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

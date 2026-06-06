@@ -16,7 +16,7 @@ const AGENTS: { id: AgentId; label: string; color: string; icon: string; desc: s
   { id: 'contacts', label: 'Contacts', color: 'var(--purple)', icon: '👥', desc: 'Seguimiento social' },
   { id: 'search',   label: 'Search',   color: 'var(--blue)',   icon: '🔍', desc: 'Brave Search + Claude' },
   { id: 'solution', label: 'Solution', color: 'var(--cyan)',   icon: '💡', desc: 'DIY · mixta · profesional' },
-  { id: 'executor', label: 'Executor', color: 'var(--green)',  icon: '📧', desc: 'Email draft + envío' },
+  { id: 'executor', label: 'Executor', color: 'var(--green)',  icon: '📧', desc: 'Email + WhatsApp draft + envío' },
   { id: 'voice',    label: 'Voice',    color: 'var(--gold2)',  icon: '🎤', desc: 'Captura de voz → inbox' },
   { id: 'jarvis',   label: 'Jarvis',   color: 'var(--gold)',   icon: '✦',  desc: 'Pipeline autónomo' },
 ];
@@ -462,6 +462,29 @@ function SolutionPanel() {
 
 /* ── Executor ── */
 function ExecutorPanel() {
+  const [tab, setTab] = useState<'email' | 'whatsapp'>('email');
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Tab switcher */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 2 }}>
+        {(['email', 'whatsapp'] as const).map(t => (
+          <button key={t} onClick={() => setTab(t)} style={{
+            padding: '6px 14px', borderRadius: 8, border: `.5px solid ${tab === t ? 'var(--green)' : 'var(--bg4)'}`,
+            background: tab === t ? 'var(--green)18' : 'transparent', cursor: 'pointer',
+            fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em',
+            color: tab === t ? 'var(--green)' : 'var(--text3)',
+          }}>
+            {t === 'email' ? '📧 EMAIL' : '💬 WHATSAPP'}
+          </button>
+        ))}
+      </div>
+      {tab === 'email'    && <EmailSubPanel />}
+      {tab === 'whatsapp' && <WhatsAppSubPanel />}
+    </div>
+  );
+}
+
+function EmailSubPanel() {
   const [to, setTo] = useState('');
   const [subject, setSubject] = useState('');
   const [context, setContext] = useState('');
@@ -506,6 +529,70 @@ function ExecutorPanel() {
       <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Asunto" style={INPUT} />
       <textarea value={context} onChange={e => setContext(e.target.value)} placeholder="¿Qué quieres decir?" style={{ ...INPUT, resize: 'none', minHeight: 80 }} />
       <button onClick={generate} disabled={loading || !to || !subject || !context} style={{ ...BTN, border: '.5px solid var(--green)', color: 'var(--green)' }}>{loading ? '···' : 'GENERAR BORRADOR →'}</button>
+    </div>
+  );
+}
+
+function WhatsAppSubPanel() {
+  const [to, setTo] = useState('');
+  const [context, setContext] = useState('');
+  const [tone, setTone] = useState<'natural' | 'formal' | 'casual'>('natural');
+  const [loading, setLoading] = useState(false);
+  const [draft, setDraft] = useState<{ body: string; to: string } | null>(null);
+  const [notice, setNotice] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const generate = async () => {
+    setLoading(true); setNotice('');
+    const r = await fetch('/api/agents/executor/whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to, context, tone }) });
+    const d = await r.json();
+    if (d.draft) setDraft(d.draft);
+    if (d.notice) setNotice(d.notice);
+    setLoading(false);
+  };
+  const send = async () => {
+    if (!draft) return; setSending(true);
+    const r = await fetch('/api/agents/executor/whatsapp/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) });
+    const d = await r.json(); if (d.ok) setSent(true); else setNotice('Error al enviar.'); setSending(false);
+  };
+
+  if (sent) return <div style={{ textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 14, color: 'var(--green)', padding: 16 }}>✓ WHATSAPP ENVIADO</div>;
+
+  if (draft) return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ background: 'var(--bg2)', borderRadius: 8, padding: '12px 14px' }}>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text4)', marginBottom: 8 }}>PARA: {draft.to}</div>
+        <textarea value={draft.body} onChange={e => setDraft(d => d ? { ...d, body: e.target.value } : d)}
+          style={{ width: '100%', background: 'transparent', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '8px 10px', color: 'var(--text)', fontFamily: 'var(--font-dm-sans)', fontSize: 13, lineHeight: 1.6, resize: 'vertical', minHeight: 100, outline: 'none', boxSizing: 'border-box' }}
+          onFocus={e => (e.target.style.borderColor = 'var(--green)')} onBlur={e => (e.target.style.borderColor = 'var(--bg4)')} />
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: draft.body.length > 300 ? 'var(--red)' : 'var(--text4)', marginTop: 4, textAlign: 'right' }}>{draft.body.length}/300</div>
+      </div>
+      {notice && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--amber)' }}>{notice}</div>}
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={() => { setDraft(null); setNotice(''); }} style={{ ...BTN, flex: 1, border: '.5px solid var(--bg4)', color: 'var(--text2)', padding: '12px 8px' }}>← VOLVER</button>
+        {!notice && <button onClick={send} disabled={sending} style={{ ...BTN, flex: 2, border: '.5px solid var(--green)', color: 'var(--green)', padding: '12px 8px' }}>{sending ? '···' : 'CONFIRMAR →'}</button>}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <input value={to} onChange={e => setTo(e.target.value)} placeholder="+34 XXX XXX XXX" style={INPUT} />
+      <textarea value={context} onChange={e => setContext(e.target.value)} placeholder="¿Qué quieres decir?" style={{ ...INPUT, resize: 'none', minHeight: 80 }} />
+      {/* Tono */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+        {(['natural', 'formal', 'casual'] as const).map(t => (
+          <button key={t} onClick={() => setTone(t)} style={{
+            flex: 1, padding: '7px 4px', borderRadius: 8,
+            border: `.5px solid ${tone === t ? 'var(--green)' : 'var(--bg4)'}`,
+            background: tone === t ? 'var(--green)18' : 'transparent', cursor: 'pointer',
+            fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em',
+            color: tone === t ? 'var(--green)' : 'var(--text3)',
+          }}>{t.toUpperCase()}</button>
+        ))}
+      </div>
+      <button onClick={generate} disabled={loading || !to || !context} style={{ ...BTN, border: '.5px solid var(--green)', color: 'var(--green)' }}>{loading ? '···' : 'GENERAR MENSAJE →'}</button>
     </div>
   );
 }
