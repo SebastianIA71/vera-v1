@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { startRegistration } from '@simplewebauthn/browser';
 import DesktopShell from '@/components/layout/DesktopShell';
+import { useHomeSections, DEFAULT_SECTIONS, SECTION_LABELS, type SectionId } from '@/hooks/useHomeSections';
 
 type Credential = {
   id: number;
@@ -87,6 +88,7 @@ export default function SettingsPage() {
   };
 
   const hasCredentials = credentials.length > 0;
+  const { isVisible, toggle, ready } = useHomeSections();
 
   return (
     <DesktopShell urgentCount={0} staleCount={0} inboxCount={0}>
@@ -117,6 +119,48 @@ export default function SettingsPage() {
             ) : (
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em' }}>
                 Configura NEXT_PUBLIC_INBOUND_EMAIL en Vercel.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Home — secciones */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.22em', color: 'var(--text3)', marginBottom: 14 }}>
+            HOME · SECCIONES VISIBLES
+          </div>
+          <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 12, overflow: 'hidden' }}>
+            {ready && DEFAULT_SECTIONS.map((id, i) => (
+              <div
+                key={id}
+                onClick={() => toggle(id as SectionId)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '13px 18px', cursor: 'pointer',
+                  borderBottom: i < DEFAULT_SECTIONS.length - 1 ? '.5px solid var(--bg4)' : 'none',
+                  background: 'transparent',
+                  transition: 'background .1s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg3)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              >
+                <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 14, color: isVisible(id as SectionId) ? 'var(--text)' : 'var(--text3)' }}>
+                  {SECTION_LABELS[id as SectionId]}
+                </span>
+                <span style={{
+                  width: 22, height: 22, borderRadius: 6,
+                  border: `.5px solid ${isVisible(id as SectionId) ? 'var(--gold2)' : 'var(--bg4)'}`,
+                  background: isVisible(id as SectionId) ? 'var(--gold-subtle)' : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--gold2)', fontSize: 13, transition: 'all .15s',
+                }}>
+                  {isVisible(id as SectionId) ? '✓' : ''}
+                </span>
+              </div>
+            ))}
+            {!ready && (
+              <div style={{ padding: '16px 18px' }}>
+                <div className="skeleton" style={{ height: 11, width: '60%' }} />
               </div>
             )}
           </div>

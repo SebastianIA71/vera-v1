@@ -9,6 +9,7 @@ import { getTodaySnm } from '@/lib/snm';
 import { getGreeting, personaSearchUrl, taskBorderColor } from '@/lib/utils';
 import { APP_VERSION } from '@/lib/version';
 import { useSearch } from '@/components/ui/SearchModal';
+import { useHomeSections } from '@/hooks/useHomeSections';
 
 const CaptureSheet  = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const ThemeToggle   = dynamic(() => import('@/components/ThemeToggle'), { ssr: false });
@@ -16,8 +17,7 @@ const InboxMobile   = dynamic(() => import('@/components/inbox/InboxMobile'), { 
 const NewEventSheet = dynamic(() => import('@/components/events/NewEventSheet'), { ssr: false });
 const NewTaskModal  = dynamic(() => import('@/components/tasks/NewTaskModal'), { ssr: false });
 const TaskDetailPanel = dynamic(() => import('@/components/tasks/TaskDetailPanel'), { ssr: false });
-const DailyInsight   = dynamic(() => import('@/components/DailyInsight'), { ssr: false });
-const DailyBriefing  = dynamic(() => import('@/components/DailyBriefing'), { ssr: false });
+const VeraPick = dynamic(() => import('@/components/VeraPick'), { ssr: false });
 const FinanceSparklineHeader = dynamic(() => import('@/components/finance/FinanceSparklineHeader').then(m => ({ default: m.FinanceSparklineHeader })), { ssr: false });
 
 type Task = { id: number; title: string; detail?: string | null; propertyId?: string | null; prioFinal?: number | null; lastActionAt?: Date | null; tags?: string | null };
@@ -86,6 +86,7 @@ export default function MobileHome({
   allEvents = [],
   todaySnm = [],
   financeRecords,
+  doneTodayCount = 0,
 }: {
   urgentTasks: Task[];
   urgentTotal?: number;
@@ -99,9 +100,11 @@ export default function MobileHome({
   allEvents?: { startDate: string; type: string; title: string }[];
   todaySnm?: string[];
   financeRecords?: { calcD: number|null; calcB: number|null; calcA: number|null; calcE: number|null }[];
+  doneTodayCount?: number;
 }) {
   const router = useRouter();
   const { openSearch } = useSearch();
+  const { isVisible } = useHomeSections();
   const [showCapture, setShowCapture] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
   const [showNewEvent, setShowNewEvent] = useState(false);
@@ -252,7 +255,7 @@ export default function MobileHome({
         </div>
 
         {/* Now section */}
-        {urgentTasks.length > 0 && (
+        {isVisible('now') && urgentTasks.length > 0 && (
           <div style={{ marginBottom: 28 }}>
             <SectionLabel label="Now" meta={`${urgentTotal ?? urgentTasks.length} URGENTES`} link="→" onLinkClick={() => router.push('/tasks')} />
             {urgentTasks.slice(0, 3).map(t => (
@@ -275,8 +278,26 @@ export default function MobileHome({
           </div>
         )}
 
+        {/* Done today banner */}
+        {isVisible('done') && doneTodayCount > 0 && (
+          <div
+            onClick={() => router.push('/tasks?status=done')}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, marginTop: -12,
+              padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
+              background: 'var(--bg2)', border: '.5px solid var(--green)',
+            }}
+          >
+            <span style={{ color: 'var(--green)', fontSize: 14 }}>✓</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', color: 'var(--green)' }}>
+              {doneTodayCount} COMPLETADA{doneTodayCount !== 1 ? 'S' : ''} HOY
+            </span>
+            <span style={{ marginLeft: 'auto', color: 'var(--green)', fontSize: 12 }}>→</span>
+          </div>
+        )}
+
         {/* Inbox strip */}
-        <div style={{ marginBottom: 28 }}>
+        {isVisible('inbox') && <div style={{ marginBottom: 28 }}>
           <SectionLabel label="Inbox" link="→" onLinkClick={() => router.push('/inbox')} />
           <div style={{ border: '.5px dashed #2c2c2a', borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}
             onClick={() => router.push('/inbox')}>
@@ -287,12 +308,12 @@ export default function MobileHome({
             </div>
             <span style={{ marginLeft: 'auto', color: 'var(--text2)', fontSize: 16 }}>→</span>
           </div>
-        </div>
+        </div>}
 
         {/* Weight section */}
-        {latestWeight && (
+        {isVisible('weight') && latestWeight && (
           <div style={{ marginBottom: 28 }}>
-            <SectionLabel label="Weight" meta="14 DÍAS" />
+            <SectionLabel label="Weight" meta="14 DÍAS" link="→" onLinkClick={() => router.push('/weight')} />
             <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '16px 16px 12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
                 <div>
@@ -337,7 +358,7 @@ export default function MobileHome({
         )}
 
         {/* Upcoming events (social) */}
-        <div style={{ marginBottom: 28 }}>
+        {isVisible('events') && <div style={{ marginBottom: 28 }}>
           <SectionLabel label="Upcoming Events" link="→" onLinkClick={() => router.push('/trips?type=social')} />
         {nextEvent ? (
           <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => router.push(`/trips/${nextEvent.id}`)}>
@@ -360,10 +381,10 @@ export default function MobileHome({
             Sin eventos próximos · toca + para añadir
           </div>
         )}
-        </div>
+        </div>}
 
         {/* Upcoming trips */}
-        {nextTrip && (
+        {isVisible('trips') && nextTrip && (
           <div style={{ marginBottom: 28 }}>
             <SectionLabel label="Upcoming trips" link="→" onLinkClick={() => router.push('/trips')} />
             <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px', cursor: 'pointer' }} onClick={() => router.push(`/trips/${nextTrip.id}`)}>
@@ -405,7 +426,7 @@ export default function MobileHome({
         )}
 
         {/* ── CALENDAR ── */}
-        {(() => {
+        {isVisible('calendar') && (() => {
           const now = new Date();
           const year = now.getFullYear();
           const month = now.getMonth();
@@ -488,7 +509,7 @@ export default function MobileHome({
         })()}
 
         {/* Real estate — top task por propiedad */}
-        {topTaskByProperty.length > 0 && (
+        {isVisible('realestate') && topTaskByProperty.length > 0 && (
           <div style={{ marginBottom: 28 }}>
             <SectionLabel label="Real Estate" link="→" onLinkClick={() => router.push('/properties')} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -516,7 +537,7 @@ export default function MobileHome({
         )}
 
         {/* Projects — top task por proyecto */}
-        {topTaskByProject.length > 0 && (
+        {isVisible('projects') && topTaskByProject.length > 0 && (
           <div style={{ marginBottom: 28 }}>
             <SectionLabel label="Projects" link="→" onLinkClick={() => router.push('/projects')} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -544,7 +565,7 @@ export default function MobileHome({
         )}
 
         {/* Finance — D · B · E con sparklines reales */}
-        <div style={{ marginBottom: 28 }}>
+        {isVisible('finance') && <div style={{ marginBottom: 28 }}>
           <SectionLabel label="Finance" link="→" onLinkClick={() => router.push('/finance')} />
           <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '14px 16px', cursor: 'pointer' }} onClick={() => router.push('/finance')}>
             {financeRecords && financeRecords.length > 0
@@ -556,10 +577,9 @@ export default function MobileHome({
               )
             }
           </div>
-        </div>
+        </div>}
 
-        <DailyBriefing />
-        <DailyInsight />
+        {isVisible('pick') && <VeraPick />}
 
       </div>
 

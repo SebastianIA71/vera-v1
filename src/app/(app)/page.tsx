@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { tasks, events, weightLog, inbox, properties, projects, financeRecords } from '@/lib/db/schema';
-import { ne, desc, eq, and, isNotNull, gte, or } from 'drizzle-orm';
+import { ne, desc, eq, and, isNotNull, gte, or, lte } from 'drizzle-orm';
 import HomeRouter from './HomeRouter';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +8,10 @@ export const dynamic = 'force-dynamic';
 export default async function AppRootPage() {
   const now = new Date();
 
-  const [allTasks, allEvents, weights, inboxItems, allProperties, allProjects, propTasks, projTasks, urgentTasksDb, financeData] = await Promise.all([
+  const todayStartPre = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayEndPre   = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+
+  const [allTasks, allEvents, weights, inboxItems, allProperties, allProjects, propTasks, projTasks, urgentTasksDb, financeData, doneTodayTasks] = await Promise.all([
     db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)).limit(30),
     db.select().from(events).orderBy(desc(events.startDate)).limit(20),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(14),
@@ -36,6 +39,9 @@ export default async function AppRootPage() {
       .limit(10),
     db.select({ calcD: financeRecords.calcD, calcB: financeRecords.calcB, calcA: financeRecords.calcA, calcE: financeRecords.calcE })
       .from(financeRecords).orderBy(desc(financeRecords.date)).limit(12),
+    db.select({ id: tasks.id }).from(tasks)
+      .where(and(eq(tasks.status, 'done'), gte(tasks.updatedAt, todayStartPre), lte(tasks.updatedAt, todayEndPre)))
+      .limit(20),
   ]);
 
   // Merge: urgentTasksDb cubre prio alto aunque prioFinal=0; allTasks cubre prioFinal alto
@@ -48,7 +54,7 @@ export default async function AppRootPage() {
   const urgentTasks = allUrgent.slice(0, 5);
   const urgentTotal = allUrgent.length;
 
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayStart = todayStartPre;
 
   const upcomingTrips = allEvents
     .filter(e => e.type === 'viaje' && e.startDate && e.startDate >= todayStart)
@@ -109,6 +115,7 @@ export default async function AppRootPage() {
         .filter(e => e.startDate && e.startDate >= new Date(now.getFullYear(), now.getMonth(), 1))
         .map(e => ({ startDate: e.startDate!.toISOString(), type: e.type ?? 'social', title: e.title }))}
       financeRecords={financeData}
+      doneTodayCount={doneTodayTasks.length}
     />
   );
 }

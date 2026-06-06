@@ -98,6 +98,25 @@ export default function MorningRitual({
   const router = useRouter();
   const [step, setStep] = useState(1);
 
+  const today = new Date().toISOString().slice(0, 10);
+  const RITUAL_KEY = `vera_ritual_${today}`;
+
+  /* Restaurar paso al abrir */
+  useEffect(() => {
+    const saved = localStorage.getItem(RITUAL_KEY);
+    if (saved) {
+      const n = parseInt(saved, 10);
+      if (n >= 1 && n <= 5) setStep(n);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* Persistir paso cuando cambia */
+  useEffect(() => {
+    localStorage.setItem(RITUAL_KEY, String(step));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
   // Step 2 — weight
   const [weightVal, setWeightVal] = useState(lastWeightEntry?.value ?? null);
   const [snm, setSnm] = useState<Record<string, boolean>>({ snmAgua: false, snmCaminar: false, snmEntreno: false, snmEscucha: false, snmDisfruta: false });
