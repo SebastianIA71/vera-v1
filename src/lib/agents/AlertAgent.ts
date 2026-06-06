@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
-import { tasks, events, weightLog, contracts, agentLog } from '@/lib/db/schema';
-import { ne, desc } from 'drizzle-orm';
+import { tasks, events, weightLog, contracts, agentLog, memory } from '@/lib/db/schema';
+import { ne, desc, eq } from 'drizzle-orm';
 import { sendPush } from '@/lib/push';
 import { runContactAgent } from './ContactAgent';
 
@@ -8,6 +8,13 @@ export async function runAlertAgent(): Promise<{ alerts: number }> {
   const startTime = Date.now();
   const now = new Date();
   let alertCount = 0;
+
+  // Modo focus activo → no enviar alertas
+  const focusRow = await db.select().from(memory).where(eq(memory.key, 'focus_until')).limit(1);
+  if (focusRow[0]?.value) {
+    const until = new Date(focusRow[0].value);
+    if (until > now) return { alerts: 0 };
+  }
 
   const [allTasks, allEvents, weights, allContracts] = await Promise.all([
     db.select().from(tasks).where(ne(tasks.status, 'archived')),

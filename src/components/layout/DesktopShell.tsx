@@ -6,6 +6,7 @@ import DesktopNav from './DesktopNav';
 import { APP_VERSION } from '@/lib/version';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useSearch } from '@/components/ui/SearchModal';
+import FocusToggle from '@/components/FocusToggle';
 
 const DAYS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
 const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
@@ -72,6 +73,7 @@ export default function DesktopShell({
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {pageActions}
+          <FocusToggle />
           <button
             onClick={openSearch}
             title="Buscar (/ o ⌘K)"

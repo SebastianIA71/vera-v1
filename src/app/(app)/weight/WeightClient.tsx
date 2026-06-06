@@ -23,18 +23,60 @@ function fmt(d: string) {
   return `${day} ${months[parseInt(m, 10) - 1]} ${y}`;
 }
 
-function trendPath(logs: WeightEntry[], w: number, h: number): string {
+function linearRegression(xs: number[], ys: number[]): { slope: number; intercept: number } {
+  const n = xs.length;
+  const mx = xs.reduce((s, x) => s + x, 0) / n;
+  const my = ys.reduce((s, y) => s + y, 0) / n;
+  const num = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0);
+  const den = xs.reduce((s, x) => s + (x - mx) ** 2, 0);
+  const slope = den === 0 ? 0 : num / den;
+  return { slope, intercept: my - slope * mx };
+}
+
+function chartPaths(logs: WeightEntry[], w: number, h: number): { actual: string; prediction: string; predVal: number } {
   const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
-  if (sorted.length < 2) return '';
+  if (sorted.length < 2) return { actual: '', prediction: '', predVal: 0 };
+
   const vals = sorted.map(l => l.value);
-  const min = Math.min(...vals) - 0.3;
-  const max = Math.max(...vals) + 0.3;
-  const points = vals.map((v, i) => {
-    const x = (i / (vals.length - 1)) * w;
-    const y = h - ((v - min) / (max - min)) * h;
-    return `${x},${y}`;
+  const allProjected: number[] = [];
+
+  // Regresión sobre los últimos 30 puntos
+  const recent = sorted.slice(-30);
+  const xs = recent.map((_, i) => i);
+  const ys = recent.map(l => l.value);
+  const { slope, intercept } = linearRegression(xs, ys);
+
+  // Proyección 30 días adelante
+  const projDays = 30;
+  const projVals = Array.from({ length: projDays + 1 }, (_, i) =>
+    intercept + slope * (xs.length - 1 + i)
+  );
+  allProjected.push(...projVals);
+
+  const allVals = [...vals, ...allProjected];
+  const min = Math.min(...allVals) - 0.5;
+  const max = Math.max(...allVals) + 0.5;
+  const toY = (v: number) => h - ((v - min) / (max - min)) * h;
+
+  // Línea real — ocupa 70% del ancho
+  const realW = w * 0.7;
+  const actualPts = vals.map((v, i) => {
+    const x = (i / (vals.length - 1)) * realW;
+    return `${x},${toY(v)}`;
   });
-  return `M${points.join(' L')}`;
+
+  // Línea de predicción — del 70% al 100%
+  const predW = w * 0.3;
+  const predPts = projVals.map((v, i) => {
+    const x = realW + (i / projDays) * predW;
+    return `${x},${toY(v)}`;
+  });
+
+  return {
+    actual: `M${actualPts.join(' L')}`,
+    prediction: `M${predPts.join(' L')}`,
+    predVal: Math.round(projVals[projDays] * 10) / 10,
+  };
 }
 
 function EntryForm({ onSaved }: { onSaved: (e: WeightEntry) => void }) {
@@ -87,9 +129,8 @@ export default function WeightClient({ initialLogs }: { initialLogs: WeightEntry
   const router = useRouter();
   const [logs, setLogs] = useState(initialLogs);
   const sorted = [...logs].sort((a, b) => b.date.localeCompare(a.date));
-  const chartLogs = [...logs].sort((a, b) => a.date.localeCompare(b.date));
   const W = 400; const H = 80;
-  const path = trendPath(chartLogs, W, H);
+  const { actual: path, prediction: predPath, predVal } = chartPaths(logs, W, H);
   const latest = sorted[0];
   const prev = sorted[1];
   const trend = latest && prev
@@ -135,7 +176,16 @@ export default function WeightClient({ initialLogs }: { initialLogs: WeightEntry
           </div>
           <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', overflow: 'visible' }}>
             <path d={path} fill="none" stroke="var(--green)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            {predPath && <path d={predPath} fill="none" stroke="var(--purple)" strokeWidth="1" strokeDasharray="4 3" strokeLinecap="round" opacity={0.7} />}
           </svg>
+          {predPath && predVal > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+              <span style={{ width: 20, borderTop: '1px dashed var(--purple)', display: 'inline-block', opacity: 0.7 }} />
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--purple)', letterSpacing: '.1em' }}>
+                {predVal} kg en 30 días (tendencia)
+              </span>
+            </div>
+          )}
         </div>
       )}
 

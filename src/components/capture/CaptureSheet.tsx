@@ -71,6 +71,16 @@ export default function CaptureSheet({ onClose }: Props) {
 
   const { state, interim, elapsedStr, start, stop, reset } = useVoice(handleTranscript);
 
+  // Respuesta hablada al recibir resultado
+  useEffect(() => {
+    if (!result || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    const text = result.amivera ? 'Jarvis procesando' : result.title;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'es-ES'; u.rate = 0.92; u.volume = 0.85;
+    window.speechSynthesis.speak(u);
+  }, [result]);
+
   // Auto-save countdown when result appears
   useEffect(() => {
     if (!result) return;
