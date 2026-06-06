@@ -98,6 +98,17 @@ export default function TasksClient({
     return () => window.removeEventListener('resize', check);
   }, []);
 
+  /* Atajo "n" = nueva tarea en desktop */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'n' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement) && !e.metaKey && !e.ctrlKey) {
+        setShowNewTask(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const hasFilters = Object.values(filters).some(v => v !== null && v !== '');
 
   const filtered = useMemo(() => tasks.filter(t => matchFilters(t, filters)), [tasks, filters]);

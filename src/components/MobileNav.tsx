@@ -117,7 +117,7 @@ export function MobileNav({ inboxCount = 0 }: { inboxCount?: number }) {
             )}
 
             <span style={{
-              fontFamily: 'var(--font-dm-mono)', fontSize: '9px',
+              fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
               letterSpacing: '0.08em', textTransform: 'uppercase',
               color: isActive && !item.disabled ? 'var(--gold2)' : 'var(--text3)',
               lineHeight: 1,

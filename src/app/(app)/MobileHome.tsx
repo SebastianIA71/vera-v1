@@ -8,6 +8,7 @@ import { getRandomPersona } from '@/lib/personas';
 import { getTodaySnm } from '@/lib/snm';
 import { getGreeting, personaSearchUrl, taskBorderColor } from '@/lib/utils';
 import { APP_VERSION } from '@/lib/version';
+import { useSearch } from '@/components/ui/SearchModal';
 
 const CaptureSheet  = dynamic(() => import('@/components/capture/CaptureSheet'), { ssr: false });
 const ThemeToggle   = dynamic(() => import('@/components/ThemeToggle'), { ssr: false });
@@ -100,6 +101,7 @@ export default function MobileHome({
   financeRecords?: { calcD: number|null; calcB: number|null; calcA: number|null; calcE: number|null }[];
 }) {
   const router = useRouter();
+  const { openSearch } = useSearch();
   const [showCapture, setShowCapture] = useState(false);
   const [showInbox, setShowInbox] = useState(false);
   const [showNewEvent, setShowNewEvent] = useState(false);
@@ -189,11 +191,20 @@ export default function MobileHome({
               <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.08em', color: 'var(--text3)', fontWeight: 400 }}>{clockStr}</span>
             )}
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <ThemeToggle size="sm" />
             <button
+              onClick={openSearch}
+              style={{ width: 44, height: 44, borderRadius: '50%', border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', cursor: 'pointer' }}
+              aria-label="Buscar"
+            >
+              <svg viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </button>
+            <button
               onClick={() => router.push('/settings')}
-              style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', cursor: 'pointer' }}
+              style={{ width: 44, height: 44, borderRadius: '50%', border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', cursor: 'pointer' }}
               aria-label="Ajustes"
             >
               <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
@@ -201,18 +212,7 @@ export default function MobileHome({
                 <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
               </svg>
             </button>
-            <button
-              onClick={async () => { await fetch('/api/auth/logout', { method: 'POST' }); router.replace('/lock'); }}
-              style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text3)', cursor: 'pointer' }}
-              title="Cerrar sesión" aria-label="Cerrar sesión"
-            >
-              <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-            </button>
-            <button onClick={() => router.push('/morning')} style={{ width: 32, height: 32, borderRadius: '50%', border: '.5px solid var(--bg4)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' }}>
+            <button onClick={() => router.push('/morning')} style={{ width: 44, height: 44, borderRadius: '50%', border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text2)', cursor: 'pointer' }}>
             <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round">
               <circle cx="12" cy="12" r="4"/>
               <line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/>
@@ -502,10 +502,12 @@ export default function MobileHome({
                   <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: 'var(--text3)', flexShrink: 0 }}>{task.prioFinal ?? 0}</span>
                   <button
                     onClick={(e) => { e.stopPropagation(); setNewTaskPropId(prop.id); }}
-                    style={{ width: 26, height: 26, borderRadius: 8, background: 'transparent', border: `.5px solid ${prop.color ?? 'var(--bg4)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: prop.color ?? 'var(--text3)', cursor: 'pointer', flexShrink: 0 }}
+                    style={{ width: 44, height: 44, borderRadius: 8, background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
                     title={`Nueva tarea en ${prop.name}`}
                   >
-                    <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span style={{ width: 26, height: 26, borderRadius: 8, border: `.5px solid ${prop.color ?? 'var(--bg4)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: prop.color ?? 'var(--text3)' }}>
+                      <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </span>
                   </button>
                 </div>
               ))}
@@ -528,10 +530,12 @@ export default function MobileHome({
                   <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: 'var(--text3)', flexShrink: 0 }}>{task.prioFinal ?? 0}</span>
                   <button
                     onClick={(e) => { e.stopPropagation(); setNewTaskProjId(proj.id); }}
-                    style={{ width: 26, height: 26, borderRadius: 8, background: 'transparent', border: `.5px solid ${proj.color ?? 'var(--bg4)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: proj.color ?? 'var(--text3)', cursor: 'pointer', flexShrink: 0 }}
+                    style={{ width: 44, height: 44, borderRadius: 8, background: 'transparent', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
                     title={`Nueva tarea en ${proj.name}`}
                   >
-                    <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    <span style={{ width: 26, height: 26, borderRadius: 8, border: `.5px solid ${proj.color ?? 'var(--bg4)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: proj.color ?? 'var(--text3)' }}>
+                      <svg viewBox="0 0 24 24" width={11} height={11} fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </span>
                   </button>
                 </div>
               ))}

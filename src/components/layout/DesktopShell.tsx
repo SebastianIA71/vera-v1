@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import DesktopNav from './DesktopNav';
 import { APP_VERSION } from '@/lib/version';
 import ThemeToggle from '@/components/ThemeToggle';
+import { useSearch } from '@/components/ui/SearchModal';
 
 const DAYS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
 const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
@@ -26,7 +27,20 @@ export default function DesktopShell({
   pageActions?: React.ReactNode;
 }) {
   const router = useRouter();
+  const { openSearch } = useSearch();
   const [time, setTime] = useState('');
+
+  /* Atajo "/" en desktop */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === '/' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+        openSearch();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [openSearch]);
 
   useEffect(() => {
     const tick = () => {
@@ -58,6 +72,25 @@ export default function DesktopShell({
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {pageActions}
+          <button
+            onClick={openSearch}
+            title="Buscar (/ o ⌘K)"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 7,
+              padding: '5px 12px', border: '.5px solid var(--bg4)', borderRadius: 999,
+              background: 'transparent', cursor: 'pointer', color: 'var(--text3)',
+              fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em',
+              transition: 'border-color .15s, color .15s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--text3)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--bg4)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text3)'; }}
+          >
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            BUSCAR
+            <kbd style={{ background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 3, padding: '1px 4px', fontSize: 9, color: 'var(--text4)' }}>⌘K</kbd>
+          </button>
           <ThemeToggle />
         </div>
       </div>
