@@ -77,17 +77,17 @@ export default function VeraPick({ compact = false }: { compact?: boolean }) {
           </div>
         ) : briefing ? (
           <div>
-            <div style={{
+            {lang && (
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.14em', marginRight: 6 }}>
+                {lang.toUpperCase()} —
+              </span>
+            )}
+            <span style={{
               fontFamily: 'var(--font-syne)', fontWeight: 400,
               fontSize: compact ? 11 : 13, lineHeight: 1.65, color: 'var(--text)',
             }}>
               {briefing}
-            </div>
-            {lang && (
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.14em', marginTop: 6 }}>
-                {lang}
-              </div>
-            )}
+            </span>
           </div>
         ) : (
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.1em' }}>

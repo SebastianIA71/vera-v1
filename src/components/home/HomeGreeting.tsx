@@ -1,10 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { QUOTES } from '@/lib/quotes';
 import { getRandomPersona } from '@/lib/personas';
 import { getGreeting, personaSearchUrl } from '@/lib/utils';
 import type { Trip, WeightLog } from './types';
+
+const DAY_NAMES   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const MONTH_NAMES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
 function transportIcon(t: string): string {
   const v = t.toLowerCase().trim();
@@ -42,7 +45,9 @@ export default function HomeGreeting({
   const [statusLine, setStatusLine] = useState('');
 
   useEffect(() => {
-    const parts: string[] = [];
+    const now = new Date();
+    const dateStr = `${DAY_NAMES[now.getDay()]} ${now.getDate()} ${MONTH_NAMES[now.getMonth()]}`;
+    const parts: string[] = [dateStr];
     if (weightLogs[0]) parts.push(`${weightLogs[0].value} KG`);
     if (financeD != null) parts.push(`${financeD.toFixed(2)}M`);
     if (nextTrip) {

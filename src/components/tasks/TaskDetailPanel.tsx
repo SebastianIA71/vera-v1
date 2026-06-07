@@ -294,10 +294,13 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'done' }),
     });
-    onMarkDone(task.id);
+    // No llamar onMarkDone todavía — esperar al timeout para que el undo sea posible
     setJustDone(true);
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    undoTimerRef.current = setTimeout(() => setJustDone(false), 6000);
+    undoTimerRef.current = setTimeout(() => {
+      setJustDone(false);
+      onMarkDone(task.id); // ahora sí notificar al padre
+    }, 5000);
   };
 
   const undoDone = async () => {
