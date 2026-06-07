@@ -462,9 +462,7 @@ function WidgetSection() {
   const widgetUrl = origin ? `${origin}/api/widget/summary?token=TU_WIDGET_SECRET` : '';
 
   const scriptableCode = origin ? `// Vera Widget — pega en Scriptable
-const SECRET = "TU_WIDGET_SECRET"; // mismo valor que WIDGET_SECRET en Vercel
-const BASE = "${origin}";
-const url = \`\${BASE}/api/widget/summary?token=\${SECRET}\`;
+const url = "${origin}/api/widget/summary";
 
 let data;
 try {
@@ -560,17 +558,16 @@ Script.complete();` : '';
           Muestra tareas urgentes, próximo viaje, peso e inbox sin abrir la app. Requiere Scriptable (gratis en App Store).
         </div>
 
-        <div style={STEP}><div style={NUM}>1</div><div style={TEXT}>Añade <strong style={{ color: 'var(--text)' }}>WIDGET_SECRET</strong> en Vercel → Environment Variables (cualquier texto aleatorio)</div></div>
-        <div style={STEP}><div style={NUM}>2</div><div style={TEXT}>Instala <strong style={{ color: 'var(--text)' }}>Scriptable</strong> desde App Store</div></div>
-        <div style={STEP}><div style={NUM}>3</div><div style={TEXT}>Copia el script, ábrelo en Scriptable → <em>+</em> → pega y guarda como "Vera"</div></div>
-        <div style={STEP}><div style={NUM}>4</div><div style={TEXT}>Añade widget Scriptable en pantalla de inicio → selecciona script "Vera"</div></div>
+        <div style={STEP}><div style={NUM}>1</div><div style={TEXT}>Instala <strong style={{ color: 'var(--text)' }}>Scriptable</strong> desde App Store (gratis)</div></div>
+        <div style={STEP}><div style={NUM}>2</div><div style={TEXT}>Copia el script → abre Scriptable → pulsa <strong style={{ color: 'var(--text)' }}>+</strong> → pega el código → guarda como "Vera"</div></div>
+        <div style={STEP}><div style={NUM}>3</div><div style={TEXT}>Mantén pulsado el home screen → <strong style={{ color: 'var(--text)' }}>+</strong> → busca Scriptable → elige tamaño → selecciona script "Vera"</div></div>
 
         <button onClick={() => copy('script', scriptableCode)} style={{ width: '100%', padding: '10px', borderRadius: 8, background: 'transparent', border: `.5px solid ${copied === 'script' ? 'var(--green)' : 'var(--gold2)'}`, color: copied === 'script' ? 'var(--green)' : 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', cursor: 'pointer', marginBottom: 8 }}>
           {copied === 'script' ? '✓ SCRIPT COPIADO' : 'COPIAR SCRIPT →'}
         </button>
 
         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.1em', lineHeight: 1.6 }}>
-          Importante: sustituye <strong>TU_WIDGET_SECRET</strong> en el script por el valor que pusiste en Vercel.
+          El script ya incluye tu URL de Vera. Sin token — app personal, URL no adivinable.
         </div>
       </div>
     </div>

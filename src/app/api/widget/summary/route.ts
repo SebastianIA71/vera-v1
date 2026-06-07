@@ -4,13 +4,6 @@ import { tasks, events, weightLog, inbox, memory } from '@/lib/db/schema';
 import { ne, desc, and, gte, eq } from 'drizzle-orm';
 
 export async function GET(req: NextRequest) {
-  // Auth simple por token en query param
-  const token = req.nextUrl.searchParams.get('token');
-  const secret = process.env.WIDGET_SECRET;
-  if (secret && token !== secret) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   const now = new Date();
 
   const [urgentTasks, allEvents, weights, inboxItems, focusRow] = await Promise.all([
