@@ -439,10 +439,12 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
             ))}
           </div>
         )}
-      </div>
 
-      {/* Adjuntos */}
-      <AttachmentsSection taskId={task.id} />
+        {/* Adjuntos — dentro del scroll para que sea visible en desktop */}
+        <div style={{ marginTop: 12 }}>
+          <AttachmentsSection taskId={task.id} />
+        </div>
+      </div>
 
       {/* FAB */}
       {!isDone && (
