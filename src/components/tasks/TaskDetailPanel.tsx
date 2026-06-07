@@ -93,11 +93,6 @@ function AttachmentsSection({ taskId }: { taskId: number }) {
           <button onClick={() => inputRef.current?.click()} disabled={uploading} style={{ width: '100%', padding: '8px', borderRadius: 8, border: '.5px solid var(--text3)', background: 'transparent', color: uploading ? 'var(--text3)' : 'var(--text2)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', cursor: 'pointer', marginBottom: items.length > 0 ? 10 : 0 }}>
             {uploading ? '···' : '+ SUBIR ARCHIVO'}
           </button>
-          {!process.env.NEXT_PUBLIC_BLOB_ENABLED && items.length === 0 && !uploading && (
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.1em', marginTop: 4 }}>
-              Requiere BLOB_READ_WRITE_TOKEN en Vercel
-            </div>
-          )}
           {items.map(a => (
             <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '.5px solid var(--bg4)' }}>
               {isImg(a.mimeType) ? (

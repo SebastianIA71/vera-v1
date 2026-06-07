@@ -9,11 +9,8 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
   if (!row) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
 
   // Borrar de Vercel Blob si está configurado
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (token) {
-    const { del } = await import('@vercel/blob');
-    await del(row.url, { token }).catch(() => {});
-  }
+  const { del } = await import('@vercel/blob');
+  await del(row.url).catch(() => {});
 
   await db.delete(attachments).where(eq(attachments.id, Number(id)));
   return NextResponse.json({ ok: true });

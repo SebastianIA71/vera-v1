@@ -19,15 +19,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const file = formData.get('file') as File | null;
   if (!file) return NextResponse.json({ error: 'Sin archivo' }, { status: 400 });
 
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) {
-    return NextResponse.json({ error: 'BLOB_READ_WRITE_TOKEN no configurado' }, { status: 503 });
-  }
-
   const { put } = await import('@vercel/blob');
   const blob = await put(`tasks/${taskId}/${file.name}`, file, {
     access: 'public',
-    token,
   });
 
   const [row] = await db.insert(attachments).values({
