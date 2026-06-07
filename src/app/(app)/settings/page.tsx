@@ -465,13 +465,15 @@ function WidgetSection() {
 const url = "${origin}/api/widget/summary";
 
 let data;
+let fetchError = null;
 try {
   const req = new Request(url);
-  req.headers = { "Accept": "application/json; charset=utf-8" };
+  req.timeoutInterval = 15;
   const raw = await req.loadString();
   data = JSON.parse(raw);
 } catch(e) {
-  data = { today: "Sin conexión", urgentTasks: [], inboxCount: 0 };
+  fetchError = String(e).slice(0, 80);
+  data = { today: fetchError, urgentTasks: [], inboxCount: 0, weight: null, nextTrip: null };
 }
 
 const w = new ListWidget();
