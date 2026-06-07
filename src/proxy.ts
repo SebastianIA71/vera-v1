@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
-const PUBLIC_ROUTES = ['/setup', '/lock', '/api/auth/setup', '/api/auth/login', '/api/auth/salt', '/api/auth/webauthn/auth-options', '/api/auth/webauthn/auth-verify', '/api/capabilities', '/api/admin/seed', '/api/email/inbound', '/_next', '/sw.js', '/manifest.json', '/icons'];
+const PUBLIC_ROUTES = ['/setup', '/lock', '/share', '/api/auth/setup', '/api/auth/login', '/api/auth/salt', '/api/auth/webauthn/auth-options', '/api/auth/webauthn/auth-verify', '/api/capabilities', '/api/admin/seed', '/api/email/inbound', '/api/widget', '/_next', '/sw.js', '/manifest.json', '/icons'];
 const CRON_ROUTES = ['/api/cron/'];
 
 const SESSION_SECRET = new TextEncoder().encode(process.env.SESSION_SECRET ?? '');
