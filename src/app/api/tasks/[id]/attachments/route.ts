@@ -19,7 +19,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const file = formData.get('file') as File | null;
   if (!file) return NextResponse.json({ error: 'Sin archivo' }, { status: 400 });
 
-  const token = process.env.BLOB_PUBLIC_TOKEN ?? process.env.BLOB_READ_WRITE_TOKEN;
+  const token = process.env.BLOB_PUBLIC_TOKEN_READ_WRITE_TOKEN ?? process.env.BLOB_READ_WRITE_TOKEN;
   if (!token) {
     return NextResponse.json({ error: 'Configura BLOB_PUBLIC_TOKEN en Vercel (Blob Store público)' }, { status: 503 });
   }
