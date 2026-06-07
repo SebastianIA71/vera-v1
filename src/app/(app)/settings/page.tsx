@@ -467,7 +467,9 @@ const url = "${origin}/api/widget/summary";
 let data;
 try {
   const req = new Request(url);
-  data = await req.loadJSON();
+  req.headers = { "Accept": "application/json; charset=utf-8" };
+  const raw = await req.loadString();
+  data = JSON.parse(raw);
 } catch(e) {
   data = { today: "Sin conexión", urgentTasks: [], inboxCount: 0 };
 }

@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
   const MONTHS = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const todayStr = `${DAYS[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]}`;
 
-  return NextResponse.json({
+  const payload = {
     today: todayStr,
     time: `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`,
     urgentTasks: urgentTasks.map(t => ({ title: t.title, prio: t.prioFinal, prop: t.propertyId })),
@@ -55,7 +55,12 @@ export async function GET(req: NextRequest) {
     weight: w0 ? { value: w0.value, trend } : null,
     inboxCount: inboxItems.length,
     focusActive,
-  }, {
-    headers: { 'Cache-Control': 'no-store' },
+  };
+
+  return new Response(JSON.stringify(payload), {
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+    },
   });
 }
