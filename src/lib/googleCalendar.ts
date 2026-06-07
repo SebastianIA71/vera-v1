@@ -55,9 +55,12 @@ function veraToGoogle(event: {
   who?: string | null;
 }) {
   const start = event.startDate ?? new Date();
-  const end = event.endDate ?? new Date(start.getTime() + 86400000);
-  // Google Calendar all-day events: end.date es exclusivo (día siguiente al último día)
-  const endExclusive = new Date(end.getTime() + 86400000);
+  // Google Calendar all-day: end.date es exclusivo (día después del último día visible)
+  // - Multi-día con endDate: añadir 1 día  (14-17 ago → end=18 ago)
+  // - Un día sin endDate: end = start + 1 día  (7 jun → end=8 jun)
+  const endExclusive = event.endDate
+    ? new Date(event.endDate.getTime() + 86400000)
+    : new Date(start.getTime() + 86400000);
 
   return {
     summary: event.title,
