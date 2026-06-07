@@ -43,20 +43,13 @@ export default function VeraPick({ compact = false }: { compact?: boolean }) {
     <div style={{ marginBottom: compact ? 14 : 24 }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-          <span style={{
-            fontFamily: 'var(--font-syne)', fontWeight: 500,
-            fontSize: compact ? 12 : 15,
-            letterSpacing: '.22em', color: 'var(--gold2)', textTransform: 'uppercase',
-          }}>
-            ✦ Pick
-          </span>
-          {lang && (
-            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.1em' }}>
-              {lang}
-            </span>
-          )}
-        </div>
+        <span style={{
+          fontFamily: 'var(--font-syne)', fontWeight: 500,
+          fontSize: compact ? 12 : 15,
+          letterSpacing: '.22em', color: 'var(--gold2)', textTransform: 'uppercase',
+        }}>
+          ✦ Pick
+        </span>
         <button
           onClick={() => !loading && load(true)}
           title="Regenerar"
@@ -83,11 +76,18 @@ export default function VeraPick({ compact = false }: { compact?: boolean }) {
             <div className="skeleton" style={{ height: 11, width: '82%' }} />
           </div>
         ) : briefing ? (
-          <div style={{
-            fontFamily: 'var(--font-syne)', fontWeight: 400,
-            fontSize: compact ? 11 : 13, lineHeight: 1.65, color: 'var(--text)',
-          }}>
-            {briefing}
+          <div>
+            <div style={{
+              fontFamily: 'var(--font-syne)', fontWeight: 400,
+              fontSize: compact ? 11 : 13, lineHeight: 1.65, color: 'var(--text)',
+            }}>
+              {briefing}
+            </div>
+            {lang && (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.14em', marginTop: 6 }}>
+                {lang}
+              </div>
+            )}
           </div>
         ) : (
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.1em' }}>

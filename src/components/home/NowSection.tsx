@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { taskBorderColor } from '@/lib/utils';
 import SectionLabel from './SectionLabel';
@@ -11,6 +12,19 @@ export default function NowSection({
   urgentTasks: Task[]; urgentTotal: number; doneTodayCount: number;
 }) {
   const router = useRouter();
+  const [doneExpanded, setDoneExpanded] = useState(false);
+  const [doneTasks, setDoneTasks] = useState<Task[]>([]);
+  const [loadingDone, setLoadingDone] = useState(false);
+
+  const toggleDone = async () => {
+    if (doneExpanded) { setDoneExpanded(false); return; }
+    setLoadingDone(true);
+    const today = new Date().toISOString().slice(0, 10);
+    const r = await fetch(`/api/tasks?status=done&doneToday=1`).then(r => r.json()).catch(() => []);
+    setDoneTasks(Array.isArray(r) ? r.slice(0, 10) : []);
+    setDoneExpanded(true);
+    setLoadingDone(false);
+  };
   const shown = urgentTasks.slice(0, 3);
   const moreCount = urgentTotal - shown.length;
 
@@ -49,16 +63,32 @@ export default function NowSection({
 
       {/* Done today banner */}
       {doneTodayCount > 0 && (
-        <div onClick={() => router.push('/tasks?status=done')} style={{
-          display: 'flex', alignItems: 'center', gap: 8, marginTop: 10,
-          padding: '8px 12px', borderRadius: 10, cursor: 'pointer',
-          background: 'var(--bg2)', border: '.5px solid var(--green)',
-        }}>
-          <span style={{ color: 'var(--green)', fontSize: 14 }}>✓</span>
-          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', color: 'var(--green)' }}>
-            {doneTodayCount} COMPLETADA{doneTodayCount !== 1 ? 'S' : ''} HOY
-          </span>
-          <span style={{ marginLeft: 'auto', color: 'var(--green)', fontSize: 12 }}>→</span>
+        <div style={{ marginTop: 10 }}>
+          <div onClick={toggleDone} style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '8px 12px', borderRadius: doneExpanded ? '10px 10px 0 0' : 10, cursor: 'pointer',
+            background: 'var(--bg2)', border: '.5px solid var(--green)',
+            borderBottom: doneExpanded ? 'none' : undefined,
+          }}>
+            <span style={{ color: 'var(--green)', fontSize: 14 }}>✓</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', color: 'var(--green)' }}>
+              {loadingDone ? '···' : `${doneTodayCount} COMPLETADA${doneTodayCount !== 1 ? 'S' : ''} HOY`}
+            </span>
+            <span style={{ marginLeft: 'auto', color: 'var(--green)', fontSize: 12 }}>{doneExpanded ? '▲' : '▼'}</span>
+          </div>
+          {doneExpanded && (
+            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--green)', borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '4px 0' }}>
+              {doneTasks.map(t => (
+                <div key={t.id} onClick={() => router.push(`/tasks/${t.id}`)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', cursor: 'pointer', borderBottom: '.5px solid var(--bg4)' }}>
+                  <span style={{ color: 'var(--green)', fontSize: 12, flexShrink: 0 }}>✓</span>
+                  <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text3)', textDecoration: 'line-through', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {t.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

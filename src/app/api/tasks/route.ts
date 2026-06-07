@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { tasks } from '@/lib/db/schema';
-import { eq, desc, and, ne } from 'drizzle-orm';
+import { eq, desc, and, ne, gte, lt } from 'drizzle-orm';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const propertyId = searchParams.get('propertyId');
-  const status = searchParams.get('status');
+  const status     = searchParams.get('status');
+  const doneToday  = searchParams.get('doneToday');
 
   const conditions = [ne(tasks.status, 'archived')];
   if (propertyId) conditions.push(eq(tasks.propertyId, propertyId));
-  if (status) conditions.push(eq(tasks.status, status));
+  if (status)     conditions.push(eq(tasks.status, status));
+  if (doneToday) {
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const end   = new Date(); end.setHours(23, 59, 59, 999);
+    conditions.push(gte(tasks.updatedAt, start));
+    conditions.push(lt(tasks.updatedAt, end));
+  }
 
   const rows = await db
     .select()

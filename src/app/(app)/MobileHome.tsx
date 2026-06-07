@@ -55,7 +55,7 @@ export default function MobileHome({
       <div style={{ padding: '16px 22px 140px' }}>
 
         <HomeHeader />
-        <HomeGreeting nextTrip={nextTrip} weightLogs={weightLogs} />
+        <HomeGreeting nextTrip={nextTrip} weightLogs={weightLogs} financeD={financeRecords?.[0]?.calcD ?? null} />
         <SongOfDay />
 
         {isVisible('now') && urgentTasks.length > 0 && (

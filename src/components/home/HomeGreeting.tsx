@@ -23,27 +23,35 @@ function renderQuote(raw: string) {
   );
 }
 
-export default function HomeGreeting({ nextTrip, weightLogs }: { nextTrip: Trip | null; weightLogs: WeightLog[] }) {
+function tripDestAbbr(title: string): { dest: string; name: string } {
+  const parts = title.split(/\s*[·/]\s*|\s+/);
+  const dest = (parts[0] ?? title).slice(0, 3).toUpperCase();
+  const name = parts.slice(1).join(' ').trim() || parts[0];
+  return { dest, name };
+}
+
+export default function HomeGreeting({
+  nextTrip, weightLogs, financeD,
+}: {
+  nextTrip: Trip | null;
+  weightLogs: WeightLog[];
+  financeD?: number | null;
+}) {
   const [quote] = useState(() => QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const [persona] = useState(() => getRandomPersona());
   const [statusLine, setStatusLine] = useState('');
-  const [transportEmojis, setTransportEmojis] = useState('');
 
   useEffect(() => {
     const parts: string[] = [];
     if (weightLogs[0]) parts.push(`${weightLogs[0].value} KG`);
-    parts.push('10,2K');
+    if (financeD != null) parts.push(`${financeD.toFixed(2)}M`);
     if (nextTrip) {
-      setTransportEmojis(nextTrip.transport ? transportIcons(nextTrip.transport) : '');
-      const dur = nextTrip.endDate && nextTrip.startDate
-        ? Math.ceil((new Date(nextTrip.endDate).getTime() - new Date(nextTrip.startDate).getTime()) / 86400000)
-        : null;
-      parts.push(`${nextTrip.title.toUpperCase()} · ${nextTrip.daysTo}D${dur ? ` · ${dur}D` : ''}`);
-    } else {
-      setTransportEmojis('');
+      const icon = nextTrip.transport ? transportIcons(nextTrip.transport) : '🧳';
+      const { dest, name } = tripDestAbbr(nextTrip.title);
+      parts.push(`${icon} ${dest} · ${name} · ${nextTrip.daysTo}d`);
     }
     setStatusLine(parts.join(' · '));
-  }, [weightLogs, nextTrip]);
+  }, [weightLogs, nextTrip, financeD]);
 
   return (
     <div style={{ marginBottom: 24 }}>
@@ -57,9 +65,8 @@ export default function HomeGreeting({ nextTrip, weightLogs }: { nextTrip: Trip 
         {'.'}
       </div>
       {statusLine && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', color: 'var(--text2)', marginTop: 12 }}>
-          {transportEmojis && <span style={{ fontSize: 14, lineHeight: 1 }}>{transportEmojis}</span>}
-          <span>{statusLine}</span>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', color: 'var(--text2)', marginTop: 12 }}>
+          {statusLine}
         </div>
       )}
       <div style={{ marginTop: 20, fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: 14, lineHeight: 1.6, color: 'var(--text2)', letterSpacing: '.01em', paddingLeft: 10, borderLeft: '1.5px solid var(--gold-ring)' }}>

@@ -285,6 +285,9 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
     }, 1000);
   }, [task.id, onUpdate]);
 
+  const [justDone, setJustDone] = useState(false);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const markDone = async () => {
     await fetch(`/api/tasks/${task.id}`, {
       method: 'PUT',
@@ -292,7 +295,21 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
       body: JSON.stringify({ status: 'done' }),
     });
     onMarkDone(task.id);
-    toast('Marcada como hecha ✓');
+    setJustDone(true);
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = setTimeout(() => setJustDone(false), 6000);
+  };
+
+  const undoDone = async () => {
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setJustDone(false);
+    await fetch(`/api/tasks/${task.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'wait' }),
+    });
+    onUpdate?.(task.id, { status: 'wait' });
+    toast('Deshecha', 'info');
   };
 
   const copyLink = useCallback(() => {
@@ -525,17 +542,27 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
         </div>
       </div>
 
-      {/* FAB */}
-      {!isDone && (
-        <button
-          onClick={markDone}
-          style={{
-            position: 'absolute', bottom: 14, left: 14, right: 14, padding: 11,
-            borderRadius: 12, background: 'transparent', border: '.5px solid var(--green)',
-            color: 'var(--green)', fontFamily: 'var(--font-dm-mono)', fontSize: 11,
-            letterSpacing: '.2em', cursor: 'pointer', textAlign: 'center',
-          }}
-        >
+      {/* FAB — marcar hecha / deshacer */}
+      {justDone ? (
+        <div style={{ position: 'absolute', bottom: 14, left: 14, right: 14, display: 'flex', gap: 8 }}>
+          <div style={{ flex: 1, padding: 11, borderRadius: 12, background: 'var(--green)18', border: '.5px solid var(--green)', color: 'var(--green)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.2em', textAlign: 'center' }}>
+            ✓ HECHA
+          </div>
+          <button onClick={undoDone} style={{
+            padding: '11px 18px', borderRadius: 12, background: 'transparent',
+            border: '.5px solid var(--amber)', color: 'var(--amber)',
+            fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', cursor: 'pointer',
+          }}>
+            DESHACER
+          </button>
+        </div>
+      ) : !isDone && (
+        <button onClick={markDone} style={{
+          position: 'absolute', bottom: 14, left: 14, right: 14, padding: 11,
+          borderRadius: 12, background: 'transparent', border: '.5px solid var(--green)',
+          color: 'var(--green)', fontFamily: 'var(--font-dm-mono)', fontSize: 11,
+          letterSpacing: '.2em', cursor: 'pointer', textAlign: 'center',
+        }}>
           MARCAR COMO HECHA ✓
         </button>
       )}

@@ -4,6 +4,6 @@ const SEMVER = '2.6';
 
 // SHA corto del commit — Vercel lo inyecta en build time automáticamente
 // En local aparece como 'dev'
-const sha = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 3) ?? 'dev';
+const sha = process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 2) ?? 'dev';
 
-export const APP_VERSION = `v.${SEMVER}.${sha}`;
+export const APP_VERSION = `v${SEMVER}.${sha}`;
