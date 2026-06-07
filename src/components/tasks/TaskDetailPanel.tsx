@@ -51,64 +51,148 @@ type SearchResult   = { title: string; url: string; description: string; summary
 type Attachment = { id: number; filename: string; url: string; mimeType: string | null; sizeBytes: number | null };
 
 function AttachmentsSection({ taskId }: { taskId: number }) {
-  const [items, setItems] = useState<Attachment[]>([]);
+  const [items, setItems]     = useState<Attachment[]>([]);
+  const [fetching, setFetching] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [open, setOpen]       = useState(false);
+  const [deleting, setDeleting] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const loadedRef = useRef(false);
 
-  const load = async () => {
-    const d = await fetch(`/api/tasks/${taskId}/attachments`).then(r => r.json()).catch(() => []);
-    setItems(d);
-  };
+  const load = useCallback(async () => {
+    setFetching(true);
+    try {
+      const res = await fetch(`/api/tasks/${taskId}/attachments`);
+      const d = res.ok ? await res.json() : [];
+      setItems(Array.isArray(d) ? d : []);
+    } catch {
+      setItems([]);
+    } finally {
+      setFetching(false);
+    }
+  }, [taskId]);
 
-  useEffect(() => { if (open) load(); }, [open]);
+  // Carga al abrir, solo una vez por apertura
+  useEffect(() => {
+    if (open && !loadedRef.current) {
+      loadedRef.current = true;
+      load();
+    }
+    if (!open) loadedRef.current = false;
+  }, [open, load]);
 
   const upload = async (file: File) => {
     setUploading(true);
-    const fd = new FormData(); fd.append('file', file);
-    const res = await fetch(`/api/tasks/${taskId}/attachments`, { method: 'POST', body: fd });
-    if (res.ok) { const a = await res.json(); setItems(prev => [a, ...prev]); }
-    setUploading(false);
+    setUploadMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`/api/tasks/${taskId}/attachments`, { method: 'POST', body: fd });
+      if (res.ok) {
+        const a = await res.json();
+        setItems(prev => [a, ...prev]);
+        setUploadMsg({ ok: true, text: `✓ ${file.name} subido` });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setUploadMsg({ ok: false, text: err.error ?? `Error ${res.status}` });
+      }
+    } catch (e) {
+      setUploadMsg({ ok: false, text: 'Error de conexión' });
+    } finally {
+      setUploading(false);
+      setTimeout(() => setUploadMsg(null), 4000);
+    }
   };
 
   const del = async (id: number) => {
-    await fetch(`/api/attachments/${id}`, { method: 'DELETE' });
+    setDeleting(id);
+    await fetch(`/api/attachments/${id}`, { method: 'DELETE' }).catch(() => {});
     setItems(prev => prev.filter(a => a.id !== id));
+    setDeleting(null);
   };
 
   const isImg = (mime: string | null) => mime?.startsWith('image/');
-  const fmtSize = (b: number | null) => b ? b > 1048576 ? `${(b/1048576).toFixed(1)}MB` : `${(b/1024).toFixed(0)}KB` : '';
+  const fmtSize = (b: number | null) =>
+    !b ? '' : b > 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${(b / 1024).toFixed(0)} KB`;
 
   return (
-    <div style={{ margin: '0 16px 8px', border: '.5px solid var(--bg4)', borderRadius: 10, overflow: 'hidden' }}>
-      <button onClick={() => setOpen(o => !o)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg2)', border: 'none', cursor: 'pointer' }}>
+    <div style={{ margin: '0 0 8px', border: '.5px solid var(--bg4)', borderRadius: 10, overflow: 'hidden' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg2)', border: 'none', cursor: 'pointer' }}
+      >
         <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--text3)' }}>
-          📎 ADJUNTOS{items.length > 0 ? ` (${items.length})` : ''}
+          📎 ADJUNTOS {items.length > 0 ? <span style={{ color: 'var(--blue)' }}>({items.length})</span> : ''}
         </span>
         <span style={{ color: 'var(--text3)', fontSize: 11 }}>{open ? '▲' : '▼'}</span>
       </button>
+
       {open && (
-        <div style={{ background: 'var(--bg3)', padding: '10px 14px', borderTop: '.5px solid var(--bg4)' }}>
-          <input ref={inputRef} type="file" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }} />
-          <button onClick={() => inputRef.current?.click()} disabled={uploading} style={{ width: '100%', padding: '8px', borderRadius: 8, border: '.5px solid var(--text3)', background: 'transparent', color: uploading ? 'var(--text3)' : 'var(--text2)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', cursor: 'pointer', marginBottom: items.length > 0 ? 10 : 0 }}>
-            {uploading ? '···' : '+ SUBIR ARCHIVO'}
+        <div style={{ background: 'var(--bg3)', padding: '12px 14px', borderTop: '.5px solid var(--bg4)' }}>
+          {/* Botón subir */}
+          <input
+            ref={inputRef} type="file"
+            style={{ display: 'none' }}
+            onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ''; }}
+          />
+          <button
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            style={{ width: '100%', padding: '9px', borderRadius: 8, border: '.5px solid var(--gold2)', background: 'transparent', color: uploading ? 'var(--text3)' : 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', cursor: uploading ? 'default' : 'pointer', marginBottom: 10 }}
+          >
+            {uploading ? 'SUBIENDO ···' : '+ SUBIR ARCHIVO'}
           </button>
+
+          {/* Feedback upload */}
+          {uploadMsg && (
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: uploadMsg.ok ? 'var(--green)' : 'var(--red)', marginBottom: 10, letterSpacing: '.08em' }}>
+              {uploadMsg.text}
+            </div>
+          )}
+
+          {/* Estado carga */}
+          {fetching && (
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.14em', padding: '8px 0' }}>···</div>
+          )}
+
+          {/* Lista */}
+          {!fetching && items.length === 0 && !uploadMsg && (
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text4)', letterSpacing: '.12em', padding: '4px 0' }}>
+              SIN ADJUNTOS
+            </div>
+          )}
+
           {items.map(a => (
-            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 0', borderBottom: '.5px solid var(--bg4)' }}>
+            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '.5px solid var(--bg4)' }}>
               {isImg(a.mimeType) ? (
-                <a href={a.url} target="_blank" rel="noopener noreferrer">
-                  <img src={a.url} alt={a.filename} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 5, flexShrink: 0 }} />
+                <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
+                  <img src={a.url} alt={a.filename} style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 6 }} />
                 </a>
               ) : (
-                <div style={{ width: 40, height: 40, borderRadius: 5, background: 'var(--bg4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>📄</div>
+                <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 6, background: 'var(--bg4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>📄</div>
+                </a>
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--blue)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block', textDecoration: 'none' }}>{a.filename}</a>
-                {a.sizeBytes && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)' }}>{fmtSize(a.sizeBytes)}</div>}
+                <a href={a.url} target="_blank" rel="noopener noreferrer" style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--blue)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>
+                  {a.filename}
+                </a>
+                {a.sizeBytes && (
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', marginTop: 2 }}>{fmtSize(a.sizeBytes)}</div>
+                )}
               </div>
-              <button onClick={() => del(a.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 14, padding: '2px 4px' }}>×</button>
+              <button
+                onClick={() => del(a.id)}
+                disabled={deleting === a.id}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 16, padding: '2px 6px', opacity: deleting === a.id ? 0.3 : 1, flexShrink: 0 }}
+              >×</button>
             </div>
           ))}
+
+          <button onClick={load} style={{ marginTop: 10, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text4)', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', padding: 0 }}>
+            ↻ recargar
+          </button>
         </div>
       )}
     </div>

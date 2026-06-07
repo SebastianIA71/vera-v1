@@ -19,19 +19,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const file = formData.get('file') as File | null;
   if (!file) return NextResponse.json({ error: 'Sin archivo' }, { status: 400 });
 
-  const { put } = await import('@vercel/blob');
-  const blob = await put(`tasks/${taskId}/${file.name}`, file, {
-    access: 'public',
-  });
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return NextResponse.json({ error: 'BLOB_READ_WRITE_TOKEN no configurado en Vercel' }, { status: 503 });
+  }
 
-  const [row] = await db.insert(attachments).values({
-    taskId,
-    url: blob.url,
-    filename: file.name,
-    mimeType: file.type || null,
-    sizeBytes: file.size || null,
-    createdAt: new Date(),
-  }).returning();
+  try {
+    const { put } = await import('@vercel/blob');
+    const blob = await put(`tasks/${taskId}/${Date.now()}-${file.name}`, file, {
+      access: 'public',
+    });
 
-  return NextResponse.json(row, { status: 201 });
+    const [row] = await db.insert(attachments).values({
+      taskId,
+      url: blob.url,
+      filename: file.name,
+      mimeType: file.type || null,
+      sizeBytes: file.size || null,
+      createdAt: new Date(),
+    }).returning();
+
+    return NextResponse.json(row, { status: 201 });
+  } catch (err) {
+    console.error('[attachments upload]', err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }
