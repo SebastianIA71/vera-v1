@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { tasks, events, weightLog, inbox, memory } from '@/lib/db/schema';
-import { ne, desc, and, gte } from 'drizzle-orm';
+import { ne, desc, and, gte, eq } from 'drizzle-orm';
 
 export async function GET(req: NextRequest) {
   // Auth simple por token en query param
@@ -32,13 +32,12 @@ export async function GET(req: NextRequest) {
       .from(inbox)
       .where(and(ne(inbox.processed, true)))
       .limit(50),
-    db.select({ value: memory.value })
+    db.select({ key: memory.key, value: memory.value })
       .from(memory)
-      .where(ne(memory.key, '_'))  // dummy filter to reuse query pattern
-      .limit(100),
+      .limit(50),
   ]);
 
-  const focusUntilRow = focusRow.find(r => (r as any).key === 'focus_until');
+  const focusUntilRow = focusRow.find(r => r.key === 'focus_until');
   const focusActive = focusUntilRow?.value ? new Date(focusUntilRow.value) > now : false;
 
   const nextTrip = allEvents[0] ?? null;
