@@ -56,6 +56,9 @@ function veraToGoogle(event: {
 }) {
   const start = event.startDate ?? new Date();
   const end = event.endDate ?? new Date(start.getTime() + 86400000);
+  // Google Calendar all-day events: end.date es exclusivo (día siguiente al último día)
+  const endExclusive = new Date(end.getTime() + 86400000);
+
   return {
     summary: event.title,
     description: [
@@ -64,7 +67,7 @@ function veraToGoogle(event: {
       '— sincronizado desde Vera',
     ].filter(Boolean).join('\n'),
     start: { date: start.toISOString().slice(0, 10) },
-    end:   { date: end.toISOString().slice(0, 10) },
+    end:   { date: endExclusive.toISOString().slice(0, 10) },
   };
 }
 
