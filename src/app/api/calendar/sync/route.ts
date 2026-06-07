@@ -2,11 +2,10 @@ import { NextResponse } from 'next/server';
 import { pullFromGoogle, pushEventToGoogle } from '@/lib/googleCalendar';
 import { db } from '@/lib/db';
 import { events } from '@/lib/db/schema';
-import { ne, gte } from 'drizzle-orm';
+import { gte, eq } from 'drizzle-orm';
 
 export async function POST() {
   try {
-    // Push eventos de Vera a Google
     const now = new Date();
     const veraEvents = await db.select().from(events)
       .where(gte(events.startDate, now))
@@ -21,19 +20,24 @@ export async function POST() {
         endDate: e.endDate,
         notes: e.notes,
         who: e.who,
-        googleEventId: (e as any).googleEventId ?? null,
+        googleEventId: e.googleEventId ?? null,
       });
-      if (gId && !(e as any).googleEventId) {
-        await db.update(events).set({ updatedAt: new Date() } as any).where(ne(events.id, -1));
+      if (gId) {
+        // Guardar googleEventId si es nuevo
+        if (!e.googleEventId) {
+          await db.update(events)
+            .set({ googleEventId: gId })
+            .where(eq(events.id, e.id));
+        }
+        pushed++;
       }
-      if (gId) pushed++;
     }
 
-    // Pull eventos de Google a Vera (solo informativo por ahora)
     const googleEvents = await pullFromGoogle();
 
     return NextResponse.json({ ok: true, pushed, pulled: googleEvents.length, googleEvents: googleEvents.slice(0, 5) });
   } catch (err) {
+    console.error('[calendar sync]', err);
     return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
   }
 }

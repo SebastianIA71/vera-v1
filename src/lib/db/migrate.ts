@@ -58,6 +58,10 @@ export async function runAutoMigrations(): Promise<void> {
       )`,
     },
     {
+      id:  'events.google_event_id',
+      sql: 'ALTER TABLE events ADD COLUMN google_event_id TEXT',
+    },
+    {
       id:  'tasks.recurrence',
       sql: 'ALTER TABLE tasks ADD COLUMN recurrence TEXT',
     },
