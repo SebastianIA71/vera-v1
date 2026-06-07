@@ -2,13 +2,29 @@
 
 import { useEffect, useState, useCallback } from 'react';
 
-// Título random multiidioma (igual que DailyBriefing)
-const PICK_LANGS = [
-  'Español','English','Français','Deutsch','Italiano','Português','Català',
-  'Nederlands','Norsk','Svenska','日本語','한국어','中文','Русский','العربية',
+// Mismo sistema que DailyBriefing — día en idioma + sufijo
+const BRIEFING_LANGS = [
+  { days: ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'], suffix: '· Resumen', lang: 'Español' },
+  { days: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], suffix: 'Briefing', lang: 'English' },
+  { days: ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'], suffix: '· Synthèse', lang: 'Français' },
+  { days: ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'], suffix: 'Überblick', lang: 'Deutsch' },
+  { days: ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'], suffix: 'Sommario', lang: 'Italiano' },
+  { days: ['Diumenge','Dilluns','Dimarts','Dimecres','Dijous','Divendres','Dissabte'], suffix: '· Resum', lang: 'Català' },
+  { days: ['Voскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'], suffix: '· Обзор', lang: 'Русский' },
+  { days: ['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'], suffix: 'まとめ', lang: '日本語' },
+  { days: ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'], suffix: '简报', lang: '中文' },
+  { days: ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'], suffix: '· ملخص', lang: 'العربية' },
+  { days: ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'], suffix: 'Özet', lang: 'Türkçe' },
+  { days: ['Søndag','Mandag','Tirsdag','Onsdag','Torsdag','Fredag','Lørdag'], suffix: 'Oversikt', lang: 'Norsk' },
+  { days: ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'], suffix: '· Resumo', lang: 'Português' },
+  { days: ['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag'], suffix: 'Overzicht', lang: 'Nederlands' },
 ];
 
-function randomLang() { return PICK_LANGS[Math.floor(Math.random() * PICK_LANGS.length)]; }
+function getPickLabel(): { label: string; lang: string } {
+  const entry = BRIEFING_LANGS[Math.floor(Math.random() * BRIEFING_LANGS.length)];
+  const dayName = entry.days[new Date().getDay()];
+  return { label: `${dayName} ${entry.suffix}`, lang: entry.lang };
+}
 
 type IdeaItem = { title: string; url?: string; description: string };
 type InsightData = {
@@ -17,14 +33,14 @@ type InsightData = {
 } | null;
 
 export default function VeraPick({ compact = false }: { compact?: boolean }) {
-  const [briefing, setBriefing]   = useState<string | null>(null);
-  const [insight, setInsight]     = useState<InsightData>(null);
-  const [loading, setLoading]     = useState(true);
-  const [lang, setLang]           = useState('');
+  const [briefing, setBriefing]     = useState<string | null>(null);
+  const [insight, setInsight]       = useState<InsightData>(null);
+  const [loading, setLoading]       = useState(true);
+  const [pickLabel, setPickLabel]   = useState<{ label: string; lang: string }>({ label: '···', lang: '' });
 
   const load = useCallback((force = false) => {
     setLoading(true);
-    setLang(randomLang());
+    setPickLabel(getPickLabel());
     Promise.all([
       fetch(`/api/briefing/morning${force ? '?force=1' : ''}`).then(r => r.json()).catch(() => ({})),
       fetch(`/api/daily-insight${force ? '?force=1' : ''}`).then(r => r.json()).catch(() => null),
@@ -43,13 +59,20 @@ export default function VeraPick({ compact = false }: { compact?: boolean }) {
     <div style={{ marginBottom: compact ? 14 : 24 }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-        <span style={{
-          fontFamily: 'var(--font-syne)', fontWeight: 500,
-          fontSize: compact ? 12 : 15,
-          letterSpacing: '.22em', color: 'var(--gold2)', textTransform: 'uppercase',
-        }}>
-          ✦ Pick
-        </span>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+          <span style={{
+            fontFamily: 'var(--font-syne)', fontWeight: 500,
+            fontSize: compact ? 12 : 15,
+            color: 'var(--gold2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {pickLabel.label}
+          </span>
+          {pickLabel.lang && (
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.12em', flexShrink: 0 }}>
+              {pickLabel.lang}
+            </span>
+          )}
+        </div>
         <button
           onClick={() => !loading && load(true)}
           title="Regenerar"
@@ -76,18 +99,11 @@ export default function VeraPick({ compact = false }: { compact?: boolean }) {
             <div className="skeleton" style={{ height: 11, width: '82%' }} />
           </div>
         ) : briefing ? (
-          <div>
-            {lang && (
-              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.14em', marginRight: 6 }}>
-                {lang.toUpperCase()} —
-              </span>
-            )}
-            <span style={{
-              fontFamily: 'var(--font-syne)', fontWeight: 400,
-              fontSize: compact ? 11 : 13, lineHeight: 1.65, color: 'var(--text)',
-            }}>
-              {briefing}
-            </span>
+          <div style={{
+            fontFamily: 'var(--font-syne)', fontWeight: 400,
+            fontSize: compact ? 11 : 13, lineHeight: 1.65, color: 'var(--text)',
+          }}>
+            {briefing}
           </div>
         ) : (
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', letterSpacing: '.1em' }}>

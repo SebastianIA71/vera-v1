@@ -545,29 +545,36 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
         </div>
       </div>
 
-      {/* FAB — marcar hecha / deshacer */}
-      {justDone ? (
-        <div style={{ position: 'absolute', bottom: 14, left: 14, right: 14, display: 'flex', gap: 8 }}>
-          <div style={{ flex: 1, padding: 11, borderRadius: 12, background: 'var(--green)18', border: '.5px solid var(--green)', color: 'var(--green)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.2em', textAlign: 'center' }}>
-            ✓ HECHA
-          </div>
-          <button onClick={undoDone} style={{
-            padding: '11px 18px', borderRadius: 12, background: 'transparent',
-            border: '.5px solid var(--amber)', color: 'var(--amber)',
-            fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', cursor: 'pointer',
-          }}>
-            DESHACER
-          </button>
-        </div>
-      ) : !isDone && (
+      {/* FAB — marcar hecha (izquierda, lejos del micro FAB de voz) */}
+      {!isDone && !justDone && (
         <button onClick={markDone} style={{
-          position: 'absolute', bottom: 14, left: 14, right: 14, padding: 11,
+          position: 'absolute', bottom: 14, left: 14, right: 80, padding: 11,
           borderRadius: 12, background: 'transparent', border: '.5px solid var(--green)',
           color: 'var(--green)', fontFamily: 'var(--font-dm-mono)', fontSize: 11,
           letterSpacing: '.2em', cursor: 'pointer', textAlign: 'center',
         }}>
-          MARCAR COMO HECHA ✓
+          MARCAR HECHA ✓
         </button>
+      )}
+
+      {/* Undo banner — dentro del scroll para no solapar el FAB de voz */}
+      {justDone && (
+        <div style={{
+          position: 'absolute', bottom: 14, left: 14, right: 14,
+          display: 'flex', alignItems: 'center', gap: 8,
+          background: 'var(--green)18', border: '.5px solid var(--green)',
+          borderRadius: 12, padding: '10px 14px',
+        }}>
+          <span style={{ color: 'var(--green)', fontSize: 16 }}>✓</span>
+          <span style={{ flex: 1, fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--green)' }}>HECHA</span>
+          <button onClick={undoDone} style={{
+            padding: '6px 14px', borderRadius: 8, background: 'transparent',
+            border: '.5px solid var(--amber)', color: 'var(--amber)',
+            fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', cursor: 'pointer',
+          }}>
+            DESHACER
+          </button>
+        </div>
       )}
 
       {/* Edit Modal */}

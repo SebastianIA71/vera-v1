@@ -33,7 +33,7 @@ export default function SongOfDay({ compact = false }: { compact?: boolean }) {
     if (!song || voting || song.feedback) return;
     setVoting(true);
     try {
-      await fetch('/api/song-of-day/feedback', {
+      await fetch('/api/song-of-day', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ feedback }),
       });

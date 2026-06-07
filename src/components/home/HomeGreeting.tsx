@@ -45,9 +45,7 @@ export default function HomeGreeting({
   const [statusLine, setStatusLine] = useState('');
 
   useEffect(() => {
-    const now = new Date();
-    const dateStr = `${DAY_NAMES[now.getDay()]} ${now.getDate()} ${MONTH_NAMES[now.getMonth()]}`;
-    const parts: string[] = [dateStr];
+    const parts: string[] = [];
     if (weightLogs[0]) parts.push(`${weightLogs[0].value} KG`);
     if (financeD != null) parts.push(`${financeD.toFixed(2)}M`);
     if (nextTrip) {
