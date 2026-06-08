@@ -4,6 +4,7 @@ export const auth = sqliteTable('auth', {
   id: integer('id').primaryKey(),
   pinHash: text('pin_hash').notNull(),
   pinSalt: text('pin_salt').notNull(),
+  role: text('role').default('user'), // 'user' | 'admin'
   failedAttempts: integer('failed_attempts').default(0),
   lockedUntil: integer('locked_until', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow(),

@@ -54,7 +54,9 @@ export async function POST(req: NextRequest) {
   // Reset failed attempts
   await db.update(auth).set({ failedAttempts: 0, lockedUntil: null }).where(eq(auth.id, 1));
 
-  const token = await new SignJWT({ sub: '1' })
+  // Incluir rol en el JWT
+  const role = authRow.role ?? 'user';
+  const token = await new SignJWT({ sub: '1', role })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(`${SESSION_DURATION}s`)

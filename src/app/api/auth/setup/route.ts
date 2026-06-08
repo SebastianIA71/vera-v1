@@ -28,9 +28,11 @@ export async function POST(req: NextRequest) {
     id: 1,
     pinHash: finalHash,
     pinSalt,
+    role: 'admin', // El primer usuario es admin por defecto
   });
 
-  const token = await new SignJWT({ sub: '1' })
+  // Incluir rol en el JWT
+  const token = await new SignJWT({ sub: '1', role: 'admin' })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(`${SESSION_DURATION}s`)

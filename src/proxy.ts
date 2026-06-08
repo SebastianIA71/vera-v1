@@ -32,6 +32,12 @@ const PUBLIC_ROUTES = [
 const CRON_ROUTES = ['/api/cron/'];
 
 // ─────────────────────────────────────────────────────────────────────────────
+// RUTAS DE ADMIN — requieren sesión + rol='admin'
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ADMIN_ROUTES = ['/api/admin/'];
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Utilidades
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -85,9 +91,25 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL('/lock', req.url));
   }
 
-  // 4. Verificar validez del JWT
+  // 4. Verificar validez del JWT y extraer datos
   try {
-    await jwtVerify(sessionCookie.value, SESSION_SECRET);
+    const verified = await jwtVerify(sessionCookie.value, SESSION_SECRET);
+    const session = verified.payload as any;
+    const role = session.role ?? 'user';
+
+    // 5. Verificar acceso a rutas ADMIN — requieren rol='admin'
+    if (matchesRoute(pathname, ADMIN_ROUTES)) {
+      if (role !== 'admin') {
+        const response = isApiRoute(pathname)
+          ? new NextResponse(
+              JSON.stringify({ error: 'Forbidden — admin role required' }),
+              { status: 403, headers: { 'content-type': 'application/json' } }
+            )
+          : NextResponse.redirect(new URL('/', req.url));
+        return response;
+      }
+    }
+
     return NextResponse.next();
   } catch (err) {
     // JWT inválido o expirado

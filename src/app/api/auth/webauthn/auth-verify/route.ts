@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuthenticationResponse } from '@simplewebauthn/server';
 import { SignJWT } from 'jose';
 import { db } from '@/lib/db';
-import { webauthnCredentials } from '@/lib/db/schema';
+import { webauthnCredentials, auth } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getRpIdFromReq, getOriginFromReq } from '@/lib/auth';
 
@@ -55,7 +55,11 @@ export async function POST(req: NextRequest) {
       .set({ counter: verification.authenticationInfo.newCounter, lastUsedAt: new Date() })
       .where(eq(webauthnCredentials.credentialId, credentialIdB64));
 
-    const token = await new SignJWT({ sub: '1' })
+    // Obtener rol del usuario
+    const [authRow] = await db.select().from(auth).where(eq(auth.id, 1)).limit(1);
+    const role = authRow?.role ?? 'user';
+
+    const token = await new SignJWT({ sub: '1', role })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
       .setExpirationTime(`${SESSION_DURATION}s`)

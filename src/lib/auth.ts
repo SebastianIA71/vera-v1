@@ -4,7 +4,8 @@ import { cookies } from 'next/headers';
 export const SESSION_SECRET = new TextEncoder().encode(process.env.SESSION_SECRET ?? '');
 
 export interface SessionData {
-  sub: string;
+  sub: string;     // User ID (siempre '1' actualmente)
+  role?: string;   // 'user' | 'admin'
 }
 
 /**
