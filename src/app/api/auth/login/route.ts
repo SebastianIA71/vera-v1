@@ -4,6 +4,8 @@ import { SignJWT } from 'jose';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { validateRequest } from '@/lib/validation/validate';
+import { authLoginSchema } from '@/lib/validation/schemas';
 
 const SESSION_SECRET = new TextEncoder().encode(process.env.SESSION_SECRET ?? '');
 const SESSION_DURATION = 60 * 60 * 24 * 30;
@@ -11,11 +13,11 @@ const MAX_ATTEMPTS = 3;
 const LOCKOUT_BASE_MS = 5 * 60 * 1000; // 5 min base
 
 export async function POST(req: NextRequest) {
-  const { pinHash } = await req.json();
+  // Validar request
+  const body = await validateRequest(req, authLoginSchema);
+  if (body instanceof NextResponse) return body;
 
-  if (!pinHash) {
-    return NextResponse.json({ error: 'Datos incompletos' }, { status: 400 });
-  }
+  const { pinHash } = body;
 
   const [authRow] = await db.select().from(auth).where(eq(auth.id, 1)).limit(1);
   if (!authRow) {
