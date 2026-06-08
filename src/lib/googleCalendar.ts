@@ -2,6 +2,7 @@ import { google } from 'googleapis';
 import { db } from '@/lib/db';
 import { memory } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
+import { decryptObjectDefault, encryptObjectDefault } from '@/lib/tokenCrypto';
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI
@@ -28,14 +29,26 @@ export async function getAuthenticatedClient() {
   const client = getOAuthClient();
   const row = await db.select().from(memory).where(eq(memory.key, 'google_tokens')).limit(1);
   if (!row[0]?.value) throw new Error('Google Calendar no conectado');
-  const tokens = JSON.parse(row[0].value);
+
+  // Descifrar tokens desde DB
+  let tokens: any;
+  try {
+    tokens = decryptObjectDefault(row[0].value);
+  } catch (err) {
+    // Fallback: si descifrado falla, intentar parse directo (para tokens viejos sin cifrar)
+    console.warn('[GoogleCalendar] Decryption failed, trying plain JSON (backward compat)');
+    tokens = JSON.parse(row[0].value);
+  }
+
   client.setCredentials(tokens);
 
   // Auto-refresh si el token expira pronto
   client.on('tokens', async (newTokens) => {
     const merged = { ...tokens, ...newTokens };
-    await db.insert(memory).values({ key: 'google_tokens', value: JSON.stringify(merged) })
-      .onConflictDoUpdate({ target: memory.key, set: { value: JSON.stringify(merged), updatedAt: new Date() } });
+    // Cifrar antes de guardar
+    const encryptedTokens = encryptObjectDefault(merged);
+    await db.insert(memory).values({ key: 'google_tokens', value: encryptedTokens })
+      .onConflictDoUpdate({ target: memory.key, set: { value: encryptedTokens, updatedAt: new Date() } });
   });
 
   return client;
