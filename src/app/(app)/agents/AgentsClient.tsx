@@ -359,7 +359,7 @@ function AlertPanel() {
       {perm === 'granted' && (<>
         <button onPointerDown={async e => { e.preventDefault(); setMsg('Enviando…'); const r = await fetch('/api/push/test', { method: 'POST' }); const d = await r.json(); setMsg(d.ok ? '✓ Push enviado' : (d.notice ?? 'Error')); }}
           style={{ ...BTN, border: '.5px solid var(--red)', color: 'var(--red)' }}>ENVIAR TEST PUSH</button>
-        <button onPointerDown={async e => { e.preventDefault(); setMsg('Ejecutando alertas…'); const r = await fetch('/api/cron/alerts', { headers: { Authorization: `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET ?? ''}` } }); const d = await r.json().catch(() => ({})); setMsg(r.ok ? `✓ ${d.alerts ?? 0} alertas enviadas` : 'Error (¿CRON_SECRET?)'); }}
+        <button onPointerDown={async e => { e.preventDefault(); setMsg('Ejecutando alertas…'); const r = await fetch('/api/admin/run-agent?agent=alerts', { method: 'POST' }); const d = await r.json().catch(() => ({})); setMsg(r.ok ? `✓ ${d.alerts ?? 0} alertas enviadas` : (d.error ?? 'Error')); }}
           style={{ ...BTN, border: '.5px solid var(--amber)', color: 'var(--amber)' }}>EJECUTAR ALERTAS AHORA</button>
       </>)}
       {perm === 'denied' && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)', lineHeight: 1.5 }}>Permiso denegado. Actívalo en Ajustes del navegador → Notificaciones.</div>}
