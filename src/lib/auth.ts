@@ -1,18 +1,48 @@
 import { jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
-const SESSION_SECRET = new TextEncoder().encode(process.env.SESSION_SECRET ?? '');
+export const SESSION_SECRET = new TextEncoder().encode(process.env.SESSION_SECRET ?? '');
 
-export async function verifySession(_req?: Request): Promise<boolean> {
+export interface SessionData {
+  sub: string;
+}
+
+/**
+ * Verifica la sesión JWT desde la cookie en route handlers.
+ * Retorna datos de la sesión o null si inválida/ausente.
+ *
+ * NOTA: El middleware.ts ya verifica sesión globalmente, así que
+ * esta función es para verificaciones adicionales dentro de endpoints
+ * o para compatibilidad con código existente.
+ */
+export async function verifySession(req?: Request): Promise<SessionData | null> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get('vera_session')?.value;
-    if (!token) return false;
-    await jwtVerify(token, SESSION_SECRET);
-    return true;
+    if (!token) return null;
+    const verified = await jwtVerify(token, SESSION_SECRET);
+    return verified.payload as SessionData;
   } catch {
-    return false;
+    return null;
   }
+}
+
+/**
+ * Para compatibilidad con código existente que espera boolean.
+ * DEPRECADO — usar verifySession() que retorna SessionData | null.
+ */
+export async function verifySessionBool(_req?: Request): Promise<boolean> {
+  return (await verifySession()) !== null;
+}
+
+/**
+ * Extrae el token JWT desde el header Cookie.
+ * Usado por middleware para verificar sesión sin acceso a cookies() API.
+ */
+export function extractSessionTokenFromHeader(cookieHeader: string | null): string | null {
+  if (!cookieHeader) return null;
+  const match = cookieHeader.match(/vera_session=([^;]+)/);
+  return match ? match[1] : null;
 }
 
 // ─── WebAuthn helpers ─────────────────────────────────────────────────────────
