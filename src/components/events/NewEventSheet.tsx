@@ -9,6 +9,7 @@ type EventData = {
   who?: string | null; transport?: string | null;
   accommodation?: string | null; status?: string | null;
   notes?: string | null; approx?: boolean | null;
+  meta?: string | null;
 };
 
 type Props = {
@@ -59,6 +60,8 @@ export default function NewEventSheet({ onClose, onCreated, onUpdated, type: def
   const isEditing = !!event?.id;
   const [saving, setSaving] = useState(false);
 
+  const parsedMeta = event?.meta ? JSON.parse(event.meta) : {};
+
   const [form, setForm] = useState({
     title:         event?.title ?? '',
     type:          event?.type ?? defaultType,
@@ -71,6 +74,13 @@ export default function NewEventSheet({ onClose, onCreated, onUpdated, type: def
     notes:         event?.notes         ?? '',
     approx:        event?.approx        ?? false,
   });
+
+  const [documents, setDocuments] = useState<{ name: string; notes: string }[]>(
+    parsedMeta.documents?.map((d: { name: string; notes?: string }) => ({ name: d.name, notes: d.notes ?? '' })) ?? []
+  );
+  const [schedule, setSchedule] = useState<{ day: string; description: string }[]>(
+    parsedMeta.schedule ?? []
+  );
 
   const set = (k: keyof typeof form, v: string | boolean) =>
     setForm(prev => ({ ...prev, [k]: v }));
@@ -91,6 +101,10 @@ export default function NewEventSheet({ onClose, onCreated, onUpdated, type: def
     try {
       const url    = isEditing ? `/api/events/${event!.id}` : '/api/events';
       const method = isEditing ? 'PUT' : 'POST';
+      const meta = {
+        documents: documents.filter(d => d.name.trim()),
+        schedule:  schedule.filter(s => s.day && s.description.trim()),
+      };
       await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -105,6 +119,7 @@ export default function NewEventSheet({ onClose, onCreated, onUpdated, type: def
           status:        form.status,
           notes:         form.notes.trim()         || null,
           approx:        form.approx,
+          meta:          JSON.stringify(meta),
         }),
       });
       router.refresh();
@@ -235,6 +250,56 @@ export default function NewEventSheet({ onClose, onCreated, onUpdated, type: def
               FECHAS APROXIMADAS
             </span>
           </label>
+
+          {/* Documentos */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <label style={{ ...LABEL, marginBottom: 0 }}>DOCUMENTOS <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(opcional)</span></label>
+              <button onClick={() => setDocuments(d => [...d, { name: '', notes: '' }])}
+                style={{ background: 'none', border: '.5px solid var(--bg4)', borderRadius: 6, padding: '3px 8px', color: 'var(--text3)', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)', fontSize: 10 }}>
+                + AÑADIR
+              </button>
+            </div>
+            {documents.length === 0 && (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', padding: '4px 0' }}>Entradas, reservas, confirmaciones...</div>
+            )}
+            {documents.map((doc, i) => (
+              <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                <input value={doc.name} onChange={e => setDocuments(d => d.map((x, j) => j === i ? { ...x, name: e.target.value } : x))}
+                  placeholder="Nombre (ej: Entrada Bruno Mars)" style={{ ...INPUT, flex: 2 }} />
+                <input value={doc.notes} onChange={e => setDocuments(d => d.map((x, j) => j === i ? { ...x, notes: e.target.value } : x))}
+                  placeholder="Nota (fila 12)" style={{ ...INPUT, flex: 2 }} />
+                <button onClick={() => setDocuments(d => d.filter((_, j) => j !== i))}
+                  style={{ background: 'none', border: '.5px solid var(--bg4)', borderRadius: 6, padding: '0 8px', color: 'var(--red)', cursor: 'pointer', fontSize: 14, flexShrink: 0 }}>×</button>
+              </div>
+            ))}
+          </div>
+
+          {/* Schedule / Itinerario */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <label style={{ ...LABEL, marginBottom: 0 }}>SCHEDULE <span style={{ color: 'var(--text3)', fontWeight: 400 }}>(opcional)</span></label>
+              <button onClick={() => setSchedule(s => [...s, { day: form.startDate, description: '' }])}
+                style={{ background: 'none', border: '.5px solid var(--bg4)', borderRadius: 6, padding: '3px 8px', color: 'var(--text3)', cursor: 'pointer', fontFamily: 'var(--font-dm-mono)', fontSize: 10 }}>
+                + AÑADIR
+              </button>
+            </div>
+            {schedule.length === 0 && (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', padding: '4px 0' }}>Horario del día, orden de actuaciones...</div>
+            )}
+            {schedule.map((s, i) => (
+              <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 8, alignItems: 'flex-start' }}>
+                <input type="date" value={s.day}
+                  onChange={e => setSchedule(sc => sc.map((x, j) => j === i ? { ...x, day: e.target.value } : x))}
+                  style={{ ...INPUT, width: 130, flex: 'none', colorScheme: 'dark', fontSize: 12 } as React.CSSProperties} />
+                <input value={s.description}
+                  onChange={e => setSchedule(sc => sc.map((x, j) => j === i ? { ...x, description: e.target.value } : x))}
+                  placeholder="Descripción del momento..." style={{ ...INPUT, flex: 1 }} />
+                <button onClick={() => setSchedule(sc => sc.filter((_, j) => j !== i))}
+                  style={{ background: 'none', border: '.5px solid var(--bg4)', borderRadius: 6, padding: '0 8px', color: 'var(--red)', cursor: 'pointer', fontSize: 14, flexShrink: 0, alignSelf: 'stretch' }}>×</button>
+              </div>
+            ))}
+          </div>
 
           {/* Notas */}
           <div>

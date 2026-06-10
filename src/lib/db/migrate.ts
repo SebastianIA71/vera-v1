@@ -69,6 +69,44 @@ export async function runAutoMigrations(): Promise<void> {
       id:  'tasks.recurrence_interval',
       sql: 'ALTER TABLE tasks ADD COLUMN recurrence_interval INTEGER',
     },
+    {
+      id:  'contracts.payment_day',
+      sql: 'ALTER TABLE contracts ADD COLUMN payment_day INTEGER',
+    },
+    {
+      id:  'contracts.billing_cycle',
+      sql: 'ALTER TABLE contracts ADD COLUMN billing_cycle TEXT',
+    },
+    {
+      id:  'create.vehicles',
+      sql: `CREATE TABLE IF NOT EXISTS vehicles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        brand TEXT,
+        model TEXT,
+        plate TEXT,
+        color TEXT DEFAULT '#5ba8e8',
+        contract_km_total INTEGER,
+        contract_months INTEGER,
+        contract_start_date INTEGER,
+        contract_end_date INTEGER,
+        contract_id INTEGER,
+        active INTEGER DEFAULT 1,
+        notes TEXT,
+        created_at INTEGER
+      )`,
+    },
+    {
+      id:  'create.km_logs',
+      sql: `CREATE TABLE IF NOT EXISTS km_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        vehicle_id INTEGER NOT NULL REFERENCES vehicles(id),
+        date TEXT NOT NULL,
+        km INTEGER NOT NULL,
+        notes TEXT,
+        created_at INTEGER
+      )`,
+    },
   ];
 
   for (const m of migrations) {

@@ -160,7 +160,35 @@ export const contracts = sqliteTable('contracts', {
   endDate: integer('end_date', { mode: 'timestamp' }),
   active: integer('active', { mode: 'boolean' }).default(true),
   alertDaysBefore: integer('alert_days_before').default(45),
+  paymentDay: integer('payment_day'),
+  billingCycle: text('billing_cycle'),
   notes: text('notes'),
+});
+
+export const vehicles = sqliteTable('vehicles', {
+  id:                integer('id').primaryKey({ autoIncrement: true }),
+  name:              text('name').notNull(),
+  brand:             text('brand'),
+  model:             text('model'),
+  plate:             text('plate'),
+  color:             text('color').default('#5ba8e8'),
+  contractKmTotal:   integer('contract_km_total'),
+  contractMonths:    integer('contract_months'),
+  contractStartDate: integer('contract_start_date', { mode: 'timestamp' }),
+  contractEndDate:   integer('contract_end_date', { mode: 'timestamp' }),
+  contractId:        integer('contract_id'),
+  active:            integer('active', { mode: 'boolean' }).default(true),
+  notes:             text('notes'),
+  createdAt:         integer('created_at', { mode: 'timestamp' }).defaultNow(),
+});
+
+export const kmLogs = sqliteTable('km_logs', {
+  id:        integer('id').primaryKey({ autoIncrement: true }),
+  vehicleId: integer('vehicle_id').notNull().references(() => vehicles.id),
+  date:      text('date').notNull(),
+  km:        integer('km').notNull(),
+  notes:     text('notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow(),
 });
 
 export const webauthnCredentials = sqliteTable('webauthn_credentials', {

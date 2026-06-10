@@ -278,6 +278,10 @@ export default function TripsClient({ trips, allTasks, urgentCount, staleCount, 
 // Detalle simple para eventos (no viajes)
 function EventDetailSimple({ trip, onEdit }: { trip: Trip; onEdit?: () => void }) {
   const st = STATUS_LABELS[trip.status ?? 'planning'] ?? STATUS_LABELS.planning;
+  const meta = trip.meta ? (() => { try { return JSON.parse(trip.meta!); } catch { return {}; } })() : {};
+  const docs: { name: string; notes?: string }[] = meta.documents ?? [];
+  const sched: { day: string; description: string }[] = meta.schedule ?? [];
+
   return (
     <div style={{ flex: 1, maxWidth: 680, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <div style={{ padding: '14px 20px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
@@ -297,9 +301,35 @@ function EventDetailSimple({ trip, onEdit }: { trip: Trip; onEdit?: () => void }
           </span>
         </div>
       </div>
-      {trip.notes && (
-        <div style={{ padding: '16px 20px', fontFamily: 'var(--font-dm-sans)', fontSize: 12, lineHeight: 1.6, color: 'var(--text2)' }}>{trip.notes}</div>
-      )}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+        {trip.notes && (
+          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, lineHeight: 1.6, color: 'var(--text2)', marginBottom: 16 }}>{trip.notes}</div>
+        )}
+        {docs.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.26em', color: 'var(--text3)', marginBottom: 8 }}>DOCUMENTOS</div>
+            {docs.map((doc, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '.5px solid var(--bg4)' }}>
+                <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)' }}>{doc.name}</span>
+                {doc.notes && <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.06em' }}>{doc.notes}</span>}
+              </div>
+            ))}
+          </div>
+        )}
+        {sched.length > 0 && (
+          <div>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.26em', color: 'var(--text3)', marginBottom: 8 }}>SCHEDULE</div>
+            {sched.map((s, i) => (
+              <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 10 }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--blue)', letterSpacing: '.06em', flexShrink: 0, paddingTop: 2 }}>
+                  {new Date(s.day).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase()}
+                </div>
+                <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)', lineHeight: 1.4 }}>{s.description}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -90,17 +90,17 @@ export default function NewProjectSheet({
 
           <div>
             <label style={LABEL}>ICONO</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 4, marginBottom: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 4, marginBottom: 8, maxHeight: 76, overflowY: 'auto' }}>
               {PROJECT_ICONS.map(ic => (
                 <button
                   key={ic}
                   onClick={() => set('icon', form.icon === ic ? '' : ic)}
                   style={{
-                    aspectRatio: '1', borderRadius: 8, fontSize: 18, cursor: 'pointer',
+                    width: '100%', aspectRatio: '1', borderRadius: 6, fontSize: 16, cursor: 'pointer',
                     border: form.icon === ic ? `.5px solid ${form.color}` : '.5px solid transparent',
                     background: form.icon === ic ? `${form.color}20` : 'var(--bg3)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'background .1s',
+                    transition: 'background .1s', padding: 0,
                   }}
                 >
                   {ic}
@@ -110,7 +110,7 @@ export default function NewProjectSheet({
             <input
               value={form.icon}
               onChange={e => set('icon', e.target.value.slice(0, 5))}
-              placeholder="O escribe cualquier emoji / letra..."
+              placeholder="O escribe cualquier emoji..."
               style={{ ...INPUT, fontSize: 13 }}
             />
           </div>

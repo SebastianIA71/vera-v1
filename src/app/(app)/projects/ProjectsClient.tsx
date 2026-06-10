@@ -41,7 +41,9 @@ function ProjectCard({ project, selected, tasks, onClick }: { project: Project; 
       onMouseLeave={e => { if (!selected) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-        <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+        {project.icon
+          ? <span style={{ fontSize: 14, flexShrink: 0, lineHeight: 1 }}>{project.icon}</span>
+          : <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />}
         <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.name}</span>
         <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', color: sm.color, flexShrink: 0 }}>{sm.label}</span>
       </div>
@@ -103,7 +105,9 @@ function ProjectDetail({ project, tasks, onEdit, onTaskCreated, onTaskUpdate, on
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <span style={{ width: 12, height: 12, borderRadius: '50%', background: color }} />
+              {project.icon
+                ? <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>{project.icon}</span>
+                : <span style={{ width: 12, height: 12, borderRadius: '50%', background: color, flexShrink: 0 }} />}
               <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 20, color: 'var(--text)', letterSpacing: '-.01em' }}>
                 {project.name}
               </span>
