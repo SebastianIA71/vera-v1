@@ -3,19 +3,21 @@ import { db } from '@/lib/db';
 import { kmLogs } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const rows = await db
     .select()
     .from(kmLogs)
-    .where(eq(kmLogs.vehicleId, Number(params.id)))
+    .where(eq(kmLogs.vehicleId, Number(id)))
     .orderBy(desc(kmLogs.date));
   return NextResponse.json(rows);
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const body = await req.json();
   const [row] = await db.insert(kmLogs).values({
-    vehicleId: Number(params.id),
+    vehicleId: Number(id),
     date:      body.date,
     km:        Number(body.km),
     notes:     body.notes ?? null,
@@ -23,7 +25,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   return NextResponse.json(row, { status: 201 });
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const { searchParams } = new URL(req.url);
   const kmId = searchParams.get('kmId');
   if (!kmId) return NextResponse.json({ error: 'Missing kmId' }, { status: 400 });

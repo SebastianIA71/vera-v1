@@ -3,13 +3,15 @@ import { db } from '@/lib/db';
 import { contracts } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 
-export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
-  const [row] = await db.select().from(contracts).where(eq(contracts.id, Number(params.id)));
+export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const [row] = await db.select().from(contracts).where(eq(contracts.id, Number(id)));
   if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json(row);
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const body = await req.json();
   const [row] = await db.update(contracts).set({
     name:             body.name,
@@ -24,11 +26,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     billingCycle:     body.billingCycle    ?? null,
     notes:            body.notes           ?? null,
     active:           body.active          ?? true,
-  }).where(eq(contracts.id, Number(params.id))).returning();
+  }).where(eq(contracts.id, Number(id))).returning();
   return NextResponse.json(row);
 }
 
-export async function DELETE(_: NextRequest, { params }: { params: { id: string } }) {
-  await db.update(contracts).set({ active: false }).where(eq(contracts.id, Number(params.id)));
+export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  await db.update(contracts).set({ active: false }).where(eq(contracts.id, Number(id)));
   return NextResponse.json({ ok: true });
 }
