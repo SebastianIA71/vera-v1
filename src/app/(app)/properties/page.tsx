@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { tasks, events, properties as propertiesTable } from '@/lib/db/schema';
-import { ne, desc, asc } from 'drizzle-orm';
+import { ne, desc, asc, and, or, isNull, lte } from 'drizzle-orm';
 import { getUrgentAndStaleCounts } from '@/lib/queries';
 import PropertiesClient from './PropertiesClient';
 
@@ -11,7 +11,10 @@ export default async function PropertiesPage() {
   const in90 = new Date(Date.now() + 90 * 86400000);
 
   const [allTasks, allEvents, allProperties, { urgentCount, staleCount, inboxCount }] = await Promise.all([
-    db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)),
+    db.select().from(tasks).where(and(
+      ne(tasks.status, 'archived'),
+      or(isNull(tasks.snoozedUntil), lte(tasks.snoozedUntil, now))!,
+    )).orderBy(desc(tasks.prioFinal)),
     db.select().from(events).orderBy(asc(events.startDate)),
     db.select().from(propertiesTable),
     getUrgentAndStaleCounts(),

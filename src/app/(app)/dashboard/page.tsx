@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { tasks, events, inbox, properties, weightLog, projects, financeRecords } from '@/lib/db/schema';
-import { ne, desc, sql } from 'drizzle-orm';
+import { ne, desc, sql, and, or, isNull, lte } from 'drizzle-orm';
 import DashboardClient from './DashboardClient';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,10 @@ export default async function DashboardPage() {
   const now = new Date();
 
   const [allTasks, allEvents, allProperties, weightLogs, allProjects, financeData] = await Promise.all([
-    db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal), desc(tasks.prio)).limit(100),
+    db.select().from(tasks).where(and(
+      ne(tasks.status, 'archived'),
+      or(isNull(tasks.snoozedUntil), lte(tasks.snoozedUntil, now))!,
+    )).orderBy(desc(tasks.prioFinal), desc(tasks.prio)).limit(100),
     db.select().from(events).orderBy(desc(events.startDate)).limit(20),
     db.select().from(properties),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(1),

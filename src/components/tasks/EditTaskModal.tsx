@@ -16,6 +16,7 @@ type Task = {
   dueDate?: Date | null;
   recurrence?: string | null;
   recurrenceInterval?: number | null;
+  snoozedUntil?: Date | null;
 };
 
 type Property = { id: string; name: string; color: string | null; icon: string | null };
@@ -50,6 +51,7 @@ export default function EditTaskModal({
   const [dueDate, setDueDate] = useState(task.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '');
   const [recurrence, setRecurrence] = useState<string>(task.recurrence ?? '');
   const [recurrenceInterval, setRecurrenceInterval] = useState<string>(String(task.recurrenceInterval ?? 7));
+  const [snoozedUntil, setSnoozedUntil] = useState(task.snoozedUntil ? new Date(task.snoozedUntil).toISOString().slice(0, 10) : '');
   const [saving, setSaving] = useState(false);
   const [propList, setPropList] = useState<Property[]>([]);
   const [projList, setProjList] = useState<{ id: number; name: string; color: string | null }[]>([]);
@@ -84,9 +86,10 @@ export default function EditTaskModal({
         propertyId: propertyId || null,
         projectId: projectId ?? null,
         tags: tags || null,
-        dueDate: dueDate ? new Date(dueDate) : null,
+        dueDate: dueDate ? new Date(dueDate).toISOString() : null,
         recurrence: recurrence || null,
         recurrenceInterval: recurrence === 'custom' ? Number(recurrenceInterval) : null,
+        snoozedUntil: snoozedUntil ? new Date(snoozedUntil).toISOString() : null,
       }),
     });
     if (res.ok) {
@@ -258,6 +261,31 @@ export default function EditTaskModal({
           <div>
             <label style={LABEL}>FECHA LÍMITE (opcional)</label>
             <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} style={{ ...INPUT, colorScheme: 'dark' }} />
+          </div>
+
+          <div>
+            <label style={{ ...LABEL, color: snoozedUntil ? 'var(--cyan)' : undefined }}>
+              🌙 DORMIR HASTA (opcional)
+            </label>
+            <input
+              type="date"
+              value={snoozedUntil}
+              onChange={e => setSnoozedUntil(e.target.value)}
+              style={{ ...INPUT, colorScheme: 'dark', borderColor: snoozedUntil ? 'var(--cyan)' : undefined }}
+            />
+            {snoozedUntil && (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: '.12em', marginTop: 4, opacity: 0.8 }}>
+                Oculta en la lista activa hasta esa fecha · aparece con 🌙 al despertar
+              </div>
+            )}
+            {snoozedUntil && (
+              <button
+                onClick={() => setSnoozedUntil('')}
+                style={{ marginTop: 6, background: 'transparent', border: 'none', color: 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', cursor: 'pointer', padding: 0 }}
+              >
+                DESPERTAR AHORA ×
+              </button>
+            )}
           </div>
 
           <div>

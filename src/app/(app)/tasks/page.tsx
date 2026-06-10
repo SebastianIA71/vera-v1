@@ -1,13 +1,17 @@
 import { db } from '@/lib/db';
 import { tasks, inbox, properties as propertiesTable, projects as projectsTable, events as eventsTable } from '@/lib/db/schema';
-import { ne, desc, eq, asc } from 'drizzle-orm';
+import { ne, desc, eq, asc, and, or, isNull, lte } from 'drizzle-orm';
 import TasksClient from './TasksClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function TasksPage() {
+  const now = new Date();
   const [allTasks, inboxItems, allProperties, allProjects, allTrips] = await Promise.all([
-    db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prioFinal)),
+    db.select().from(tasks).where(and(
+      ne(tasks.status, 'archived'),
+      or(isNull(tasks.snoozedUntil), lte(tasks.snoozedUntil, now))!,
+    )).orderBy(desc(tasks.prioFinal)),
     db.select({ id: inbox.id }).from(inbox).where(eq(inbox.processed, false)),
     db.select().from(propertiesTable),
     db.select({ id: projectsTable.id, name: projectsTable.name, color: projectsTable.color })

@@ -5,9 +5,25 @@ import { useRouter } from 'next/navigation';
 import { getDailyQuote, parseQuote } from '@/lib/quotes';
 import { startAuthentication } from '@simplewebauthn/browser';
 
-type LockState = 'faceid' | 'pin';
+type LockState = 'faceid' | 'pin' | 'recovery';
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'FACE', '0', 'CLR'] as const;
+
+// Extrae el PIN del código de recuperación: formato XXXXXX-NNNNNN
+// Segunda parte NNNNNN al revés = PIN
+function extractPinFromRecoveryCode(code: string): string | null {
+  const parts = code.trim().toUpperCase().split('-');
+  if (parts.length !== 2) return null;
+  const [firstPart, reversedPinStr] = parts;
+  if (!/^\d{6}$/.test(reversedPinStr)) return null;
+  const pinDigits = reversedPinStr.split('').reverse().join('');
+  // Verificar primera parte
+  const expectedFirst = pinDigits.split('').map((d, i) =>
+    String.fromCharCode(65 + parseInt(d) * 2 + i)
+  ).join('');
+  if (firstPart !== expectedFirst) return null;
+  return pinDigits;
+}
 
 async function hashPin(pin: string, salt: string): Promise<string> {
   const data = new TextEncoder().encode(pin + salt);
@@ -40,6 +56,8 @@ export default function LockPage() {
   const [shaking, setShaking] = useState(false);
   const [error, setError] = useState('');
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [recoveryCode, setRecoveryCode] = useState('');
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.PublicKeyCredential) {
@@ -165,6 +183,40 @@ export default function LockPage() {
       setTimeout(() => setError(''), 6000);
     }
   }, [router]);
+
+  const handleRecovery = useCallback(async () => {
+    const recoveredPin = extractPinFromRecoveryCode(recoveryCode);
+    if (!recoveredPin) {
+      setError('Código de recuperación inválido');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+    setRecoveryLoading(true);
+    setError('');
+    try {
+      const saltRes = await fetch('/api/auth/salt');
+      if (!saltRes.ok) throw new Error('no salt');
+      const { pinSalt } = await saltRes.json();
+      const pinHash = await hashPin(recoveredPin, pinSalt);
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pinHash }),
+      });
+      if (res.ok) {
+        await deriveAndStoreKey(recoveredPin);
+        router.replace('/');
+      } else {
+        setError('El código no coincide con el PIN guardado');
+        setTimeout(() => setError(''), 4000);
+      }
+    } catch {
+      setError('Error de conexión');
+      setTimeout(() => setError(''), 3000);
+    } finally {
+      setRecoveryLoading(false);
+    }
+  }, [recoveryCode, router]);
 
   const handleKey = useCallback(
     (key: string) => {
@@ -452,12 +504,53 @@ export default function LockPage() {
 
         {/* Recovery + Footer */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginTop: 'auto', paddingTop: 8 }}>
-          <a
-            href="/setup"
-            style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--text3)', textDecoration: 'none', borderBottom: '.5px solid var(--border-subtle)' }}
-          >
-            ¿Olvidaste el PIN? →
-          </a>
+          {lockState !== 'recovery' ? (
+            <button
+              onClick={() => { setLockState('recovery'); setError(''); setPin(''); }}
+              style={{ background: 'transparent', border: 'none', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--text3)', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'var(--text4)' }}
+            >
+              ¿Olvidaste el PIN? Usar código de recuperación →
+            </button>
+          ) : (
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--amber)' }}>
+                CÓDIGO DE RECUPERACIÓN
+              </div>
+              <input
+                autoFocus
+                value={recoveryCode}
+                onChange={e => setRecoveryCode(e.target.value.toUpperCase())}
+                onKeyDown={e => e.key === 'Enter' && handleRecovery()}
+                placeholder="XXXXXX-NNNNNN"
+                style={{
+                  background: 'var(--bg2)', border: '.5px solid var(--amber)', borderRadius: 10,
+                  padding: '10px 14px', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)',
+                  fontSize: 14, letterSpacing: '.1em', outline: 'none', width: '100%',
+                  boxSizing: 'border-box',
+                }}
+              />
+              {error && (
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--red)', letterSpacing: '.12em' }}>
+                  {error}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => { setLockState('pin'); setRecoveryCode(''); setError(''); }}
+                  style={{ flex: 1, padding: '10px', borderRadius: 10, background: 'transparent', border: '.5px solid var(--bg4)', color: 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', cursor: 'pointer' }}
+                >
+                  CANCELAR
+                </button>
+                <button
+                  onClick={handleRecovery}
+                  disabled={recoveryLoading || !recoveryCode}
+                  style={{ flex: 2, padding: '10px', borderRadius: 10, background: 'transparent', border: '.5px solid var(--amber)', color: 'var(--amber)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', cursor: 'pointer', opacity: recoveryLoading ? 0.5 : 1 }}
+                >
+                  {recoveryLoading ? 'VERIFICANDO···' : 'ACCEDER CON CÓDIGO'}
+                </button>
+              </div>
+            </div>
+          )}
           <div style={{ textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.3em', color: 'var(--text3)' }}>
             VERA · MEMORY POWERED BY CLAUDE
           </div>

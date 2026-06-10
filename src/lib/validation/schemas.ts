@@ -41,7 +41,8 @@ export const createTaskSchema = z.object({
     .max(2000, 'Detalle máximo 2000 caracteres')
     .optional()
     .nullable(),
-  propertyId: z.enum(['flat', 'sarapita', 'willys'])
+  propertyId: z.string()
+    .max(50, 'PropertyId máximo 50 caracteres')
     .optional()
     .nullable(),
   projectId: z.number()
@@ -61,6 +62,10 @@ export const createTaskSchema = z.object({
     .optional()
     .nullable(),
   dueDate: z.string()
+    .datetime()
+    .optional()
+    .nullable(),
+  snoozedUntil: z.string()
     .datetime()
     .optional()
     .nullable(),

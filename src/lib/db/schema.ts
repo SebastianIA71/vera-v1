@@ -58,6 +58,7 @@ export const tasks = sqliteTable('tasks', {
   isException: integer('is_exception', { mode: 'boolean' }).default(false),
   recurrence: text('recurrence'),           // 'daily'|'weekly'|'monthly'|'custom'|null
   recurrenceInterval: integer('recurrence_interval'), // días (solo para 'custom')
+  snoozedUntil: integer('snoozed_until', { mode: 'timestamp' }), // dormant: oculta hasta esta fecha
 }, (t) => ({
   statusPrioIdx: index('tasks_status_prio').on(t.status, t.prioFinal),
   propertyIdx:   index('tasks_property').on(t.propertyId),

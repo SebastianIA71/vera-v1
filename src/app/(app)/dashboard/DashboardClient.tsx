@@ -61,13 +61,14 @@ function AgentIcon({ icon }: { icon: string }) {
 }
 
 /* ─── Right Panel ───────────────────────────────────── */
-function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkDone, router }: {
+function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkDone, onNewTask, router }: {
   tasks: Task[];
   inboxCount: number;
   nextTrip: { title: string; daysTo: number } | null;
   nextEvent: { title: string; daysTo: number; startDate: string } | null;
   allEvents: { startDate: Date | null; type: string }[];
   onMarkDone: (id: number) => void;
+  onNewTask: () => void;
   router: any;
 }) {
   const now = new Date();
@@ -112,10 +113,17 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
     }}>
-      <div style={{ padding: '12px 18px 8px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
+      <div style={{ padding: '12px 18px 8px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.22em', color: 'var(--text3)' }}>
           PUNCH LIST
         </div>
+        <button
+          onClick={onNewTask}
+          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', border: '.5px solid var(--gold2)', borderRadius: 999, background: 'transparent', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', cursor: 'pointer' }}
+        >
+          <svg viewBox="0 0 24 24" width={9} height={9} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          TAREA
+        </button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
@@ -597,6 +605,7 @@ export default function DashboardClient({
             nextEvent={nextEvent}
             allEvents={allEvents}
             onMarkDone={markDone}
+            onNewTask={() => setShowNewTask(true)}
             router={router}
           />
         ))}

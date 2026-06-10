@@ -34,7 +34,8 @@ export default function NewTaskModal({
   const [propertyId, setPropertyId] = useState(defaultPropertyId ?? '');
   const [projectId, setProjectId]   = useState<number | null>(defaultProjectId ?? null);
   const [tripTitle, setTripTitle]   = useState<string | null>(null);
-  const [dueDate, setDueDate]       = useState(new Date().toISOString().slice(0, 10));
+  const [dueDate, setDueDate]       = useState('');
+  const [snoozedUntil, setSnoozedUntil] = useState('');
   const [saving, setSaving]         = useState(false);
   const [propList, setPropList]     = useState<Property[]>([]);
   const [projList, setProjList]     = useState<{id: number; name: string; color: string | null}[]>([]);
@@ -64,7 +65,15 @@ export default function NewTaskModal({
     const res = await fetch('/api/tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, prio, propertyId: propertyId || null, projectId: projectId ?? null, tags: tripTitle ?? null, dueDate: dueDate ? new Date(dueDate) : null }),
+      body: JSON.stringify({
+        title,
+        prio,
+        propertyId: propertyId || null,
+        projectId: projectId ?? null,
+        tags: tripTitle ?? null,
+        dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+        snoozedUntil: snoozedUntil ? new Date(snoozedUntil).toISOString() : null,
+      }),
     });
     if (res.ok) {
       const task = await res.json();
@@ -105,8 +114,25 @@ export default function NewTaskModal({
           </div>
 
           <div>
-            <label style={LABEL}>FECHA (opcional)</label>
+            <label style={LABEL}>FECHA LÍMITE (opcional)</label>
             <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} style={{ ...INPUT, colorScheme: 'dark' }} />
+          </div>
+
+          <div>
+            <label style={{ ...LABEL, color: snoozedUntil ? 'var(--cyan)' : undefined }}>
+              🌙 DORMIR HASTA (opcional)
+            </label>
+            <input
+              type="date"
+              value={snoozedUntil}
+              onChange={e => setSnoozedUntil(e.target.value)}
+              style={{ ...INPUT, colorScheme: 'dark', borderColor: snoozedUntil ? 'var(--cyan)' : undefined }}
+            />
+            {snoozedUntil && (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--cyan)', letterSpacing: '.12em', marginTop: 4, opacity: 0.8 }}>
+                La tarea no aparecerá en la lista hasta esa fecha
+              </div>
+            )}
           </div>
 
           <div>

@@ -2,13 +2,16 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import MobilePageHeader from '@/components/layout/MobilePageHeader';
 import DesktopShell from '@/components/layout/DesktopShell';
 import TaskDetailPanel, { TaskDetail } from '@/components/tasks/TaskDetailPanel';
 import { taskBorderColor, fmtTime } from '@/lib/utils';
 import { useToast } from '@/components/ui/Toast';
 
-type Task     = TaskDetail & { inNow?: boolean | null };
+const NewTaskModal = dynamic(() => import('@/components/tasks/NewTaskModal'), { ssr: false });
+
+type Task     = TaskDetail & { inNow?: boolean | null; snoozedUntil?: Date | null };
 type Property = { id: string; name: string; color: string | null; icon: string | null };
 type Project  = { id: number; name: string; color: string | null };
 type Trip     = { id: number; title: string };
@@ -94,6 +97,9 @@ export default function TasksClient({
   const [showFilters, setShowFilters] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [showDormant, setShowDormant] = useState(false);
+  const [dormantTasks, setDormantTasks] = useState<Task[]>([]);
+  const [loadingDormant, setLoadingDormant] = useState(false);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 769);
@@ -112,6 +118,17 @@ export default function TasksClient({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  /* Cargar tareas dormidas cuando se activa el filtro */
+  useEffect(() => {
+    if (!showDormant) return;
+    setLoadingDormant(true);
+    fetch('/api/tasks?dormant=true')
+      .then(r => r.json())
+      .then((data: Task[]) => setDormantTasks(data))
+      .catch(() => {})
+      .finally(() => setLoadingDormant(false));
+  }, [showDormant]);
 
   const hasFilters = Object.values(filters).some(v => v !== null && v !== '');
 
@@ -203,6 +220,7 @@ export default function TasksClient({
   }
 
   return (
+    <>
     <DesktopShell urgentCount={urgentCount} staleCount={0} inboxCount={inboxCount} pageActions={pageActions}
       rightSlot={selected && (
         <TaskDetailPanel
@@ -218,12 +236,21 @@ export default function TasksClient({
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRight: '.5px solid var(--bg4)' }}>
         {isMobile && <MobilePageHeader title="Tareas" />}
         <div style={{ padding: '14px 20px 0', flexShrink: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em' }}>
               Tareas <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>activas</em>
             </div>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text4)' }}>
-              {filtered.filter(t => t.status !== 'done' && t.status !== 'archived').length} ACTIVAS
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text4)' }}>
+                {filtered.filter(t => t.status !== 'done' && t.status !== 'archived').length} ACTIVAS
+              </span>
+              <button
+                onClick={() => setShowNewTask(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', border: '.5px solid var(--gold2)', borderRadius: 999, background: 'transparent', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', cursor: 'pointer' }}
+              >
+                <svg viewBox="0 0 24 24" width={10} height={10} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                NUEVA
+              </button>
             </div>
           </div>
 
@@ -303,6 +330,9 @@ export default function TasksClient({
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', flexShrink: 0 }}>CONTEXTO</span>
             <FilterChip label="NoW" active={filters.context === 'now'} onClick={() => setFilters(f => ({ ...f, context: f.context === 'now' ? null : 'now' }))} />
 
+            <div style={{ width: .5, height: 16, background: 'var(--bg4)', margin: '0 3px', flexShrink: 0 }} />
+            <FilterChip label="🌙 DORMIDAS" active={showDormant} color="var(--cyan)" onClick={() => setShowDormant(v => !v)} />
+
             {hasFilters && (
               <button onClick={clearFilters} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)', cursor: 'pointer', padding: '4px 5px', background: 'none', border: 'none' }}>
                 LIMPIAR ×
@@ -338,11 +368,49 @@ export default function TasksClient({
               {doneTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={selectionMode ? () => toggleSelect(t.id) : setSelected} onPrioChange={(id, v) => setTasks(prev => prev.map(x => x.id === id ? { ...x, prioFinal: v } : x))} projects={projects} trips={trips} selectionMode={selectionMode} isChecked={selectedIds.has(t.id)} onCheckbox={() => toggleSelect(t.id)} onLongPress={() => enterSelection(t.id)} />)}
             </>
           )}
-          {filtered.filter(t => t.status !== 'done').length === 0 && (
+          {filtered.filter(t => t.status !== 'done').length === 0 && !showDormant && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 200, gap: 8 }}>
               <div style={{ fontFamily: 'var(--font-syne)', fontSize: 32, color: 'var(--gold)' }}>✦</div>
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text3)' }}>SIN TAREAS CON ESTOS FILTROS</div>
             </div>
+          )}
+
+          {/* Sección dormidas */}
+          {showDormant && (
+            <>
+              <div style={{ padding: '10px 20px 4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.26em', color: 'var(--cyan)' }}>
+                <span>🌙 DORMIDAS · {loadingDormant ? '···' : `${dormantTasks.length} TAREAS`}</span>
+                <span style={{ fontSize: 8, color: 'var(--text4)' }}>ocultas hasta su fecha de despertar</span>
+              </div>
+              {!loadingDormant && dormantTasks.length === 0 && (
+                <div style={{ padding: '20px', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', color: 'var(--text4)', textAlign: 'center' }}>
+                  No hay tareas dormidas
+                </div>
+              )}
+              {dormantTasks.map(t => (
+                <div key={t.id} onClick={() => setSelected(t)} style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '10px 20px',
+                  cursor: 'pointer', borderBottom: '.5px solid var(--bg2)',
+                  background: selected?.id === t.id ? 'var(--bg2)' : 'transparent',
+                  opacity: 0.7, transition: 'background .1s',
+                }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--bg2)'; (e.currentTarget as HTMLDivElement).style.opacity = '1'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = selected?.id === t.id ? 'var(--bg2)' : 'transparent'; (e.currentTarget as HTMLDivElement).style.opacity = '0.7'; }}
+                >
+                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--cyan)' }} />
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, lineHeight: 1 }}>🌙</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {t.title}
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--cyan)', letterSpacing: '.1em', marginTop: 2 }}>
+                      DESPIERTA {t.snoozedUntil ? new Date(t.snoozedUntil).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                    </div>
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--gold2)', flexShrink: 0 }}>{t.prioFinal ?? 0}</span>
+                </div>
+              ))}
+            </>
           )}
         </div>
       </div>
@@ -373,6 +441,18 @@ export default function TasksClient({
         </div>
       )}
     </DesktopShell>
+
+    {showNewTask && (
+      <NewTaskModal
+        onClose={() => setShowNewTask(false)}
+        onCreated={(task) => {
+          setTasks(prev => [task as Task, ...prev]);
+          setShowNewTask(false);
+          toast('Tarea creada');
+        }}
+      />
+    )}
+    </>
   );
 }
 
@@ -455,6 +535,11 @@ function TaskRow({ task, selected, onSelect, onPrioChange, projects, trips, sele
       {task.inNow && (
         <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.14em', padding: '2px 6px', borderRadius: 999, border: '.5px solid var(--gold2)', color: 'var(--gold2)', flexShrink: 0 }}>
           ⚡ NOW
+        </span>
+      )}
+      {task.snoozedUntil && new Date(task.snoozedUntil) <= new Date() && new Date(task.snoozedUntil) > new Date(Date.now() - 7 * 86400000) && (
+        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.14em', padding: '2px 6px', borderRadius: 999, border: '.5px solid var(--cyan)', color: 'var(--cyan)', flexShrink: 0 }}>
+          🌙 DESPIERTA
         </span>
       )}
     </div>
