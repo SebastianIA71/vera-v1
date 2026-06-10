@@ -1,6 +1,6 @@
 // Versión semántica — formato 2.x (x = sprint/fase, SHA = 3 chars)
 // Incrementar x al arrancar cada nueva fase del plan de acción
-const SEMVER = '2.7';
+const SEMVER = '2.8';
 
 // SHA corto del commit — Vercel lo inyecta en build time automáticamente
 // En local aparece como 'dev'

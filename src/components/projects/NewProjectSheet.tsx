@@ -13,6 +13,14 @@ const PROJECT_COLORS = [
   { value: '#e05c5c', label: 'Rojo' },
 ];
 
+const PROJECT_ICONS = [
+  '🚀','🏗️','💡','📐','🎯','🔧',
+  '📦','🌐','💼','🎨','📊','🏠',
+  '🌿','🎪','✈️','🎵','📝','🔬',
+  '🌟','⚡','🏆','🎭','🧩','🔑',
+  '🛠️','📱','🖥️','🌊','🔥','💎',
+];
+
 const INPUT: React.CSSProperties = { width: '100%', background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '10px 12px', color: 'var(--text)', fontFamily: 'var(--font-dm-sans)', fontSize: 15, outline: 'none', boxSizing: 'border-box' };
 const LABEL: React.CSSProperties = { fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', color: 'var(--text3)', marginBottom: 6, display: 'block' };
 
@@ -31,6 +39,7 @@ export default function NewProjectSheet({
     name:        editProject?.name        ?? '',
     description: editProject?.description ?? '',
     color:       editProject?.color       ?? '#9b7fe8',
+    icon:        editProject?.icon        ?? '',
     status:      editProject?.status      ?? 'active',
     dueDate:     editProject?.dueDate
                    ? new Date(editProject.dueDate).toISOString().slice(0, 10)
@@ -69,8 +78,43 @@ export default function NewProjectSheet({
           {isEdit ? 'Editar' : 'Nuevo'} <em style={{ fontStyle: 'italic', color: 'var(--purple)' }}>proyecto</em>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <div><label style={LABEL}>NOMBRE</label><input autoFocus value={form.name} onChange={e => set('name', e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} placeholder="Nombre del proyecto..." style={INPUT} /></div>
+          {/* Header preview */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: `${form.color}22`, border: `.5px solid ${form.color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
+              {form.icon || <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, color: form.color, opacity: 0.5 }}>◆</span>}
+            </div>
+            <input autoFocus value={form.name} onChange={e => set('name', e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} placeholder="Nombre del proyecto..." style={{ ...INPUT, fontSize: 17, fontFamily: 'var(--font-syne)', fontWeight: 500 }} />
+          </div>
+
           <div><label style={LABEL}>DESCRIPCIÓN (opcional)</label><textarea value={form.description} onChange={e => set('description', e.target.value)} placeholder="Objetivo, contexto..." rows={2} style={{ ...INPUT, resize: 'none', lineHeight: 1.5 }} /></div>
+
+          <div>
+            <label style={LABEL}>ICONO</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 4, marginBottom: 8 }}>
+              {PROJECT_ICONS.map(ic => (
+                <button
+                  key={ic}
+                  onClick={() => set('icon', form.icon === ic ? '' : ic)}
+                  style={{
+                    aspectRatio: '1', borderRadius: 8, fontSize: 18, cursor: 'pointer',
+                    border: form.icon === ic ? `.5px solid ${form.color}` : '.5px solid transparent',
+                    background: form.icon === ic ? `${form.color}20` : 'var(--bg3)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    transition: 'background .1s',
+                  }}
+                >
+                  {ic}
+                </button>
+              ))}
+            </div>
+            <input
+              value={form.icon}
+              onChange={e => set('icon', e.target.value.slice(0, 5))}
+              placeholder="O escribe cualquier emoji / letra..."
+              style={{ ...INPUT, fontSize: 13 }}
+            />
+          </div>
+
           <div><label style={LABEL}>FECHA LÍMITE (opcional)</label><input type="date" value={form.dueDate} onChange={e => set('dueDate', e.target.value)} style={{ ...INPUT, colorScheme: 'dark' }} /></div>
           {isEdit && (
             <div>
@@ -97,7 +141,8 @@ export default function NewProjectSheet({
               ))}
             </div>
           </div>
-          <button onClick={save} disabled={!canSave || saving} style={{ width: '100%', padding: '14px', borderRadius: 10, background: canSave ? form.color : 'var(--bg3)', border: 'none', color: canSave ? '#fff' : 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 12, letterSpacing: '.2em', cursor: canSave ? 'pointer' : 'default', marginTop: 4 }}>
+          <button onClick={save} disabled={!canSave || saving} style={{ width: '100%', padding: '14px', borderRadius: 10, background: canSave ? form.color : 'var(--bg3)', border: 'none', color: canSave ? '#fff' : 'var(--text3)', fontFamily: 'var(--font-dm-mono)', fontSize: 12, letterSpacing: '.2em', cursor: canSave ? 'pointer' : 'default', marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            {form.icon && <span style={{ fontSize: 16 }}>{form.icon}</span>}
             {saving ? 'GUARDANDO...' : isEdit ? 'GUARDAR CAMBIOS' : 'CREAR PROYECTO'}
           </button>
           {isEdit && (
