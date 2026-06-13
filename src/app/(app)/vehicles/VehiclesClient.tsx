@@ -89,8 +89,7 @@ function StatusChip({ status }: { status: 'en_ritmo' | 'pasado' | 'corto' }) {
   );
 }
 
-function VehicleForm({ vehicle, onClose, onSaved }: { vehicle?: Vehicle; onClose: () => void; onSaved: () => void }) {
-  const router = useRouter();
+function VehicleForm({ vehicle, onClose, onSaved }: { vehicle?: Vehicle; onClose: () => void; onSaved: (updated: Vehicle) => void }) {
   const isEdit = !!vehicle;
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -112,16 +111,16 @@ function VehicleForm({ vehicle, onClose, onSaved }: { vehicle?: Vehicle; onClose
     setSaving(true);
     const url    = isEdit ? `/api/vehicles/${vehicle!.id}` : '/api/vehicles';
     const method = isEdit ? 'PUT' : 'POST';
-    await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
       ...form,
       contractKmTotal:  form.contractKmTotal   ? Number(form.contractKmTotal)  : null,
       contractMonths:   form.contractMonths     ? Number(form.contractMonths)   : null,
       contractStartDate: form.contractStartDate || null,
       contractEndDate:   form.contractEndDate   || null,
     }) });
+    const saved = await res.json();
     setSaving(false);
-    router.refresh();
-    onSaved();
+    onSaved(saved);
   };
 
   const COLORS = ['#5ba8e8','#9b7fe8','#4ecb8d','#e8a020','#e05c5c','#3ecfcf','#e8d5a3'];
@@ -171,11 +170,13 @@ function VehicleForm({ vehicle, onClose, onSaved }: { vehicle?: Vehicle; onClose
   );
 }
 
-function KmDetail({ vehicle, logs, onLogAdded, onLogDeleted }: {
+function KmDetail({ vehicle, logs, onLogAdded, onLogDeleted, onEdit, onDeactivate }: {
   vehicle: Vehicle;
   logs: KmLog[];
   onLogAdded: (log: KmLog) => void;
   onLogDeleted: (id: number) => void;
+  onEdit: () => void;
+  onDeactivate: () => void;
 }) {
   const color  = vehicle.color ?? '#5ba8e8';
   const pace   = calcPace(vehicle, logs);
@@ -213,8 +214,14 @@ function KmDetail({ vehicle, logs, onLogAdded, onLogDeleted }: {
       <div style={{ padding: '18px 24px 14px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
           <span style={{ fontSize: 22 }}>🚗</span>
-          <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 20, color: 'var(--text)' }}>{vehicle.name}</span>
+          <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 20, color: 'var(--text)', flex: 1 }}>{vehicle.name}</span>
           {pace && <StatusChip status={pace.status} />}
+          <button onClick={onEdit} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', padding: '4px 10px', border: '.5px solid var(--blue)44', borderRadius: 7, background: 'var(--blue)12', color: 'var(--blue)', cursor: 'pointer' }}>
+            EDITAR
+          </button>
+          <button onClick={onDeactivate} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', padding: '4px 10px', border: '.5px solid var(--red)44', borderRadius: 7, background: 'transparent', color: 'var(--red)', cursor: 'pointer', opacity: 0.7 }}>
+            DAR DE BAJA
+          </button>
         </div>
         {vehicle.plate && (
           <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', color: 'var(--text3)', padding: '2px 8px', borderRadius: 6, border: '.5px solid var(--bg4)', background: 'var(--bg3)' }}>
@@ -357,6 +364,25 @@ export default function VehiclesClient({ vehicles: initialVehicles, kmLogs: init
     return () => window.removeEventListener('resize', check);
   }, []);
 
+  const handleSaved = (updated: Vehicle) => {
+    setVehicles(prev => {
+      const exists = prev.find(v => v.id === updated.id);
+      return exists ? prev.map(v => v.id === updated.id ? updated : v) : [updated, ...prev];
+    });
+    if (selected?.id === updated.id) setSelected(updated);
+    setShowForm(false);
+    setEditing(null);
+    router.refresh();
+  };
+
+  const handleDeactivate = async (vehicle: Vehicle) => {
+    if (!confirm(`¿Dar de baja "${vehicle.name}"? Se archivará y dejará de aparecer.`)) return;
+    await fetch(`/api/vehicles/${vehicle.id}`, { method: 'DELETE' });
+    setVehicles(prev => prev.filter(v => v.id !== vehicle.id));
+    setSelected(prev => prev?.id === vehicle.id ? null : prev);
+    router.refresh();
+  };
+
   return (
     <>
       <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}>
@@ -419,6 +445,8 @@ export default function VehiclesClient({ vehicles: initialVehicles, kmLogs: init
               logs={logs}
               onLogAdded={log => setLogs(prev => [log, ...prev])}
               onLogDeleted={id => setLogs(prev => prev.filter(l => l.id !== id))}
+              onEdit={() => setEditing(selected)}
+              onDeactivate={() => handleDeactivate(selected)}
             />
           ) : (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 10 }}>
@@ -433,7 +461,7 @@ export default function VehiclesClient({ vehicles: initialVehicles, kmLogs: init
         <VehicleForm
           vehicle={editing ?? undefined}
           onClose={() => { setShowForm(false); setEditing(null); }}
-          onSaved={() => { setShowForm(false); setEditing(null); router.refresh(); }}
+          onSaved={handleSaved}
         />
       )}
     </>
