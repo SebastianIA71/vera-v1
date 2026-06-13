@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import { getTodaySnm, toggleSnm, setSnmActiveForToday } from '@/lib/snm';
 
 type Task = { id: number; title: string; detail?: string | null; propertyId?: string | null; prioFinal?: number | null; tags?: string | null };
-type Event = { id: number; title: string; startDate?: Date | null };
 type WeightLog = {
   id: number; date: string; value: number;
   snmAgua?: boolean | null; snmCaminar?: boolean | null;
   snmEntreno?: boolean | null; snmEscucha?: boolean | null; snmDisfruta?: boolean | null;
+  notes?: string | null;
 };
 
 const SNM = [
@@ -89,16 +89,19 @@ function FocusTaskCard({ task, isFocus }: { task: Task; isFocus: boolean }) {
 export default function MorningRitual({
   urgentTasks,
   nextTrip,
-  lastWeightEntry,
+  weightHistory,
 }: {
   urgentTasks: Task[];
   nextTrip: { title: string; daysTo: number } | null;
-  lastWeightEntry: WeightLog | null;
+  weightHistory: WeightLog[];
 }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const lastWeightEntry = weightHistory[0] ?? null;
+  // Entrada de ayer: la primera que no sea de hoy
+  const yesterdayEntry = weightHistory.find(w => w.date !== today) ?? null;
   const router = useRouter();
   const [step, setStep] = useState(1);
 
-  const today = new Date().toISOString().slice(0, 10);
   const RITUAL_KEY = `vera_ritual_${today}`;
 
   /* Restaurar paso al abrir */
@@ -118,11 +121,29 @@ export default function MorningRitual({
   }, [step]);
 
   // Step 2 — weight
-  const [weightVal, setWeightVal] = useState(lastWeightEntry?.value ?? null);
+  const todayEntry = weightHistory.find(w => w.date === today) ?? null;
+  const [weightVal, setWeightVal] = useState(todayEntry?.value ?? lastWeightEntry?.value ?? null);
   const [snm, setSnm] = useState<Record<string, boolean>>({ snmAgua: false, snmCaminar: false, snmEntreno: false, snmEscucha: false, snmDisfruta: false });
 
+  // SNM de ayer completados (los que el usuario confirma haber hecho ayer)
+  const [snmYesterday, setSnmYesterday] = useState<Record<string, boolean>>(() => {
+    if (!yesterdayEntry) return { snmAgua: false, snmCaminar: false, snmEntreno: false, snmEscucha: false, snmDisfruta: false };
+    return {
+      snmAgua:     !!yesterdayEntry.snmAgua,
+      snmCaminar:  !!yesterdayEntry.snmCaminar,
+      snmEntreno:  !!yesterdayEntry.snmEntreno,
+      snmEscucha:  !!yesterdayEntry.snmEscucha,
+      snmDisfruta: !!yesterdayEntry.snmDisfruta,
+    };
+  });
+
+  // Delta: si hay diferencia >= 0.5kg, pedir explicación
+  const prevWeight = yesterdayEntry?.value ?? null;
+  const weightDelta = weightVal !== null && prevWeight !== null ? Math.round((weightVal - prevWeight) * 10) / 10 : null;
+  const showDeltaForm = weightDelta !== null && Math.abs(weightDelta) >= 0.5;
+  const [deltaForm, setDeltaForm] = useState({ comer: '', beber: '', ejercicio: '', otros: '' });
+
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
     const localActive = getTodaySnm();
     if (localActive.length > 0) {
       setSnm(prev => {
@@ -130,20 +151,19 @@ export default function MorningRitual({
         localActive.forEach(k => { if (k in next) next[k] = true; });
         return next;
       });
-    } else if (lastWeightEntry?.date === today) {
-      // Otro dispositivo registró SNM hoy — leer de DB y sincronizar localStorage
+    } else if (todayEntry) {
       const dbSnm = {
-        snmAgua:     !!lastWeightEntry.snmAgua,
-        snmCaminar:  !!lastWeightEntry.snmCaminar,
-        snmEntreno:  !!lastWeightEntry.snmEntreno,
-        snmEscucha:  !!lastWeightEntry.snmEscucha,
-        snmDisfruta: !!lastWeightEntry.snmDisfruta,
+        snmAgua:     !!todayEntry.snmAgua,
+        snmCaminar:  !!todayEntry.snmCaminar,
+        snmEntreno:  !!todayEntry.snmEntreno,
+        snmEscucha:  !!todayEntry.snmEscucha,
+        snmDisfruta: !!todayEntry.snmDisfruta,
       };
       setSnm(dbSnm);
       const activeKeys = Object.entries(dbSnm).filter(([, v]) => v).map(([k]) => k);
       setSnmActiveForToday(activeKeys);
     }
-  }, [lastWeightEntry]);
+  }, [todayEntry]);
   const [weightSaved, setWeightSaved] = useState(false);
 
   // Step 4 — briefing
@@ -164,10 +184,19 @@ export default function MorningRitual({
       // Guarda SNM aunque el usuario salte; usa el último peso como fallback
       const saveVal = weightVal ?? lastWeightEntry?.value;
       if (saveVal !== null && saveVal !== undefined) {
+        const notesObj: Record<string, unknown> = {};
+        const snmYesterdayDone = Object.entries(snmYesterday).filter(([, v]) => v).map(([k]) => k);
+        if (snmYesterdayDone.length > 0) notesObj.snmYesterdayDone = snmYesterdayDone;
+        if (showDeltaForm && (deltaForm.comer || deltaForm.beber || deltaForm.ejercicio || deltaForm.otros)) {
+          notesObj.delta = deltaForm;
+        }
         fetch('/api/weight', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ value: saveVal, ...snm }),
+          body: JSON.stringify({
+            value: saveVal, ...snm,
+            notes: Object.keys(notesObj).length > 0 ? JSON.stringify(notesObj) : null,
+          }),
         }).then(() => setWeightSaved(true)).catch(() => {});
       }
     }
@@ -183,7 +212,7 @@ export default function MorningRitual({
       return;
     }
     setStep(s => Math.min(s + 1, 5));
-  }, [step, weightVal, snm, weightSaved, router]);
+  }, [step, weightVal, snm, snmYesterday, showDeltaForm, deltaForm, weightSaved, router]);
 
   useEffect(() => {
     if (step === 5) {
@@ -203,7 +232,7 @@ export default function MorningRitual({
   const skipStyle: React.CSSProperties = { fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--text3)', cursor: 'pointer', background: 'none', border: 'none' };
 
   return (
-    <div style={{ minHeight: '100dvh', paddingBottom: 80, background: 'var(--bg)', display: 'flex', flexDirection: 'column', position: 'relative', maxWidth: 430, margin: '0 auto' }}>
+    <div style={{ minHeight: '100dvh', paddingBottom: 80, background: 'var(--bg)', display: 'flex', flexDirection: 'column', position: 'relative', maxWidth: 640, margin: '0 auto' }}>
       <ProgressBar step={step} />
 
       <div style={{ flex: 1, padding: '42px 18px 24px', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
@@ -234,11 +263,11 @@ export default function MorningRitual({
               <button style={skipStyle} onClick={next}>SALTAR →</button>
             </div>
             <h1 style={h1Style}>¿Cuánto pesas<br /><em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>hoy?</em></h1>
-            <p style={subStyle}>ÚLTIMO · {lastWeightEntry ? `${lastWeightEntry.value} KG · ${lastWeightEntry.date}` : 'sin registro'}</p>
+            <p style={subStyle}>AYER · {yesterdayEntry ? `${yesterdayEntry.value} KG · ${yesterdayEntry.date}` : 'sin registro'}</p>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4, marginBottom: 8 }}>
               {WEIGHT_DELTAS.map(d => {
-                const base = lastWeightEntry?.value ?? 75;
+                const base = yesterdayEntry?.value ?? lastWeightEntry?.value ?? 75;
                 const val = Math.round((base + d) * 10) / 10;
                 const isActive = weightVal === val;
                 return (
@@ -256,33 +285,73 @@ export default function MorningRitual({
             </div>
 
             {/* Ajuste fino ±0.1 */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, justifyContent: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, justifyContent: 'center' }}>
               <button
-                onClick={() => setWeightVal(w => w !== null ? Math.round((w - 0.1) * 10) / 10 : (lastWeightEntry?.value ?? 75) - 0.1)}
+                onClick={() => setWeightVal(w => w !== null ? Math.round((w - 0.1) * 10) / 10 : (yesterdayEntry?.value ?? 75) - 0.1)}
                 style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--bg2)', border: '.5px solid var(--bg4)', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: 18, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >−</button>
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', color: 'var(--text3)', minWidth: 60, textAlign: 'center' }}>
                 {weightVal !== null ? `${weightVal} KG` : '—'}
               </div>
               <button
-                onClick={() => setWeightVal(w => w !== null ? Math.round((w + 0.1) * 10) / 10 : (lastWeightEntry?.value ?? 75) + 0.1)}
+                onClick={() => setWeightVal(w => w !== null ? Math.round((w + 0.1) * 10) / 10 : (yesterdayEntry?.value ?? 75) + 0.1)}
                 style={{ width: 38, height: 38, borderRadius: 8, background: 'var(--bg2)', border: '.5px solid var(--bg4)', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: 18, lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >+</button>
             </div>
 
             {weightVal !== null && (
-              <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 10, display: 'flex', alignItems: 'baseline', gap: 8 }}>
                 <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 44, color: 'var(--text)', lineHeight: 1, letterSpacing: '-.03em' }}>{weightVal}</span>
-                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text2)', letterSpacing: '.1em', marginLeft: 6 }}>KG</span>
-                {lastWeightEntry && (
-                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', color: weightVal === lastWeightEntry.value ? 'var(--green)' : weightVal > lastWeightEntry.value ? 'var(--red)' : 'var(--green)', marginLeft: 10 }}>
-                    {weightVal === lastWeightEntry.value ? '= AYER' : weightVal > lastWeightEntry.value ? `+${Math.round((weightVal - lastWeightEntry.value)*10)/10}` : `${Math.round((weightVal - lastWeightEntry.value)*10)/10}`}
+                <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text2)', letterSpacing: '.1em' }}>KG</span>
+                {yesterdayEntry && (
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', color: weightDelta === 0 ? 'var(--green)' : (weightDelta ?? 0) > 0 ? 'var(--red)' : 'var(--green)' }}>
+                    {weightDelta === 0 ? '= AYER' : (weightDelta ?? 0) > 0 ? `+${weightDelta}` : `${weightDelta}`}
                   </span>
                 )}
               </div>
             )}
 
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.22em', color: 'var(--text2)', margin: '12px 0 7px' }}>INTENCIONES DE HOY</div>
+            {/* ── Delta explicación (si cambio >= 0.5kg) ── */}
+            {showDeltaForm && (
+              <div style={{ background: 'var(--bg2)', border: `.5px solid ${(weightDelta ?? 0) > 0 ? 'var(--red)' : 'var(--green)'}44`, borderLeft: `2px solid ${(weightDelta ?? 0) > 0 ? 'var(--red)' : 'var(--green)'}`, borderRadius: 10, padding: '10px 12px', marginBottom: 10 }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.22em', color: (weightDelta ?? 0) > 0 ? 'var(--red)' : 'var(--green)', marginBottom: 8 }}>
+                  {(weightDelta ?? 0) > 0 ? `+${weightDelta} KG · ¿QUÉ PASÓ?` : `${weightDelta} KG · ¿QUÉ HAS HECHO BIEN?`}
+                </div>
+                {(['comer', 'beber', 'ejercicio', 'otros'] as const).map(field => (
+                  <div key={field} style={{ marginBottom: 7 }}>
+                    <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.18em', color: 'var(--text3)', marginBottom: 3 }}>{field.toUpperCase()}</div>
+                    <input
+                      type="text"
+                      value={deltaForm[field]}
+                      onChange={e => setDeltaForm(prev => ({ ...prev, [field]: e.target.value }))}
+                      placeholder={field === 'comer' ? 'p.ej: cené tarde y mucho' : field === 'beber' ? 'p.ej: poca agua, alcohol' : field === 'ejercicio' ? 'p.ej: no salí a caminar' : 'p.ej: poco sueño'}
+                      style={{ width: '100%', background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 7, padding: '7px 10px', color: 'var(--text)', fontFamily: 'var(--font-dm-sans)', fontSize: 12, outline: 'none', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* ── Intenciones de ayer ── */}
+            {yesterdayEntry && (
+              <>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.22em', color: 'var(--text2)', margin: '10px 0 6px' }}>¿CUMPLISTE AYER?</div>
+                <div style={{ display: 'flex', gap: 5, marginBottom: 12 }}>
+                  {SNM.map(s => (
+                    <button key={s.key} onClick={() => setSnmYesterday(prev => ({ ...prev, [s.key]: !prev[s.key] }))} title={s.label} style={{
+                      flex: 1, background: snmYesterday[s.key] ? 'rgba(78,203,141,.08)' : 'var(--bg2)',
+                      border: `.5px solid ${snmYesterday[s.key] ? 'var(--green)' : 'var(--bg4)'}`,
+                      borderRadius: 9, padding: '8px 3px', textAlign: 'center', fontSize: 14, cursor: 'pointer', opacity: snmYesterday[s.key] ? 1 : 0.4,
+                    }}>
+                      {s.icon}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* ── Intenciones de hoy ── */}
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.22em', color: 'var(--text2)', margin: '4px 0 6px' }}>INTENCIONES DE HOY</div>
             <div style={{ display: 'flex', gap: 5 }}>
               {SNM.map(s => (
                 <button key={s.key} onClick={() => { toggleSnm(s.key); setSnm(prev => ({ ...prev, [s.key]: !prev[s.key] })); }} title={s.label} style={{

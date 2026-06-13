@@ -237,21 +237,26 @@ type Kpis = {
   propsCount: number;
   projectsCount: number;
   currentWeight: number | null;
+  vehiclesCount?: number;
+  contractsActive?: number;
 };
 
 const KPI_ICONS: Record<string, string> = {
-  tasks: '✓', inbox: '↓', trips: '✈', events: '◉', props: '⌂', projects: '◆', agents: '✦', weight: '⚖',
+  tasks: '✓', inbox: '↓', trips: '✈', events: '◉', props: '⌂', projects: '◆',
+  vehicles: '⬡', contracts: '≡', agents: '✦', weight: '⚖',
 };
 
-const getKpiNodes = (kpis: Kpis) => [
-  { id: 'tasks',    label: 'TAREAS',      value: kpis.tasksActive,                                       color: 'var(--gold2)'  },
-  { id: 'inbox',    label: 'INBOX',       value: kpis.inboxPending,                                      color: 'var(--red)'    },
-  { id: 'trips',    label: 'VIAJES',      value: kpis.tripsCount,                                        color: 'var(--blue)'   },
-  { id: 'events',   label: 'EVENTOS',     value: kpis.eventsCount,                                       color: 'var(--purple)' },
-  { id: 'props',    label: 'PROPIEDADES', value: kpis.propsCount,                                        color: 'var(--green)'  },
-  { id: 'projects', label: 'PROYECTOS',   value: kpis.projectsCount,                                     color: '#9b7fe8'       },
-  { id: 'agents',   label: 'AGENTES',     value: 6,                                                      color: 'var(--gold2)'  },
-  { id: 'weight',   label: 'KG',          value: kpis.currentWeight !== null ? kpis.currentWeight : '—', color: 'var(--amber)'  },
+const getKpiNodes = (kpis: Kpis, liveTasksActive: number) => [
+  { id: 'tasks',     label: 'TAREAS',      value: liveTasksActive,                                         color: 'var(--gold2)'  },
+  { id: 'inbox',     label: 'INBOX',       value: kpis.inboxPending,                                       color: 'var(--red)'    },
+  { id: 'trips',     label: 'VIAJES',      value: kpis.tripsCount,                                         color: 'var(--blue)'   },
+  { id: 'events',    label: 'EVENTOS',     value: kpis.eventsCount,                                        color: 'var(--purple)' },
+  { id: 'props',     label: 'PROPIEDADES', value: kpis.propsCount,                                         color: 'var(--green)'  },
+  { id: 'projects',  label: 'PROYECTOS',   value: kpis.projectsCount,                                      color: '#9b7fe8'       },
+  { id: 'vehicles',  label: 'COCHES',      value: kpis.vehiclesCount ?? 0,                                 color: 'var(--cyan)'   },
+  { id: 'contracts', label: 'CONTRATOS',   value: kpis.contractsActive ?? 0,                               color: 'var(--amber)'  },
+  { id: 'agents',    label: 'AGENTES',     value: 6,                                                       color: 'var(--gold2)'  },
+  { id: 'weight',    label: 'KG',          value: kpis.currentWeight !== null ? kpis.currentWeight : '—',  color: 'var(--amber)'  },
 ];
 
 export default function DashboardClient({
@@ -296,12 +301,27 @@ export default function DashboardClient({
   const [inboxCount, setInboxCount] = useState(initialInboxCount);
   const [isMobile, setIsMobile] = useState(false);
   const [snmActive, setSnmActive] = useState<string[]>(todaySnm);
+  const orbitalWrapRef = useRef<HTMLDivElement>(null);
+  const [orbitalScale, setOrbitalScale] = useState(1);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 900);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
+  }, []);
+
+  useEffect(() => {
+    if (!orbitalWrapRef.current) return;
+    const obs = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width;
+        const h = entry.contentRect.height;
+        setOrbitalScale(Math.min(1, Math.min(w, h) / 480));
+      }
+    });
+    obs.observe(orbitalWrapRef.current);
+    return () => obs.disconnect();
   }, []);
 
   useEffect(() => {
@@ -397,6 +417,12 @@ export default function DashboardClient({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={() => router.push('/morning')}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', border: '.5px solid var(--gold2)', borderRadius: 999, background: 'transparent', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.14em', cursor: 'pointer' }}
+          >
+            ✦ RITUAL
+          </button>
           <ThemeToggle />
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 12px', border: '.5px solid var(--bg4)', borderRadius: '999px', fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.14em', color: 'var(--green)' }}>
             <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--green)', display: 'inline-block', animation: 'blink 2s ease-in-out infinite' }} />
@@ -457,22 +483,22 @@ export default function DashboardClient({
 
             {/* ── LEFT: KPI zone (30%) ── */}
             <div style={{ flex: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', padding: '0 8px' }}>
-              <div style={{ width: '100%', maxWidth: 220, display: 'flex', flexDirection: 'column', gap: 5 }}>
-                {getKpiNodes(kpis).map(kpi => (
+              <div style={{ width: '100%', maxWidth: 220, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {getKpiNodes(kpis, tasks.filter(t => t.status !== 'done' && t.status !== 'archived').length).map(kpi => (
                   <div key={kpi.id} style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
+                    display: 'flex', alignItems: 'center', gap: 6,
                     background: 'var(--bg)', border: `.5px solid ${kpi.color}22`,
-                    borderRadius: 8, padding: '10px 14px', overflow: 'hidden',
+                    borderRadius: 7, padding: '6px 10px', overflow: 'hidden',
                   }}>
-                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 20, color: kpi.color, opacity: 0.8, lineHeight: 1, flexShrink: 0 }}>
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 14, color: kpi.color, opacity: 0.8, lineHeight: 1, flexShrink: 0 }}>
                       {KPI_ICONS[kpi.id] ?? '·'}
                     </span>
-                    <div style={{ width: 1.5, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
-                    <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, gap: 5 }}>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 33, fontWeight: 500, color: kpi.color, lineHeight: 1, flexShrink: 0 }}>
+                    <div style={{ width: 1, alignSelf: 'stretch', background: kpi.color, flexShrink: 0 }} />
+                    <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0, gap: 4 }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 22, fontWeight: 500, color: kpi.color, lineHeight: 1, flexShrink: 0 }}>
                         {kpi.value}
                       </div>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 12, letterSpacing: '.1em', color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em', color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {kpi.label}
                       </div>
                     </div>
@@ -482,8 +508,9 @@ export default function DashboardClient({
             </div>
 
             {/* ── CENTER: Orbital (40%) ── */}
-            <div style={{ flex: 4, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minWidth: 0, gap: 0 }}>
-            <div style={{ position: 'relative', width: '480px', height: '480px', flexShrink: 0 }}>
+            <div style={{ flex: 4, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minWidth: 0, gap: 0, overflow: 'hidden' }}>
+            <div ref={orbitalWrapRef} style={{ width: '100%', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', width: '480px', height: '480px', flexShrink: 0, transform: `scale(${orbitalScale})`, transformOrigin: 'center center' }}>
               {/* Rings */}
               {[140, 260, 380, 440].map((size, i) => (
                 <div key={size} style={{
@@ -557,7 +584,9 @@ export default function DashboardClient({
                 );
               })}
             </div>
-            {/* fin D (orbital inner) */}
+            {/* fin D (orbital inner 480×480) */}
+            </div>
+            {/* fin wrapper con ref */}
             </div>
             {/* fin C (CENTER wrapper) — RIGHT stats sigue dentro de A */}
 

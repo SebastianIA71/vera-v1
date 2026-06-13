@@ -76,7 +76,7 @@ function ProjectDetail({ project, tasks, onEdit, onTaskCreated, onTaskUpdate, on
   const color = project.color ?? '#9b7fe8';
   const sm    = STATUS_META[project.status ?? 'active'] ?? STATUS_META.active;
   const due   = daysUntil(project.dueDate);
-  const projTasks = tasks.filter(t => t.projectId === project.id && t.status !== 'done');
+  const projTasks = tasks.filter(t => t.projectId === project.id && t.status !== 'done').sort((a, b) => (b.prioFinal ?? b.prio ?? 0) - (a.prioFinal ?? a.prio ?? 0));
   const doneTasks = tasks.filter(t => t.projectId === project.id && t.status === 'done');
 
   if (selectedTask) {
@@ -192,7 +192,7 @@ function ProjectDetail({ project, tasks, onEdit, onTaskCreated, onTaskUpdate, on
         <NewTaskModal
           defaultProjectId={project.id}
           onClose={() => setShowNewTask(false)}
-          onCreated={t => { onTaskCreated(t as Task); setShowNewTask(false); }}
+          onCreated={t => { onTaskCreated(t as Task); }}
         />
       )}
     </div>

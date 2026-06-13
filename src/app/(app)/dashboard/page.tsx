@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
-import { tasks, events, inbox, properties, weightLog, projects, financeRecords } from '@/lib/db/schema';
-import { ne, desc, sql, and, or, isNull, lte } from 'drizzle-orm';
+import { tasks, events, inbox, properties, weightLog, projects, financeRecords, vehicles, contracts } from '@/lib/db/schema';
+import { ne, desc, sql, and, or, isNull, lte, eq } from 'drizzle-orm';
 import DashboardClient from './DashboardClient';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage() {
   const now = new Date();
 
-  const [allTasks, allEvents, allProperties, weightLogs, allProjects, financeData] = await Promise.all([
+  const [allTasks, allEvents, allProperties, weightLogs, allProjects, financeData, allVehicles, allContracts] = await Promise.all([
     db.select().from(tasks).where(and(
       ne(tasks.status, 'archived'),
       or(isNull(tasks.snoozedUntil), lte(tasks.snoozedUntil, now))!,
@@ -19,6 +19,8 @@ export default async function DashboardPage() {
     db.select({ id: projects.id }).from(projects).where(ne(projects.status, 'archived')),
     db.select({ calcD: financeRecords.calcD, calcB: financeRecords.calcB, calcA: financeRecords.calcA, calcE: financeRecords.calcE })
       .from(financeRecords).orderBy(desc(financeRecords.date)).limit(12),
+    db.select({ id: vehicles.id }).from(vehicles),
+    db.select({ id: contracts.id }).from(contracts).where(eq(contracts.active, true)),
   ]);
 
   const urgentTasks = allTasks.filter(t =>
@@ -76,7 +78,7 @@ export default async function DashboardPage() {
       nextEvent={nextEventItem !== null && daysToNextEvent !== null ? { title: nextEventItem.title, daysTo: daysToNextEvent, startDate: nextEventItem.startDate!.toISOString() } : null}
       allEvents={allEvents.map(e => ({ startDate: e.startDate, type: e.type ?? '', title: e.title }))}
       todaySnm={todaySnm}
-      kpis={{ tasksActive, tasksDone, inboxPending: inboxCount, tripsCount, eventsCount, propsCount, projectsCount, currentWeight }}
+      kpis={{ tasksActive, tasksDone, inboxPending: inboxCount, tripsCount, eventsCount, propsCount, projectsCount, currentWeight, vehiclesCount: allVehicles.length, contractsActive: allContracts.length }}
       financeRecords={financeData}
     />
   );

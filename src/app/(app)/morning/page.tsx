@@ -9,10 +9,9 @@ export default async function MorningPage() {
   const now = new Date();
 
   const [allTasks, allEvents, weights] = await Promise.all([
-    // Ordenar por prio porque prioFinal defaultea a 0 hasta que corra PrioAgent
     db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prio)).limit(50),
     db.select().from(events).orderBy(asc(events.startDate)).limit(20),
-    db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(1),
+    db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(14),
   ]);
 
   const effectivePrio = (t: typeof allTasks[0]) => Math.max(t.prioFinal ?? 0, t.prio ?? 0);
@@ -34,7 +33,7 @@ export default async function MorningPage() {
     <MorningRitual
       urgentTasks={urgentTasks}
       nextTrip={nextTrip && daysToNextTrip ? { title: nextTrip.title, daysTo: daysToNextTrip } : null}
-      lastWeightEntry={weights[0] ?? null}
+      weightHistory={weights}
     />
   );
 }

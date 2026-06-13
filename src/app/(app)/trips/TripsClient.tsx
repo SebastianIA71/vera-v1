@@ -289,7 +289,7 @@ function EventDetailSimple({ trip, onEdit }: { trip: Trip; onEdit?: () => void }
           <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.18em', color: 'var(--text3)' }}>EVENTO</span>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, padding: '3px 9px', borderRadius: 999, border: `.5px solid ${st.border}`, color: st.color }}>{st.label}</span>
-            <MapsBtn title={trip.title} />
+            <MapsBtn title={trip.title} accommodation={trip.accommodation} />
             {onEdit && <button onClick={onEdit} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', color: 'var(--text3)', background: 'none', border: '.5px solid var(--bg4)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>EDITAR</button>}
           </div>
         </div>

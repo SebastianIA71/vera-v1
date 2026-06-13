@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import DesktopShell from '@/components/layout/DesktopShell';
 import MobilePageHeader from '@/components/layout/MobilePageHeader';
 import { fmtTime } from '@/lib/utils';
+import { useToast } from '@/components/ui/Toast';
 
 type InboxItem = {
   id: number;
@@ -44,6 +45,7 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
   trips?: Trip[];
 }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [items, setItems] = useState<InboxItem[]>(initialItems);
   const [selected, setSelected] = useState<InboxItem | null>(null);
   const [tab, setTab] = useState<Tab>('pending');
@@ -98,9 +100,12 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
         }),
       });
       if (res.ok) {
+        const newTask = await res.json().catch(() => null);
         setItems(prev => prev.map(i => i.id === selected.id ? { ...i, processed: true } : i));
         setSelected(null);
+        toast('Tarea creada');
         router.refresh();
+        if (newTask?.id) router.push(`/tasks?highlight=${newTask.id}`);
       }
     } finally {
       setSaving(false);
