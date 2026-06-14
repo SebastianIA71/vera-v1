@@ -97,7 +97,7 @@ timeChip.cornerRadius = 5;
 timeChip.setPadding(2, 6, 2, 6);
 const timeT = timeChip.addText(data.time ?? "--:--");
 timeT.textColor = C.text2;
-timeT.font = Font.monospacedDigitSystemFont(10);
+timeT.font = Font.regularMonospacedSystemFont(10);
 
 w.addSpacer(6);
 
