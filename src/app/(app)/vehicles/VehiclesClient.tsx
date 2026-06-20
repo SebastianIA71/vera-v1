@@ -170,13 +170,15 @@ function VehicleForm({ vehicle, onClose, onSaved }: { vehicle?: Vehicle; onClose
   );
 }
 
-function KmDetail({ vehicle, logs, onLogAdded, onLogDeleted, onEdit, onDeactivate }: {
+function KmDetail({ vehicle, logs, onLogAdded, onLogDeleted, onEdit, onDeactivate, isWidget, onWidgetToggle }: {
   vehicle: Vehicle;
   logs: KmLog[];
   onLogAdded: (log: KmLog) => void;
   onLogDeleted: (id: number) => void;
   onEdit: () => void;
   onDeactivate: () => void;
+  isWidget: boolean;
+  onWidgetToggle: () => void;
 }) {
   const color  = vehicle.color ?? '#5ba8e8';
   const pace   = calcPace(vehicle, logs);
@@ -216,6 +218,13 @@ function KmDetail({ vehicle, logs, onLogAdded, onLogDeleted, onEdit, onDeactivat
           <span style={{ fontSize: 22 }}>🚗</span>
           <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 20, color: 'var(--text)', flex: 1 }}>{vehicle.name}</span>
           {pace && <StatusChip status={pace.status} />}
+          <button
+            onClick={onWidgetToggle}
+            title={isWidget ? 'Quitar del widget' : 'Mostrar en widget'}
+            style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', padding: '4px 10px', border: `.5px solid ${isWidget ? 'var(--gold2)' : 'var(--bg4)'}`, borderRadius: 7, background: isWidget ? 'rgba(196,168,106,.12)' : 'transparent', color: isWidget ? 'var(--gold2)' : 'var(--text3)', cursor: 'pointer' }}
+          >
+            {isWidget ? '★ WIDGET' : '☆ WIDGET'}
+          </button>
           <button onClick={onEdit} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', padding: '4px 10px', border: '.5px solid var(--blue)44', borderRadius: 7, background: 'var(--blue)12', color: 'var(--blue)', cursor: 'pointer' }}>
             EDITAR
           </button>
@@ -342,20 +351,22 @@ function KmDetail({ vehicle, logs, onLogAdded, onLogDeleted, onEdit, onDeactivat
   );
 }
 
-export default function VehiclesClient({ vehicles: initialVehicles, kmLogs: initialLogs, urgentCount, staleCount, inboxCount }: {
+export default function VehiclesClient({ vehicles: initialVehicles, kmLogs: initialLogs, urgentCount, staleCount, inboxCount, widgetVehicleId: initialWidgetId }: {
   vehicles: Vehicle[];
   kmLogs: KmLog[];
   urgentCount: number;
   staleCount: number;
   inboxCount: number;
+  widgetVehicleId: number | null;
 }) {
   const router     = useRouter();
-  const [vehicles, setVehicles]   = useState<Vehicle[]>(initialVehicles);
-  const [logs,     setLogs]       = useState<KmLog[]>(initialLogs);
-  const [selected, setSelected]   = useState<Vehicle | null>(initialVehicles[0] ?? null);
-  const [showForm, setShowForm]   = useState(false);
-  const [editing,  setEditing]    = useState<Vehicle | null>(null);
-  const [isMobile, setIsMobile]   = useState(false);
+  const [vehicles, setVehicles]       = useState<Vehicle[]>(initialVehicles);
+  const [logs,     setLogs]           = useState<KmLog[]>(initialLogs);
+  const [selected, setSelected]       = useState<Vehicle | null>(initialVehicles[0] ?? null);
+  const [showForm, setShowForm]       = useState(false);
+  const [editing,  setEditing]        = useState<Vehicle | null>(null);
+  const [isMobile, setIsMobile]       = useState(false);
+  const [widgetId, setWidgetId]       = useState<number | null>(initialWidgetId);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 769);
@@ -381,6 +392,16 @@ export default function VehiclesClient({ vehicles: initialVehicles, kmLogs: init
     setVehicles(prev => prev.filter(v => v.id !== vehicle.id));
     setSelected(prev => prev?.id === vehicle.id ? null : prev);
     router.refresh();
+  };
+
+  const handleWidgetToggle = async (vehicle: Vehicle) => {
+    if (widgetId === vehicle.id) {
+      await fetch(`/api/vehicles/${vehicle.id}/widget`, { method: 'DELETE' });
+      setWidgetId(null);
+    } else {
+      await fetch(`/api/vehicles/${vehicle.id}/widget`, { method: 'POST' });
+      setWidgetId(vehicle.id);
+    }
   };
 
   return (
@@ -424,6 +445,9 @@ export default function VehiclesClient({ vehicles: initialVehicles, kmLogs: init
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 16 }}>🚗</span>
                       <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.name}</span>
+                      {widgetId === v.id && (
+                        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--gold2)', letterSpacing: '.1em' }}>★</span>
+                      )}
                       {pace && <StatusChip status={pace.status} />}
                     </div>
                     <div style={{ display: 'flex', gap: 10, paddingLeft: 24, fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.08em' }}>
@@ -447,6 +471,8 @@ export default function VehiclesClient({ vehicles: initialVehicles, kmLogs: init
               onLogDeleted={id => setLogs(prev => prev.filter(l => l.id !== id))}
               onEdit={() => setEditing(selected)}
               onDeactivate={() => handleDeactivate(selected)}
+              isWidget={widgetId === selected.id}
+              onWidgetToggle={() => handleWidgetToggle(selected)}
             />
           ) : (
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 10 }}>

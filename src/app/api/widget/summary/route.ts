@@ -66,13 +66,20 @@ export async function GET(req: NextRequest) {
       .where(and(ne(tasks.status, 'done'), ne(tasks.status, 'archived')))
       .groupBy(tasks.projectId),
 
-    db.select().from(vehicles).where(eq(vehicles.active, true)).limit(1),
+    db.select().from(vehicles).where(eq(vehicles.active, true)),
   ]);
+
+  // Pick widget vehicle: prefer memory preference, fall back to first active
+  const widgetVehicleIdStr = memoryRows.find(r => r.key === 'widget_vehicle_id')?.value;
+  const widgetVehicleId = widgetVehicleIdStr ? parseInt(widgetVehicleIdStr) : null;
+  const chosenVehicle = widgetVehicleId
+    ? (activeVehicles.find(v => v.id === widgetVehicleId) ?? activeVehicles[0])
+    : activeVehicles[0];
 
   // Latest km for vehicle
   let vehicleData = null;
-  if (activeVehicles[0]) {
-    const v = activeVehicles[0];
+  if (chosenVehicle) {
+    const v = chosenVehicle;
     const [latestLog] = await db
       .select({ km: kmLogs.km, date: kmLogs.date })
       .from(kmLogs)
