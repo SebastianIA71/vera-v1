@@ -359,13 +359,45 @@ export default function ContractsClient({ contracts: initialContracts, urgentCou
     ? contracts.filter(c => c.propertyId === filter)
     : contracts;
 
+  // Mobile: full-screen detail when a contract is selected
+  if (isMobile && selected) {
+    return (
+      <>
+        <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '10px 16px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
+              <button onClick={() => setSelected(null)} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                ← CONTRATOS
+              </button>
+            </div>
+            <ContractDetail
+              key={selected.id}
+              contract={selected}
+              onEdit={() => setEditing(selected)}
+            />
+          </div>
+        </DesktopShell>
+        {editing && (
+          <ContractForm
+            contract={editing}
+            onClose={() => setEditing(null)}
+            onSaved={() => { setEditing(null); router.refresh(); }}
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <>
       <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}>
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', overflow: 'hidden' }}>
 
-          {/* Left panel */}
-          <div style={{ width: 340, flexShrink: 0, borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* List panel */}
+          <div style={isMobile
+            ? { flexShrink: 0, borderBottom: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', maxHeight: '50vh', overflow: 'hidden' }
+            : { width: 340, flexShrink: 0, borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }
+          }>
             <div style={{ padding: '14px 18px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)' }}>
@@ -462,8 +494,8 @@ export default function ContractsClient({ contracts: initialContracts, urgentCou
             </div>
           </div>
 
-          {/* Right panel */}
-          {selected ? (
+          {/* Right panel — desktop only */}
+          {!isMobile && (selected ? (
             <ContractDetail
               key={selected.id}
               contract={selected}
@@ -477,7 +509,7 @@ export default function ContractsClient({ contracts: initialContracts, urgentCou
                 + NUEVO CONTRATO
               </button>
             </div>
-          )}
+          ))}
         </div>
       </DesktopShell>
 

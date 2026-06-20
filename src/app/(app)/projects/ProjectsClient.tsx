@@ -227,13 +227,53 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
       : (p.status === 'done'   || p.status === 'archived')
   );
 
+  // Mobile: full-screen detail when a project is selected
+  if (isMobile && selected) {
+    return (
+      <>
+        <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '10px 16px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
+              <button onClick={() => setSelected(null)} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                ← PROYECTOS
+              </button>
+            </div>
+            <ProjectDetail
+              key={selected.id}
+              project={selected}
+              tasks={tasks}
+              onEdit={() => setEditing(selected)}
+              onTaskCreated={t => setTasks(prev => [t, ...prev])}
+              onTaskUpdate={(id, d) => setTasks(prev => prev.map(t => t.id === id ? { ...t, ...d } : t))}
+              onMarkDone={id => setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t))}
+              isMobile={isMobile}
+            />
+          </div>
+        </DesktopShell>
+        {editing && (
+          <NewProjectSheet
+            editProject={editing}
+            onClose={() => setEditing(null)}
+            onSaved={p => {
+              setProjects(prev => prev.map(x => x.id === p.id ? p as Project : x));
+              setSelected(p as Project);
+            }}
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <>
       <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}>
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', overflow: 'hidden' }}>
 
-          {/* Left — project list */}
-          <div style={{ width: 300, flexShrink: 0, borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {/* Project list */}
+          <div style={isMobile
+            ? { flexShrink: 0, borderBottom: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', maxHeight: '45vh', overflow: 'hidden' }
+            : { width: 300, flexShrink: 0, borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }
+          }>
             <div style={{ padding: '14px 18px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
                 <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)', letterSpacing: '-.01em' }}>
@@ -255,7 +295,7 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
 
             <div style={{ flex: 1, overflowY: 'auto' }}>
               {filteredProjects.length === 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 200, gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 140, gap: 8 }}>
                   <div style={{ fontFamily: 'var(--font-syne)', fontSize: 28, color: 'var(--purple-border)' }}>✦</div>
                   <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)' }}>SIN PROYECTOS</div>
                 </div>
@@ -267,8 +307,8 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
             </div>
           </div>
 
-          {/* Right — detail */}
-          {selected ? (
+          {/* Detail panel — below on mobile, right on desktop */}
+          {!isMobile && (selected ? (
             <ProjectDetail
               key={selected.id}
               project={selected}
@@ -277,7 +317,7 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
               onTaskCreated={t => setTasks(prev => [t, ...prev])}
               onTaskUpdate={(id, d) => setTasks(prev => prev.map(t => t.id === id ? { ...t, ...d } : t))}
               onMarkDone={id => setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t))}
-              isMobile={isMobile}
+              isMobile={false}
             />
           ) : (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
@@ -287,7 +327,7 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
                 + NUEVO PROYECTO
               </button>
             </div>
-          )}
+          ))}
         </div>
       </DesktopShell>
 

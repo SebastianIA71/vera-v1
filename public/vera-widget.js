@@ -4,7 +4,8 @@
 //  medium a tu pantalla de inicio.
 // ═══════════════════════════════════════════════════════
 
-const API = "https://vera-v1-bhxy.vercel.app/api/widget/summary";
+const APP_URL = "https://vera-v1-bhxy.vercel.app";
+const API = APP_URL + "/api/widget/summary";
 
 // ── Fetch ──────────────────────────────────────────────
 let data;
@@ -49,6 +50,7 @@ const PROP = {
 
 // ── Widget ─────────────────────────────────────────────
 const w = new ListWidget();
+w.url = APP_URL; // tap opens the app
 
 const grad = new LinearGradient();
 grad.locations = [0, 0.5, 1];
@@ -300,16 +302,26 @@ if (data.vehicle) {
   vKm.font = Font.boldSystemFont(9);
 }
 
-// Projects activos (sólo iconos)
+// Projects activos (icono + cuenta de tareas pendientes)
 if (data.projects?.length > 0) {
   btm.addSpacer(6);
-  const projRow = btm.addStack();
-  projRow.layoutHorizontally();
-  projRow.centerAlignContent();
   for (const p of (data.projects ?? []).slice(0, 3)) {
-    const icon = projRow.addText(p.icon ?? "●");
-    icon.font = Font.systemFont(10);
-    projRow.addSpacer(3);
+    const projColor = p.color ? new Color(p.color) : C.purple;
+    const projBadge = btm.addStack();
+    projBadge.layoutHorizontally();
+    projBadge.centerAlignContent();
+    projBadge.backgroundColor = new Color((p.color ?? "#9b7fe8") + "1a");
+    projBadge.cornerRadius = 5;
+    projBadge.setPadding(2, 5, 2, 5);
+    const pi = projBadge.addText(p.icon ?? "●");
+    pi.font = Font.systemFont(9);
+    if ((p.taskCount ?? 0) > 0) {
+      projBadge.addSpacer(2);
+      const pc = projBadge.addText(String(p.taskCount));
+      pc.textColor = projColor;
+      pc.font = Font.boldSystemFont(9);
+    }
+    btm.addSpacer(4);
   }
 }
 

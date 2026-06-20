@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
     memoryRows,
     propCounts,
     activeProjects,
+    projectTaskCounts,
     activeVehicles,
   ] = await Promise.all([
     db.select({ id: tasks.id, title: tasks.title, prioFinal: tasks.prioFinal, propertyId: tasks.propertyId })
@@ -55,6 +56,15 @@ export async function GET(req: NextRequest) {
       .from(projects)
       .where(eq(projects.status, 'active'))
       .limit(4),
+
+    // Project task counts (active tasks per project)
+    db.select({
+        projectId: tasks.projectId,
+        count: sql<number>`count(*)`.as('count'),
+      })
+      .from(tasks)
+      .where(and(ne(tasks.status, 'done'), ne(tasks.status, 'archived')))
+      .groupBy(tasks.projectId),
 
     db.select().from(vehicles).where(eq(vehicles.active, true)).limit(1),
   ]);
@@ -147,12 +157,16 @@ export async function GET(req: NextRequest) {
     inboxCount: inboxItems.length,
     focusActive,
     propertyCounts,
-    projects: activeProjects.map(p => ({
-      name: p.name,
-      icon: p.icon ?? '●',
-      color: p.color ?? '#c4a86a',
-      dueDate: p.dueDate ? new Date(p.dueDate).toISOString().slice(0, 10) : null,
-    })),
+    projects: activeProjects.map(p => {
+      const taskCountRow = projectTaskCounts.find(r => r.projectId === p.id);
+      return {
+        name: p.name,
+        icon: p.icon ?? '●',
+        color: p.color ?? '#c4a86a',
+        dueDate: p.dueDate ? new Date(p.dueDate).toISOString().slice(0, 10) : null,
+        taskCount: Number(taskCountRow?.count ?? 0),
+      };
+    }),
     vehicle: vehicleData,
   };
 
