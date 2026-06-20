@@ -63,15 +63,19 @@ export default function CaptureSheet({ onClose }: Props) {
         setResult(data);
       }
     } catch {
-      // silently fail — transcript still captured if visible
+      // silently fail
     } finally {
       setSaving(false);
     }
   }, []);
 
-  const { state, interim, elapsedStr, start, stop, reset } = useVoice(handleTranscript);
+  const handleJarvisDetected = useCallback(() => {
+    // Visual/audio feedback se gestiona via jarvisActive en useVoice
+  }, []);
 
-  // Pre-calentar speechSynthesis al montar (dentro del gesto de usuario que abre el sheet)
+  const { state, interim, elapsedStr, start, stop, reset, jarvisActive } = useVoice(handleTranscript, handleJarvisDetected);
+
+  // Pre-calentar speechSynthesis al montar
   useEffect(() => {
     if (!('speechSynthesis' in window)) return;
     const silent = new SpeechSynthesisUtterance(' ');
@@ -102,11 +106,10 @@ export default function CaptureSheet({ onClose }: Props) {
     }
   }, [result]);
 
-  // Auto-save countdown when result appears
+  // Auto-save countdown
   useEffect(() => {
     if (!result) return;
     if (result.amivera) {
-      // Amivera: no countdown, cerrar automáticamente en 2.5s
       const t = setTimeout(() => { setSaved(true); setTimeout(onClose, 300); }, 2500);
       return () => clearTimeout(t);
     }
@@ -129,11 +132,6 @@ export default function CaptureSheet({ onClose }: Props) {
     if (countdownRef.current) clearInterval(countdownRef.current);
     setSaved(true);
     setTimeout(onClose, 300);
-  };
-
-  const handleEdit = () => {
-    if (countdownRef.current) clearInterval(countdownRef.current);
-    saveNow();
   };
 
   const createAsTask = async () => {
@@ -164,7 +162,6 @@ export default function CaptureSheet({ onClose }: Props) {
     }
   };
 
-  // Swipe down to close
   const onTouchStart = (e: React.TouchEvent) => setTouchStart(e.touches[0].clientY);
   const onTouchMove = (e: React.TouchEvent) => {
     if (touchStart === null) return;
@@ -172,17 +169,29 @@ export default function CaptureSheet({ onClose }: Props) {
     if (delta > 0) setTranslateY(delta);
   };
   const onTouchEnd = () => {
-    if (translateY > 80) {
-      reset();
-      onClose();
-    } else {
-      setTranslateY(0);
-    }
+    if (translateY > 80) { reset(); onClose(); }
+    else setTranslateY(0);
     setTouchStart(null);
   };
 
-  const circumference = 2 * Math.PI * 20; // r=20
+  const circumference = 2 * Math.PI * 20;
   const progress = result ? (countdown / 3) * circumference : 0;
+
+  // Colores según modo Jarvis
+  const accentColor = jarvisActive ? 'var(--gold)' : 'var(--gold2)';
+  const micBorderColor = state === 'listening'
+    ? (jarvisActive ? 'var(--gold)' : 'var(--red)')
+    : accentColor;
+  const micIconColor = state === 'listening'
+    ? (jarvisActive ? 'var(--gold)' : 'var(--red)')
+    : 'var(--gold)';
+  const stateColor = state === 'listening'
+    ? (jarvisActive ? 'var(--gold)' : 'var(--red)')
+    : result ? 'var(--green)' : 'var(--text2)';
+  const stateLabel = state === 'listening'
+    ? (jarvisActive ? 'JARVIS ✦ ESCUCHANDO' : 'LISTENING')
+    : result ? 'CAPTURED'
+    : saving ? 'PROCESSING···' : 'CAPTURE';
 
   return (
     <div
@@ -195,9 +204,12 @@ export default function CaptureSheet({ onClose }: Props) {
     >
       <div
         style={{
-          background: 'var(--bg)',
+          background: jarvisActive && state === 'listening'
+            ? 'linear-gradient(180deg, rgba(196,168,106,.06) 0%, var(--bg) 40%)'
+            : 'var(--bg)',
           borderRadius: '24px 24px 0 0',
-          border: '.5px solid var(--bg4)',
+          border: `.5px solid ${jarvisActive && state === 'listening' ? 'rgba(196,168,106,.3)' : 'var(--bg4)'}`,
+          borderBottom: 'none',
           paddingBottom: 'env(safe-area-inset-bottom, 24px)',
           transform: `translateY(${translateY}px)`,
           transition: touchStart ? 'none' : 'transform .3s ease',
@@ -208,7 +220,7 @@ export default function CaptureSheet({ onClose }: Props) {
         onTouchEnd={onTouchEnd}
       >
         {/* Handle */}
-        <div style={{ width: 36, height: 4, background: 'var(--bg4)', borderRadius: 2, margin: '12px auto 0' }} />
+        <div style={{ width: 36, height: 4, background: jarvisActive ? 'rgba(196,168,106,.4)' : 'var(--bg4)', borderRadius: 2, margin: '12px auto 0', transition: 'background .3s' }} />
 
         <div style={{ padding: '16px 22px 24px', display: 'flex', flexDirection: 'column' }}>
           {/* Header */}
@@ -216,9 +228,9 @@ export default function CaptureSheet({ onClose }: Props) {
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text2)', letterSpacing: '.1em' }}>
               {new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
             </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: 'var(--gold2)' }}>
-              <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill="#c4a86a" /></svg>
-              VERA
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 11, letterSpacing: '.3em', color: accentColor, transition: 'color .3s' }}>
+              <svg width={9} height={9} viewBox="0 0 24 24" fill="none"><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z" fill={accentColor}/></svg>
+              {jarvisActive && state === 'listening' ? 'JARVIS' : 'VERA'}
             </span>
             <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', letterSpacing: '.2em' }}>SWIPE ↓</span>
           </div>
@@ -227,18 +239,19 @@ export default function CaptureSheet({ onClose }: Props) {
           <div style={{
             fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.24em',
             marginTop: 20, marginBottom: 0, textAlign: 'center',
-            color: state === 'listening' ? 'var(--red)' : result ? 'var(--green)' : 'var(--text2)',
+            color: stateColor,
+            transition: 'color .3s',
           }}>
-            {state === 'listening' ? 'LISTENING' : result ? 'CAPTURED' : saving ? 'PROCESSING···' : 'CAPTURE'}
+            {stateLabel}
           </div>
 
           {!result && state !== 'listening' && !saving && (
             <div style={{ fontFamily: 'var(--font-syne)', fontSize: 13, color: 'var(--text4)', textAlign: 'center', marginTop: 5 }}>
-              Say it. Type it.
+              {jarvisActive ? 'Di tu consulta...' : 'Say it. Type it.'}
             </div>
           )}
 
-          {/* === ESTADO 1 & 2: MIC === */}
+          {/* ── MIC (estados idle y listening) ── */}
           {!result && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 18, marginTop: 24, marginBottom: 8 }}>
               <button
@@ -246,29 +259,41 @@ export default function CaptureSheet({ onClose }: Props) {
                 aria-label={state === 'listening' ? 'parar grabación' : 'iniciar grabación'}
                 style={{
                   width: 168, height: 168, borderRadius: '50%',
-                  background: 'transparent',
-                  border: `.5px solid ${state === 'listening' ? 'var(--red)' : 'var(--gold2)'}`,
+                  background: jarvisActive && state === 'listening'
+                    ? 'radial-gradient(circle, rgba(196,168,106,.1) 0%, transparent 70%)'
+                    : 'transparent',
+                  border: `.5px solid ${micBorderColor}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   position: 'relative', cursor: 'pointer',
-                  color: state === 'listening' ? 'var(--red)' : 'var(--gold)',
-                  animation: state === 'listening' ? 'none' : undefined,
+                  color: micIconColor,
+                  transition: 'border-color .3s, background .3s',
                 }}
               >
                 <div style={{
                   position: 'absolute', inset: -12, borderRadius: '50%',
-                  border: `.5px solid ${state === 'listening' ? 'rgba(224,92,92,.30)' : 'rgba(196,168,106,.22)'}`,
+                  border: `.5px solid ${
+                    state === 'listening'
+                      ? (jarvisActive ? 'rgba(196,168,106,.35)' : 'rgba(224,92,92,.30)')
+                      : 'rgba(196,168,106,.22)'
+                  }`,
                   animation: state === 'listening' ? 'pulse-ring 1.4s ease-in-out infinite' : 'none',
+                  transition: 'border-color .3s',
                 }} />
                 <div style={{
                   position: 'absolute', inset: -26, borderRadius: '50%',
-                  border: `.5px solid ${state === 'listening' ? 'rgba(224,92,92,.15)' : 'rgba(196,168,106,.10)'}`,
+                  border: `.5px solid ${
+                    state === 'listening'
+                      ? (jarvisActive ? 'rgba(196,168,106,.18)' : 'rgba(224,92,92,.15)')
+                      : 'rgba(196,168,106,.10)'
+                  }`,
                   animation: state === 'listening' ? 'pulse-ring 1.4s ease-in-out infinite .3s' : 'none',
+                  transition: 'border-color .3s',
                 }} />
                 {MIC_SVG}
               </button>
 
               {state === 'listening' ? (
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: 'var(--red)', letterSpacing: '.18em' }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: jarvisActive ? 'var(--gold)' : 'var(--red)', letterSpacing: '.18em', transition: 'color .3s' }}>
                   {elapsedStr}
                 </div>
               ) : (
@@ -281,27 +306,28 @@ export default function CaptureSheet({ onClose }: Props) {
 
           {/* Live transcript */}
           {state === 'listening' && interim && (
-            <div style={{ borderTop: '.5px solid var(--bg4)', paddingTop: 16, marginTop: 4 }}>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: 'var(--text4)', marginBottom: 8 }}>LIVE TRANSCRIPT</div>
+            <div style={{ borderTop: `.5px solid ${jarvisActive ? 'rgba(196,168,106,.2)' : 'var(--bg4)'}`, paddingTop: 16, marginTop: 4 }}>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: jarvisActive ? 'var(--gold2)' : 'var(--text4)', marginBottom: 8 }}>
+                {jarvisActive ? 'JARVIS · LIVE' : 'LIVE TRANSCRIPT'}
+              </div>
               <div style={{ fontFamily: 'var(--font-syne)', fontSize: 16, lineHeight: 1.4, color: 'var(--text)' }}>
                 {interim}
-                <span style={{ display: 'inline-block', width: 8, height: 17, background: 'var(--gold2)', verticalAlign: -3, marginLeft: 2, animation: 'blink 1s steps(2) infinite' }} />
+                <span style={{ display: 'inline-block', width: 8, height: 17, background: jarvisActive ? 'var(--gold)' : 'var(--gold2)', verticalAlign: -3, marginLeft: 2, animation: 'blink 1s steps(2) infinite' }} />
               </div>
             </div>
           )}
 
           {state === 'listening' && (
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
-              <button onClick={stop} style={{ background: 'transparent', border: '.5px solid var(--bg4)', borderRadius: 999, padding: '10px 28px', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', cursor: 'pointer' }}>
+              <button onClick={stop} style={{ background: 'transparent', border: `.5px solid ${jarvisActive ? 'rgba(196,168,106,.3)' : 'var(--bg4)'}`, borderRadius: 999, padding: '10px 28px', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.18em', cursor: 'pointer' }}>
                 TAP TO STOP
               </button>
             </div>
           )}
 
-          {/* === ESTADO 3: CONFIRMACIÓN === */}
+          {/* ── CONFIRMACIÓN ── */}
           {result && (
             result.amivera ? (
-              /* Amivera: confirmación especial */
               <div style={{ marginTop: 18, textAlign: 'center' }}>
                 <div style={{
                   background: 'rgba(196,168,106,0.07)', border: '.5px solid var(--gold2)',
@@ -321,7 +347,6 @@ export default function CaptureSheet({ onClose }: Props) {
                 </div>
               </div>
             ) : (
-              /* Normal capture confirmation */
               <>
                 <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 16, padding: '18px 16px', marginTop: 18 }}>
                   <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: 'var(--text4)', marginBottom: 10 }}>VERA UNDERSTOOD</div>
@@ -341,7 +366,6 @@ export default function CaptureSheet({ onClose }: Props) {
                   </div>
                 </div>
 
-                {/* Countdown ring */}
                 <div style={{ textAlign: 'center', marginTop: 18 }}>
                   <div style={{ width: 48, height: 48, position: 'relative', margin: '0 auto' }}>
                     <svg width={48} height={48} viewBox="0 0 48 48" style={{ transform: 'rotate(-90deg)' }}>
@@ -359,7 +383,6 @@ export default function CaptureSheet({ onClose }: Props) {
                   <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.24em', color: 'var(--text4)', marginTop: 8 }}>SAVING TO INBOX</div>
                 </div>
 
-                {/* 2 botones directos */}
                 <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
                   <button
                     onClick={saveNow}

@@ -4,16 +4,21 @@ import { useState, useRef, useCallback } from 'react';
 
 export type VoiceState = 'idle' | 'listening' | 'processing';
 
-export function useVoice(onTranscript: (text: string) => void) {
+export function useVoice(onTranscript: (text: string) => void, onJarvisDetected?: () => void) {
   const [state, setState] = useState<VoiceState>('idle');
   const [interim, setInterim] = useState('');
   const [elapsed, setElapsed] = useState(0);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [jarvisActive, setJarvisActive] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recRef = useRef<any>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const finalRef = useRef('');
-  const interimRef = useRef(''); // ref para evitar stale closure en onend
+  const interimRef = useRef('');
+  const jarvisSignaledRef = useRef(false);
+
+  const detectJarvis = (text: string): boolean => {
+    return /\bjarvis\b|\bharvis\b|\bjarbi\b/i.test(text);
+  };
 
   const start = useCallback(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -25,7 +30,6 @@ export function useVoice(onTranscript: (text: string) => void) {
       return;
     }
 
-    // Desactivar handlers antes de abortar — evita que el onend viejo resetee el estado
     if (recRef.current) {
       recRef.current.onend = null;
       recRef.current.onerror = null;
@@ -41,6 +45,7 @@ export function useVoice(onTranscript: (text: string) => void) {
     rec.interimResults = true;
     finalRef.current = '';
     interimRef.current = '';
+    jarvisSignaledRef.current = false;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rec.onresult = (e: any) => {
@@ -57,6 +62,13 @@ export function useVoice(onTranscript: (text: string) => void) {
       const combined = finalRef.current + interimText;
       interimRef.current = combined;
       setInterim(combined);
+
+      // Detección en tiempo real de "Jarvis" en el texto interim
+      if (!jarvisSignaledRef.current && detectJarvis(combined)) {
+        jarvisSignaledRef.current = true;
+        setJarvisActive(true);
+        onJarvisDetected?.();
+      }
     };
 
     rec.onend = () => {
@@ -66,18 +78,20 @@ export function useVoice(onTranscript: (text: string) => void) {
         setState('processing');
         onTranscript(text);
       } else {
-        // Sin texto — volver a idle para que el usuario pueda reintentar
         setState('idle');
         setInterim('');
         setElapsed(0);
+        setJarvisActive(false);
         finalRef.current = '';
         interimRef.current = '';
+        jarvisSignaledRef.current = false;
       }
     };
 
     rec.onerror = () => {
       if (timerRef.current) clearInterval(timerRef.current);
       setState('idle');
+      setJarvisActive(false);
     };
 
     recRef.current = rec;
@@ -85,8 +99,10 @@ export function useVoice(onTranscript: (text: string) => void) {
     setState('listening');
     setElapsed(0);
     setInterim('');
+    setJarvisActive(false);
+    jarvisSignaledRef.current = false;
     timerRef.current = setInterval(() => setElapsed(s => s + 1), 1000);
-  }, [onTranscript]); // sin interim en deps — usamos interimRef
+  }, [onTranscript, onJarvisDetected]);
 
   const stop = useCallback(() => {
     recRef.current?.stop();
@@ -99,11 +115,13 @@ export function useVoice(onTranscript: (text: string) => void) {
     setState('idle');
     setInterim('');
     setElapsed(0);
+    setJarvisActive(false);
     finalRef.current = '';
     interimRef.current = '';
+    jarvisSignaledRef.current = false;
   }, []);
 
   const elapsedStr = `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, '0')}`;
 
-  return { state, interim, elapsedStr, start, stop, reset };
+  return { state, interim, elapsedStr, start, stop, reset, jarvisActive };
 }

@@ -4,7 +4,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getTodaySnm, toggleSnm, setSnmActiveForToday } from '@/lib/snm';
 
-type Task = { id: number; title: string; detail?: string | null; propertyId?: string | null; prioFinal?: number | null; tags?: string | null };
+type Task = {
+  id: number;
+  title: string;
+  detail?: string | null;
+  propertyId?: string | null;
+  prioFinal?: number | null;
+  tags?: string | null;
+  lastActionAt?: number | null;
+  createdAt?: number | null;
+};
 type WeightLog = {
   id: number; date: string; value: number;
   snmAgua?: boolean | null; snmCaminar?: boolean | null;
@@ -32,10 +41,46 @@ function getTimeGreeting(): string {
 function buildFocusReason(task: Task, all: Task[]): string {
   const prio = task.prioFinal ?? 0;
   const n = all.length;
-  if (prio >= 9) return `Prioridad ${prio} — la más alta de ${n} activas. No puede esperar otro día.`;
-  if (prio >= 8) return `Prioridad ${prio} entre ${n} urgentes. Es la que más impacto tiene si la mueves hoy.`;
-  if (prio >= 7) return `Con ${n} urgentes encima, esta es la que desbloquea más cosas. Empieza aquí.`;
-  return `La más relevante ahora mismo. ${n > 1 ? `El resto puede esperar.` : ''}`.trim();
+  const now = Date.now();
+
+  const daysSinceAction = task.lastActionAt
+    ? Math.floor((now - task.lastActionAt) / 86400000)
+    : null;
+  const daysSinceCreated = task.createdAt
+    ? Math.floor((now - task.createdAt) / 86400000)
+    : null;
+
+  // Determinar texto de antigüedad
+  const ageText = (() => {
+    if (daysSinceAction === null) {
+      if (daysSinceCreated === null) return null;
+      if (daysSinceCreated === 0) return 'creada hoy';
+      return `en lista hace ${daysSinceCreated} día${daysSinceCreated === 1 ? '' : 's'}`;
+    }
+    if (daysSinceAction === 0) return 'tocada hoy';
+    if (daysSinceAction === 1) return 'sin mover desde ayer';
+    return `sin mover hace ${daysSinceAction} días`;
+  })();
+
+  if (prio >= 9) {
+    if (ageText && daysSinceAction !== null && daysSinceAction > 3)
+      return `Prio ${prio} — ${ageText}. La más crítica de ${n} activas. Hoy sí o sí.`;
+    return `La más crítica de ${n} activas con prio ${prio}. No puede esperar.`;
+  }
+  if (prio >= 8) {
+    if (ageText && daysSinceAction !== null && daysSinceAction > 7)
+      return `${ageText} y sigue en prio ${prio}. Entre ${n} urgentes, es la de mayor impacto hoy.`;
+    return `Prio ${prio} entre ${n} urgentes — la de mayor impacto si la mueves hoy.`;
+  }
+  if (prio >= 7) {
+    if (ageText && daysSinceAction !== null && daysSinceAction > 10)
+      return `${ageText}. Con ${n} urgentes en lista, esta va primero.`;
+    if (ageText)
+      return `Prio ${prio}, ${ageText}. Con ${n} urgentes — empieza aquí.`;
+    return `Con ${n} urgentes encima, esta va primero. Prio ${prio}.`;
+  }
+  if (ageText) return `La más relevante ahora. ${ageText}.${n > 1 ? ` El resto puede esperar.` : ''}`;
+  return `La más relevante ahora mismo.${n > 1 ? ` El resto puede esperar.` : ''}`;
 }
 
 function taskColor(prio: number): string {

@@ -10,8 +10,11 @@ import { runSearchAgent } from '@/lib/agents/SearchAgent';
  * Acepta variantes: "jarvis," "¡jarvis" "jarvis:" y combinaciones similares.
  */
 export function extractAmiVeraQuery(text: string): string | null {
-  const m = text.match(/\bjarvis[,!:.\s]+(.+)/i);
-  return m ? m[1].trim() : null;
+  // Acepta "jarvis", "harvis", "jarbi" con cualquier separador o sin él
+  const m = text.match(/\b(?:jarvis|harvis|jarbi)[,!:.\s¿¡]*([\s\S]+)/i);
+  if (m && m[1].trim()) return m[1].trim();
+  // Fallback: si el texto empieza por jarvis sin nada después, ignorar
+  return null;
 }
 
 /* ─── Construcción de contexto vital (2a) ───────────────── */

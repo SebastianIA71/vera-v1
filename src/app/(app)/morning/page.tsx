@@ -18,7 +18,17 @@ export default async function MorningPage() {
   const urgentTasks = allTasks
     .filter(t => t.status !== 'done' && t.status !== 'archived' && effectivePrio(t) >= 6)
     .sort((a, b) => effectivePrio(b) - effectivePrio(a))
-    .slice(0, 5);
+    .slice(0, 5)
+    .map(t => ({
+      id: t.id,
+      title: t.title,
+      detail: t.detail,
+      propertyId: t.propertyId,
+      prioFinal: t.prioFinal,
+      tags: t.tags,
+      lastActionAt: t.lastActionAt ? t.lastActionAt.getTime() : null,
+      createdAt: t.createdAt ? t.createdAt.getTime() : null,
+    }));
 
   const upcomingTrips = allEvents
     .filter(e => e.type === 'viaje' && e.startDate && e.startDate > now)
