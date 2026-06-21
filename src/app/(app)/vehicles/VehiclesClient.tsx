@@ -404,13 +404,48 @@ export default function VehiclesClient({ vehicles: initialVehicles, kmLogs: init
     }
   };
 
+  // Mobile: fullscreen detail when vehicle selected
+  if (isMobile && selected) {
+    return (
+      <>
+        <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '10px 16px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
+              <button onClick={() => setSelected(null)} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.18em', color: 'var(--text3)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                ← VEHÍCULOS
+              </button>
+            </div>
+            <KmDetail
+              key={selected.id}
+              vehicle={selected}
+              logs={logs}
+              onLogAdded={log => setLogs(prev => [log, ...prev])}
+              onLogDeleted={id => setLogs(prev => prev.filter(l => l.id !== id))}
+              onEdit={() => setEditing(selected)}
+              onDeactivate={() => handleDeactivate(selected)}
+              isWidget={widgetId === selected.id}
+              onWidgetToggle={() => handleWidgetToggle(selected)}
+            />
+          </div>
+        </DesktopShell>
+        {editing && (
+          <VehicleForm
+            vehicle={editing}
+            onClose={() => setEditing(null)}
+            onSaved={handleSaved}
+          />
+        )}
+      </>
+    );
+  }
+
   return (
     <>
       <DesktopShell urgentCount={urgentCount} staleCount={staleCount} inboxCount={inboxCount}>
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
           {/* Left — vehicle list */}
-          <div style={{ width: isMobile ? '100%' : 300, flexShrink: 0, borderRight: isMobile ? 'none' : '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ width: 300, flexShrink: 0, borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '14px 18px 12px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 18, color: 'var(--text)' }}>
@@ -437,7 +472,7 @@ export default function VehiclesClient({ vehicles: initialVehicles, kmLogs: init
                 const isSel = selected?.id === v.id;
                 return (
                   <div key={v.id}
-                    onClick={() => isMobile ? undefined : setSelected(v)}
+                    onClick={() => setSelected(v)}
                     style={{ padding: '12px 18px', cursor: 'pointer', borderBottom: '.5px solid var(--bg2)', borderLeft: isSel ? `2px solid ${color}` : '2px solid transparent', background: isSel ? 'var(--bg2)' : 'transparent', transition: 'background .1s' }}
                     onMouseEnter={e => { if (!isSel) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg2)'; }}
                     onMouseLeave={e => { if (!isSel) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
@@ -461,8 +496,8 @@ export default function VehiclesClient({ vehicles: initialVehicles, kmLogs: init
             </div>
           </div>
 
-          {/* Right — detail */}
-          {!isMobile && (selected ? (
+          {/* Right — detail (desktop only) */}
+          {selected ? (
             <KmDetail
               key={selected.id}
               vehicle={selected}
@@ -479,7 +514,7 @@ export default function VehiclesClient({ vehicles: initialVehicles, kmLogs: init
               <div style={{ fontFamily: 'var(--font-syne)', fontSize: 36, color: 'var(--blue)', opacity: 0.4 }}>🚗</div>
               <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text3)' }}>SELECCIONA UN VEHÍCULO</div>
             </div>
-          ))}
+          )}
         </div>
       </DesktopShell>
 

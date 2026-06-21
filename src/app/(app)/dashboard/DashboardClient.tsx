@@ -440,12 +440,11 @@ export default function DashboardClient({
       {/* LAYOUT */}
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
-        {/* LEFT PANEL — nav + briefing */}
+        {/* LEFT PANEL — nav + song */}
         <div style={{ width: 260, flexShrink: 0, borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <DesktopNav activeOverride="dashboard" counts={{ tasks: kpis.tasksActive, trips: kpis.tripsCount, properties: kpis.propsCount, projects: kpis.projectsCount, agents: 6 }} />
           <div style={{ height: '.5px', background: 'var(--bg4)', margin: '4px 16px' }} />
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px 20px' }}>
-            <DailyBriefing compact={true} />
             <SongOfDay compact={true} />
           </div>
         </div>
@@ -606,16 +605,9 @@ export default function DashboardClient({
 
           </div>
 
-          {/* Botones de creación */}
-          <div style={{ padding: '12px 24px 20px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setShowNewTask(true)}     style={{ flex: 1, background: 'transparent', border: '.5px solid var(--gold2)',  borderRadius: 10, padding: '11px 8px', color: 'var(--gold)',   fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', cursor: 'pointer' }}>+ TAREA</button>
-              <button onClick={() => setShowNewEvent(true)}    style={{ flex: 1, background: 'transparent', border: '.5px solid var(--purple)', borderRadius: 10, padding: '11px 8px', color: 'var(--purple)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', cursor: 'pointer' }}>+ EVENTO</button>
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setShowNewProperty(true)} style={{ flex: 1, background: 'transparent', border: '.5px solid var(--green)',  borderRadius: 10, padding: '11px 8px', color: 'var(--green)',  fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', cursor: 'pointer' }}>+ PROPIEDAD</button>
-              <button onClick={() => setShowNewProject(true)}  style={{ flex: 1, background: 'transparent', border: '.5px solid var(--amber)', borderRadius: 10, padding: '11px 8px', color: 'var(--amber)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', cursor: 'pointer' }}>+ PROYECTO</button>
-            </div>
+          {/* Briefing diario */}
+          <div style={{ padding: '0 16px 16px', flexShrink: 0 }}>
+            <DailyBriefing compact={true} />
           </div>
         </div>
 

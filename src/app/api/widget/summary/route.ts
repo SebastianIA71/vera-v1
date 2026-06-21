@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { tasks, events, weightLog, inbox, memory, projects, vehicles, kmLogs } from '@/lib/db/schema';
 import { ne, desc, and, gte, eq, sql } from 'drizzle-orm';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   const now = new Date();
 
@@ -12,6 +14,7 @@ export async function GET(req: NextRequest) {
     weights,
     inboxItems,
     memoryRows,
+    widgetVehicleRow,
     propCounts,
     activeProjects,
     projectTaskCounts,
@@ -43,6 +46,12 @@ export async function GET(req: NextRequest) {
       .from(memory)
       .limit(50),
 
+    // Direct query for widget vehicle preference — avoids 50-row pool limit
+    db.select({ value: memory.value })
+      .from(memory)
+      .where(eq(memory.key, 'widget_vehicle_id'))
+      .limit(1),
+
     // Task counts per property (active tasks only)
     db.select({
         propertyId: tasks.propertyId,
@@ -69,10 +78,10 @@ export async function GET(req: NextRequest) {
     db.select().from(vehicles).where(eq(vehicles.active, true)),
   ]);
 
-  // Pick widget vehicle: prefer memory preference, fall back to first active
-  const widgetVehicleIdStr = memoryRows.find(r => r.key === 'widget_vehicle_id')?.value;
-  const widgetVehicleId = widgetVehicleIdStr ? parseInt(widgetVehicleIdStr) : null;
-  const chosenVehicle = widgetVehicleId
+  // Pick widget vehicle: prefer pinned preference, fall back to first active
+  const widgetVehicleIdStr = widgetVehicleRow[0]?.value ?? null;
+  const widgetVehicleId = widgetVehicleIdStr ? parseInt(widgetVehicleIdStr, 10) : null;
+  const chosenVehicle = (widgetVehicleId && !isNaN(widgetVehicleId))
     ? (activeVehicles.find(v => v.id === widgetVehicleId) ?? activeVehicles[0])
     : activeVehicles[0];
 
