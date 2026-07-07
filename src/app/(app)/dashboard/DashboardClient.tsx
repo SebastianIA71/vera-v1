@@ -101,8 +101,8 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
   const DAY_NAMES = ['L','M','X','J','V','S','D'];
 
   const activeTasks = tasks.filter(t => t.status !== 'done' && t.status !== 'archived');
-  const topTasks = activeTasks
-    .filter(t => Math.max(t.prioFinal ?? 0, t.prio ?? 0) >= 8)
+  const urgentTasks = activeTasks.filter(t => Math.max(t.prioFinal ?? 0, t.prio ?? 0) >= 8);
+  const topTasks = urgentTasks
     .sort((a, b) => Math.max(b.prioFinal ?? 0, b.prio ?? 0) - Math.max(a.prioFinal ?? 0, a.prio ?? 0))
     .slice(0, 3);
 
@@ -113,9 +113,16 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
     }}>
-      <div style={{ padding: '12px 18px 8px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.22em', color: 'var(--text3)' }}>
-          PUNCH LIST
+      <div style={{ padding: '12px 18px 8px', borderBottom: '.5px solid var(--bg4)', flexShrink: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.22em', color: 'var(--text3)' }}>
+            PUNCH LIST
+          </div>
+          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--text3)', marginTop: 2 }}>
+            <span style={{ color: urgentTasks.length > 0 ? 'var(--red)' : 'var(--text3)' }}>{urgentTasks.length} urgentes</span>
+            <span style={{ color: 'var(--text3)' }}> (prio≥8) · </span>
+            <span style={{ color: 'var(--amber)' }}>{activeTasks.length} activas</span>
+          </div>
         </div>
         <button
           onClick={onNewTask}
@@ -317,7 +324,8 @@ export default function DashboardClient({
       for (const entry of entries) {
         const w = entry.contentRect.width;
         const h = entry.contentRect.height;
-        setOrbitalScale(Math.min(1, Math.min(w, h) / 480));
+        // Reserve 60px vertical buffer so nodes at the orbital edges don't get clipped
+        setOrbitalScale(Math.min(1, Math.min(w, h - 60) / 480));
       }
     });
     obs.observe(orbitalWrapRef.current);
@@ -410,9 +418,9 @@ export default function DashboardClient({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Pill dot="red"   label={`${urgentNow} URGENTES`} />
-          <Pill dot="amber" label={`${waitingNow} EN ESPERA`} />
-          <Pill dot="green" label={`${calmNow} TRANQUILAS`} />
+          <Pill dot="red"   label={`${urgentNow} URGENTES`}   title="prio ≥ 8" />
+          <Pill dot="amber" label={`${waitingNow} EN ESPERA`}  title="prio 5–7" />
+          <Pill dot="green" label={`${calmNow} TRANQUILAS`}    title="prio < 5" />
           <Pill dot="green" label={`${inboxCount} INBOX`} />
         </div>
 
@@ -508,7 +516,7 @@ export default function DashboardClient({
 
             {/* ── CENTER: Orbital (40%) ── */}
             <div style={{ flex: 4, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minWidth: 0, gap: 0, overflow: 'hidden' }}>
-            <div ref={orbitalWrapRef} style={{ width: '100%', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            <div ref={orbitalWrapRef} style={{ width: '100%', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'visible' }}>
             <div style={{ position: 'relative', width: '480px', height: '480px', flexShrink: 0, transform: `scale(${orbitalScale})`, transformOrigin: 'center center' }}>
               {/* Rings */}
               {[140, 260, 380, 440].map((size, i) => (
@@ -667,10 +675,10 @@ export default function DashboardClient({
 }
 
 /* ─── NavItem helper ────────────────────────────────── */
-function Pill({ dot, label }: { dot: string; label: string }) {
+function Pill({ dot, label, title }: { dot: string; label: string; title?: string }) {
   const colors: Record<string, string> = { red: 'var(--red)', amber: 'var(--amber)', green: 'var(--green)' };
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '5px 12px', border: '.5px solid var(--bg4)', borderRadius: '999px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', letterSpacing: '.14em', color: 'var(--text2)' }}>
+    <div title={title} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '5px 12px', border: '.5px solid var(--bg4)', borderRadius: '999px', fontFamily: 'var(--font-dm-mono)', fontSize: '12px', letterSpacing: '.14em', color: 'var(--text2)', cursor: title ? 'help' : 'default' }}>
       <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: colors[dot] ?? 'var(--text3)', display: 'inline-block' }} />
       {label}
     </div>

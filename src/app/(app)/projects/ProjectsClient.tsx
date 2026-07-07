@@ -61,18 +61,20 @@ function ProjectCard({ project, selected, tasks, onClick }: { project: Project; 
   );
 }
 
-function ProjectDetail({ project, tasks, onEdit, onTaskCreated, onTaskUpdate, onMarkDone, isMobile }: {
+function ProjectDetail({ project, tasks, onEdit, onArchive, onTaskCreated, onTaskUpdate, onMarkDone, isMobile }: {
   project: Project;
   tasks: Task[];
   onEdit: () => void;
+  onArchive: () => void;
   onTaskCreated: (t: Task) => void;
   onTaskUpdate: (id: number, d: Partial<Task>) => void;
   onMarkDone: (id: number) => void;
   isMobile?: boolean;
 }) {
   const router = useRouter();
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [showNewTask, setShowNewTask]   = useState(false);
+  const [selectedTask, setSelectedTask]   = useState<Task | null>(null);
+  const [showNewTask, setShowNewTask]     = useState(false);
+  const [archiving,   setArchiving]       = useState(false);
   const color = project.color ?? '#9b7fe8';
   const sm    = STATUS_META[project.status ?? 'active'] ?? STATUS_META.active;
   const due   = daysUntil(project.dueDate);
@@ -128,6 +130,21 @@ function ProjectDetail({ project, tasks, onEdit, onTaskCreated, onTaskUpdate, on
             )}
           </div>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            {project.status !== 'archived' && (
+              <button
+                onClick={async () => {
+                  if (!confirm(`¿Archivar "${project.name}"?`)) return;
+                  setArchiving(true);
+                  await fetch(`/api/projects/${project.id}`, { method: 'DELETE' });
+                  setArchiving(false);
+                  onArchive();
+                }}
+                disabled={archiving}
+                style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', padding: '6px 12px', borderRadius: 8, border: '.5px solid var(--red)', background: 'transparent', color: 'var(--red)', cursor: 'pointer', opacity: archiving ? 0.5 : 1 }}
+              >
+                {archiving ? '...' : 'ARCHIVAR'}
+              </button>
+            )}
             <button onClick={onEdit} style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', padding: '6px 12px', borderRadius: 8, border: '.5px solid var(--bg4)', background: 'transparent', color: 'var(--text3)', cursor: 'pointer' }}>
               EDITAR
             </button>
@@ -243,6 +260,7 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
               project={selected}
               tasks={tasks}
               onEdit={() => setEditing(selected)}
+              onArchive={() => { setProjects(prev => prev.map(p => p.id === selected.id ? { ...p, status: 'archived' } : p)); setSelected(null); }}
               onTaskCreated={t => setTasks(prev => [t, ...prev])}
               onTaskUpdate={(id, d) => setTasks(prev => prev.map(t => t.id === id ? { ...t, ...d } : t))}
               onMarkDone={id => setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t))}
@@ -314,6 +332,7 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
               project={selected}
               tasks={tasks}
               onEdit={() => setEditing(selected)}
+              onArchive={() => { setProjects(prev => prev.map(p => p.id === selected.id ? { ...p, status: 'archived' } : p)); setSelected(null); }}
               onTaskCreated={t => setTasks(prev => [t, ...prev])}
               onTaskUpdate={(id, d) => setTasks(prev => prev.map(t => t.id === id ? { ...t, ...d } : t))}
               onMarkDone={id => setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t))}

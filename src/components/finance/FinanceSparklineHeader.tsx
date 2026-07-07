@@ -28,6 +28,7 @@ function Sparkline({ values, color, height = 28 }: { values: number[]; color: st
 type MetricRowProps = {
   label: string;
   value: number;
+  prevValue?: number;
   values: number[];
   color: string;
   fontSize?: number;
@@ -36,7 +37,8 @@ type MetricRowProps = {
   border?: boolean;
 };
 
-function MetricRow({ label, value, values, color, fontSize = 28, decimals = 2, sparklineHeight = 28, border = true }: MetricRowProps) {
+function MetricRow({ label, value, prevValue, values, color, fontSize = 28, decimals = 2, sparklineHeight = 28, border = true }: MetricRowProps) {
+  const diff = prevValue !== undefined ? value - prevValue : null;
   return (
     <div style={{
       paddingBottom: border ? 10 : 0,
@@ -46,16 +48,29 @@ function MetricRow({ label, value, values, color, fontSize = 28, decimals = 2, s
       <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.22em', color: 'var(--text3)', marginBottom: 3 }}>
         {label}
       </div>
-      <div style={{
-        fontFamily: '"Arial Black", Arial, sans-serif',
-        fontWeight: 900,
-        fontSize,
-        color,
-        lineHeight: 1,
-        letterSpacing: '-.02em',
-        marginBottom: 5,
-      }}>
-        {value.toFixed(decimals)}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 5 }}>
+        <div style={{
+          fontFamily: '"Arial Black", Arial, sans-serif',
+          fontWeight: 900,
+          fontSize,
+          color,
+          lineHeight: 1,
+          letterSpacing: '-.02em',
+        }}>
+          {value.toFixed(decimals)}
+        </div>
+        {prevValue !== undefined && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.06em', lineHeight: 1 }}>
+              was {prevValue.toFixed(decimals)}
+            </div>
+            {diff !== null && (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.04em', lineHeight: 1, color: diff > 0 ? 'var(--red)' : diff < 0 ? 'var(--green)' : 'var(--text3)' }}>
+                {diff > 0 ? '+' : ''}{diff.toFixed(decimals)}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <Sparkline values={values} color={color} height={sparklineHeight} />
     </div>
@@ -75,12 +90,17 @@ export function FinanceSparklineHeader({ records }: { records: FinanceEntry[] })
   const lastA = records[0]?.calcA ?? 0;
   const lastE = records[0]?.calcE ?? 0;
 
+  const prevD = dVals.length >= 2 ? dVals[dVals.length - 2] : undefined;
+  const prevB = bVals.length >= 2 ? bVals[bVals.length - 2] : undefined;
+  const prevA = aVals.length >= 2 ? aVals[aVals.length - 2] : undefined;
+  const prevE = eVals.length >= 2 ? eVals[eVals.length - 2] : undefined;
+
   return (
     <div style={{ width: '100%' }}>
-      <MetricRow label="D · 12M" value={lastD} values={dVals} color="var(--gold)"  fontSize={34} decimals={2} sparklineHeight={36} />
-      <MetricRow label="B · 12M" value={lastB} values={bVals} color="var(--gold2)" fontSize={26} decimals={1} sparklineHeight={28} />
-      <MetricRow label="A · 12M" value={lastA} values={aVals} color="var(--amber)" fontSize={26} decimals={1} sparklineHeight={28} />
-      <MetricRow label="E · 12M" value={lastE} values={eVals} color="var(--green)" fontSize={22} decimals={2} sparklineHeight={26} border={false} />
+      <MetricRow label="D · PT" value={lastD} prevValue={prevD} values={dVals} color="var(--gold)"  fontSize={34} decimals={2} sparklineHeight={36} />
+      <MetricRow label="B · PS" value={lastB} prevValue={prevB} values={bVals} color="var(--gold2)" fontSize={26} decimals={1} sparklineHeight={28} />
+      <MetricRow label="A · CF" value={lastA} prevValue={prevA} values={aVals} color="var(--amber)" fontSize={26} decimals={1} sparklineHeight={28} />
+      <MetricRow label="E · LI" value={lastE} prevValue={prevE} values={eVals} color="var(--green)" fontSize={22} decimals={2} sparklineHeight={26} border={false} />
     </div>
   );
 }
