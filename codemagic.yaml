@@ -78,7 +78,8 @@ workflows:
             --project ios/App/App.xcodeproj \
             --scheme App \
             --config Release \
-            --export-options-plist /tmp/export_options.plist
+            --export-options-plist /tmp/export_options.plist \
+            --archive-xcargs 'PROVISIONING_PROFILE_SPECIFIER="Vera AppStore"'
 
     artifacts:
       - build/ios/ipa/*.ipa
