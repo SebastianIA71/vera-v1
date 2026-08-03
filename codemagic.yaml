@@ -3,15 +3,12 @@ workflows:
     name: Vera iOS → TestFlight
     max_build_duration: 60
 
+    integrations:
+      app_store_connect: Vera ASC
+
     environment:
       groups:
         - ios_signing
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.sebastian.vera
-        certificate: $DISTRIBUTION_CERTIFICATE
-        certificate_password: $CERTIFICATE_PASSWORD
-        provisioning_profile: $PROVISIONING_PROFILE
       node: 20.11.0
       xcode: latest
       cocoapods: default
@@ -20,13 +17,32 @@ workflows:
       - name: Install npm dependencies
         script: npm ci
 
+      - name: Set up code signing
+        script: |
+          # Decode certificate and install in keychain
+          echo $DISTRIBUTION_CERTIFICATE | base64 --decode > /tmp/certificate.p12
+
+          security create-keychain -p "vera2026" build.keychain
+          security import /tmp/certificate.p12 -k ~/Library/Keychains/build.keychain \
+            -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security list-keychains -s ~/Library/Keychains/build.keychain
+          security default-keychain -s ~/Library/Keychains/build.keychain
+          security unlock-keychain -p "vera2026" ~/Library/Keychains/build.keychain
+          security set-key-partition-list -S apple-tool:,apple: -s -k "vera2026" ~/Library/Keychains/build.keychain
+
+          # Decode and install provisioning profile
+          echo $PROVISIONING_PROFILE | base64 --decode > /tmp/profile.mobileprovision
+          UUID=$(security cms -D -i /tmp/profile.mobileprovision | plutil -extract UUID xml1 - -o - | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp /tmp/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/${UUID}.mobileprovision
+
       - name: Capacitor sync iOS
         script: npx cap sync ios
 
       - name: Set build number
         script: |
-          LATEST=$(app-store-connect get-latest-testflight-build-number "6797608152" || echo "0")
-          agvtool new-version -all $(($LATEST + 1))
+          LATEST=$(app-store-connect get-latest-testflight-build-number "6797608152" 2>/dev/null || echo "0")
+          agvtool new-version -all $((LATEST + 1))
         working_directory: ios/App
 
       - name: Build IPA for App Store
