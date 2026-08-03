@@ -9,7 +9,7 @@ workflows:
     environment:
       groups:
         - ios_signing
-      node: 20.11.0
+      node: 22.14.0
       xcode: latest
       cocoapods: default
 
