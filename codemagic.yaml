@@ -2,57 +2,50 @@ workflows:
   ios-testflight:
     name: Vera iOS → TestFlight
     max_build_duration: 60
+    integrations:
+      app_store_connect: Vera ASC   # nombre que pongas en el dashboard de Codemagic
+
     environment:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.sebastian.vera
-      vars:
-        APP_STORE_CONNECT_ISSUER_ID: Encrypted(...)   # rellenar en Codemagic dashboard
-        APP_STORE_CONNECT_KEY_IDENTIFIER: Encrypted(...)
-        APP_STORE_CONNECT_PRIVATE_KEY: Encrypted(...)
-        CERTIFICATE_PRIVATE_KEY: Encrypted(...)
       node: 20.11.0
       xcode: latest
       cocoapods: default
 
     scripts:
-      - name: Install dependencies
+      - name: Install npm dependencies
         script: npm ci
 
-      - name: Capacitor sync
+      - name: Capacitor sync iOS
         script: npx cap sync ios
 
-      - name: Generate icons (requiere assets/icon-only.png ≥ 1024x1024)
+      - name: Set build number (auto-incrementa desde TestFlight)
         script: |
-          if [ -f assets/icon-only.png ]; then
-            npx capacitor-assets generate --ios
-          else
-            echo "Sin assets/icon-only.png — saltando generación de iconos"
-          fi
-
-      - name: Set version from package.json
-        script: |
-          BUILD_NUMBER=$BUILD_NUMBER
-          VERSION=$(cat package.json | jq -r '.version')
-          agvtool new-version -all $BUILD_NUMBER
-          agvtool new-marketing-version $VERSION
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_ID")
+          agvtool new-version -all $(($LATEST + 1))
         working_directory: ios/App
 
-      - name: Build iOS
+      - name: Build IPA for App Store
         script: |
           xcode-project build-ipa \
             --workspace ios/App/App.xcworkspace \
             --scheme App \
-            --archive-flags="-destination 'generic/platform=iOS'" \
-            --export-options-plist /Users/builder/export_options.plist
+            --config Release
 
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
 
     publishing:
+      email:
+        recipients:
+          - sebastianfont71@gmail.com
+        notify:
+          success: true
+          failure: true
       app_store_connect:
         auth: integration
         submit_to_testflight: true
         beta_groups:
-          - Sebastian
+          - App Store Connect Users   # grupo de testers en TestFlight
