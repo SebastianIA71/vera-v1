@@ -2,13 +2,16 @@ workflows:
   ios-testflight:
     name: Vera iOS → TestFlight
     max_build_duration: 60
-    integrations:
-      app_store_connect: Vera ASC   # nombre que pongas en el dashboard de Codemagic
 
     environment:
+      groups:
+        - ios_signing
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.sebastian.vera
+        certificate: $DISTRIBUTION_CERTIFICATE
+        certificate_password: $CERTIFICATE_PASSWORD
+        provisioning_profile: $PROVISIONING_PROFILE
       node: 20.11.0
       xcode: latest
       cocoapods: default
@@ -20,9 +23,9 @@ workflows:
       - name: Capacitor sync iOS
         script: npx cap sync ios
 
-      - name: Set build number (auto-incrementa desde TestFlight)
+      - name: Set build number
         script: |
-          LATEST=$(app-store-connect get-latest-testflight-build-number "6797608152")
+          LATEST=$(app-store-connect get-latest-testflight-build-number "6797608152" || echo "0")
           agvtool new-version -all $(($LATEST + 1))
         working_directory: ios/App
 
@@ -48,4 +51,4 @@ workflows:
         auth: integration
         submit_to_testflight: true
         beta_groups:
-          - App Store Connect Users   # grupo de testers en TestFlight
+          - App Store Connect Users
