@@ -47,10 +47,38 @@ workflows:
 
       - name: Build IPA for App Store
         script: |
+          # Extract Team ID from provisioning profile installed earlier
+          TEAM_ID=$(security cms -D -i /tmp/profile.mobileprovision | \
+            plutil -extract TeamIdentifier.0 xml1 - -o - | \
+            sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
+
+          cat > /tmp/export_options.plist << PLIST_EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>${TEAM_ID}</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.sebastian.vera</key>
+                  <string>Vera AppStore</string>
+              </dict>
+          </dict>
+          </plist>
+          PLIST_EOF
+
           xcode-project build-ipa \
             --project ios/App/App.xcodeproj \
             --scheme App \
-            --config Release
+            --config Release \
+            --export-options-plist /tmp/export_options.plist
 
     artifacts:
       - build/ios/ipa/*.ipa
