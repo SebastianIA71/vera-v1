@@ -48,7 +48,7 @@ workflows:
       - name: Build IPA for App Store
         script: |
           xcode-project build-ipa \
-            --workspace ios/App/App.xcworkspace \
+            --project ios/App/App.xcodeproj \
             --scheme App \
             --config Release
 
