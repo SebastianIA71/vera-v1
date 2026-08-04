@@ -14,8 +14,6 @@ const config: CapacitorConfig = {
   ios: {
     backgroundColor: '#07080a',
     contentInset: 'automatic',
-    // Scroll elástico desactivado — la app ya gestiona su propio scroll
-    scrollEnabled: false,
   },
 };
 

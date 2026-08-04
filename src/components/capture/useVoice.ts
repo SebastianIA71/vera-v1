@@ -20,14 +20,26 @@ export function useVoice(onTranscript: (text: string) => void, onJarvisDetected?
     return /\bjarvis\b|\bharvis\b|\bjarbi\b/i.test(text);
   };
 
-  const start = useCallback(() => {
+  const start = useCallback(async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const w = window as any;
     const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition;
 
     if (!SR) {
-      alert('Tu navegador no soporta reconocimiento de voz. Usa Chrome o Edge.');
+      alert('Tu navegador no soporta reconocimiento de voz.');
       return;
+    }
+
+    // En WKWebView (iOS), getUserMedia fuerza el diálogo de permisos del sistema.
+    // Sin este paso, webkitSpeechRecognition falla silenciosamente.
+    if (navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(t => t.stop());
+      } catch {
+        alert('Vera necesita acceso al micrófono.\nVe a Ajustes → Vera → Micrófono → Permitir.');
+        return;
+      }
     }
 
     if (recRef.current) {
@@ -88,10 +100,14 @@ export function useVoice(onTranscript: (text: string) => void, onJarvisDetected?
       }
     };
 
-    rec.onerror = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onerror = (e: any) => {
       if (timerRef.current) clearInterval(timerRef.current);
       setState('idle');
       setJarvisActive(false);
+      if (e?.error === 'not-allowed') {
+        alert('Sin permiso de micrófono.\nAjustes → Vera → Micrófono → Permitir.');
+      }
     };
 
     recRef.current = rec;
