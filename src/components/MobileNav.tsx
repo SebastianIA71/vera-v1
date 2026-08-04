@@ -224,7 +224,9 @@ export function MobileNav({ inboxCount = 0 }: { inboxCount?: number }) {
 
       {/* ── Barra de navegación ── */}
       <nav className="mobile-nav" style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, height: '64px',
+        position: 'fixed', bottom: 0, left: 0, right: 0,
+        height: 'calc(64px + env(safe-area-inset-bottom, 0px))',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         background: 'rgba(7, 8, 10, 0.96)', borderTop: '0.5px solid var(--bg4)',
         display: 'flex', alignItems: 'stretch', zIndex: 100, width: '100%',
       }}>

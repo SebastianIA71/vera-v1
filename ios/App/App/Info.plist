@@ -68,5 +68,9 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Vera usa el micrófono para capturar tareas y notas por voz</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Vera transcribe tu voz para crear tareas y capturas instantáneas</string>
 </dict>
 </plist>

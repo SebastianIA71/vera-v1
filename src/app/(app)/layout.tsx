@@ -25,9 +25,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       <LayoutClient tasksCount={tasksCount} inboxCount={inboxCount}>
-        <main className="main-content">
+        <main className="main-content" style={{ paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))' }}>
           {children}
         </main>
       </LayoutClient>
