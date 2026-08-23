@@ -15,11 +15,11 @@ export default async function DashboardPage() {
     )).orderBy(desc(tasks.prioFinal), desc(tasks.prio)).limit(100),
     db.select().from(events).orderBy(desc(events.startDate)).limit(20),
     db.select().from(properties),
-    db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(1),
+    db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(14),
     db.select({ id: projects.id }).from(projects).where(ne(projects.status, 'archived')),
     db.select({ calcD: financeRecords.calcD, calcB: financeRecords.calcB, calcA: financeRecords.calcA, calcE: financeRecords.calcE })
       .from(financeRecords).orderBy(desc(financeRecords.date)).limit(12),
-    db.select({ id: vehicles.id }).from(vehicles),
+    db.select({ id: vehicles.id }).from(vehicles).where(eq(vehicles.active, true)),
     db.select({ id: contracts.id }).from(contracts).where(eq(contracts.active, true)),
   ]);
 
@@ -74,6 +74,7 @@ export default async function DashboardPage() {
       initialTasks={allTasks}
       urgentCount={urgentTasks.length}
       inboxCount={inboxCount}
+      weightLogs={weightLogs.map(w => ({ date: w.date, value: w.value }))}
       nextTrip={nextTrip !== null ? { title: nextTrip.title, daysTo: daysToNextTrip ?? 0 } : null}
       nextEvent={nextEventItem !== null && daysToNextEvent !== null ? { title: nextEventItem.title, daysTo: daysToNextEvent, startDate: nextEventItem.startDate!.toISOString() } : null}
       allEvents={allEvents.map(e => ({ startDate: e.startDate, type: e.type ?? '', title: e.title }))}

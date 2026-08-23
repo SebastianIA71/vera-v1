@@ -31,6 +31,7 @@ type Task = {
   tags?: string | null; dueDate?: Date | null;
 };
 type CompletingTask = Task & { completingAt: number };
+type WeightLogEntry = { date: string; value: number };
 
 /* ─── Constants ─────────────────────────────────────── */
 const DAYS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
@@ -260,7 +261,7 @@ const getKpiNodes = (kpis: Kpis, liveTasksActive: number) => [
   { id: 'events',    label: 'EVENTOS',     value: kpis.eventsCount,                                        color: 'var(--purple)' },
   { id: 'props',     label: 'PROPIEDADES', value: kpis.propsCount,                                         color: 'var(--green)'  },
   { id: 'projects',  label: 'PROYECTOS',   value: kpis.projectsCount,                                      color: '#9b7fe8'       },
-  { id: 'vehicles',  label: 'COCHES',      value: kpis.vehiclesCount ?? 0,                                 color: 'var(--cyan)'   },
+  { id: 'vehicles',  label: 'VEHÍCULOS',   value: kpis.vehiclesCount ?? 0,                                 color: 'var(--cyan)'   },
   { id: 'contracts', label: 'CONTRATOS',   value: kpis.contractsActive ?? 0,                               color: 'var(--amber)'  },
   { id: 'agents',    label: 'AGENTES',     value: 6,                                                       color: 'var(--gold2)'  },
   { id: 'weight',    label: 'KG',          value: kpis.currentWeight !== null ? kpis.currentWeight : '—',  color: 'var(--amber)'  },
@@ -276,6 +277,7 @@ export default function DashboardClient({
   kpis,
   todaySnm = [],
   financeRecords = [],
+  weightLogs = [],
 }: {
   initialTasks: Task[];
   urgentCount: number;
@@ -286,6 +288,7 @@ export default function DashboardClient({
   kpis: Kpis;
   todaySnm?: string[];
   financeRecords?: { calcD: number|null; calcB: number|null; calcA: number|null; calcE: number|null }[];
+  weightLogs?: WeightLogEntry[];
 }) {
   const router = useRouter();
   const [time, setTime] = useState('');
@@ -390,6 +393,12 @@ export default function DashboardClient({
   const nodeBorderColor = (s: string) => s === 'running' ? 'var(--gold2)' : s === 'active' ? 'var(--green)' : 'var(--border-medium)';
   const nodeIconColor = (s: string) => s === 'running' ? 'var(--gold2)' : s === 'active' ? 'var(--green)' : 'var(--text2)';
 
+  const latestW = weightLogs[0];
+  const prevW = weightLogs[1];
+  const wDiff = latestW && prevW ? +(latestW.value - prevW.value).toFixed(1) : 0;
+  const wTrendColor = wDiff > 0 ? 'var(--amber)' : wDiff < 0 ? 'var(--green)' : 'var(--text3)';
+  const wTrendLabel = !latestW || !prevW ? null : wDiff > 0 ? `+${wDiff}` : wDiff < 0 ? `${wDiff}` : '=';
+
   const urgentNow  = tasks.filter(t => (t.prioFinal ?? 0) >= 8 && t.status !== 'done' && t.status !== 'archived').length;
   const waitingNow = tasks.filter(t => { const p = t.prioFinal ?? 0; return p >= 5 && p <= 7 && t.status !== 'done' && t.status !== 'archived'; }).length;
   const calmNow    = tasks.filter(t => (t.prioFinal ?? 0) < 5 && t.status !== 'done' && t.status !== 'archived').length;
@@ -486,7 +495,7 @@ export default function DashboardClient({
 
 
           {/* Orbital map */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'visible' }}>
 
             {/* ── LEFT: KPI zone (30%) ── */}
             <div style={{ flex: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', padding: '0 8px' }}>
@@ -508,6 +517,15 @@ export default function DashboardClient({
                       <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em', color: 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {kpi.label}
                       </div>
+                      {kpi.id === 'weight' && wTrendLabel && (
+                        <span style={{
+                          marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4,
+                          fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: wTrendColor, flexShrink: 0,
+                        }}>
+                          <span style={{ width: 4, height: 4, borderRadius: '50%', background: wTrendColor, display: 'inline-block' }} />
+                          {wTrendLabel}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}

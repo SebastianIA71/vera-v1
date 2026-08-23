@@ -39,6 +39,8 @@ type MetricRowProps = {
 
 function MetricRow({ label, value, prevValue, values, color, fontSize = 28, decimals = 2, sparklineHeight = 28, border = true }: MetricRowProps) {
   const diff = prevValue !== undefined ? value - prevValue : null;
+  const value12mAgo = values.length >= 12 ? values[values.length - 12] : undefined;
+  const diff12m = value12mAgo !== undefined ? value - value12mAgo : null;
   return (
     <div style={{
       paddingBottom: border ? 10 : 0,
@@ -63,9 +65,19 @@ function MetricRow({ label, value, prevValue, values, color, fontSize = 28, deci
           <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.06em', lineHeight: 1 }}>
               was {prevValue.toFixed(decimals)}
+              {value12mAgo !== undefined && (
+                <span style={{ color: 'var(--text4)' }}>
+                  {' '}(12m: {value12mAgo.toFixed(decimals)}
+                  {diff12m !== null && (
+                    <span style={{ color: diff12m > 0 ? 'var(--green)' : diff12m < 0 ? 'var(--red)' : 'var(--text4)' }}>
+                      {', '}{diff12m > 0 ? '+' : ''}{diff12m.toFixed(decimals)}
+                    </span>
+                  )})
+                </span>
+              )}
             </div>
             {diff !== null && (
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.04em', lineHeight: 1, color: diff > 0 ? 'var(--red)' : diff < 0 ? 'var(--green)' : 'var(--text3)' }}>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.04em', lineHeight: 1, color: diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red)' : 'var(--text3)' }}>
                 {diff > 0 ? '+' : ''}{diff.toFixed(decimals)}
               </div>
             )}
