@@ -62,23 +62,23 @@ function MetricRow({ label, value, prevValue, values, color, fontSize = 28, deci
           {value.toFixed(decimals)}
         </div>
         {prevValue !== undefined && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.06em', lineHeight: 1 }}>
-              was {prevValue.toFixed(decimals)}
-              {value12mAgo !== undefined && (
-                <span style={{ color: 'var(--text4)' }}>
-                  {' '}(12m: {value12mAgo.toFixed(decimals)}
-                  {diff12m !== null && (
-                    <span style={{ color: diff12m > 0 ? 'var(--green)' : diff12m < 0 ? 'var(--red)' : 'var(--text4)' }}>
-                      {', '}{diff12m > 0 ? '+' : ''}{diff12m.toFixed(decimals)}
-                    </span>
-                  )})
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.06em', lineHeight: 1.3 }}>
+              last: {prevValue.toFixed(decimals)}
+              {diff !== null && (
+                <span style={{ color: diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red)' : 'var(--text3)' }}>
+                  {' '}{diff > 0 ? '+' : ''}{diff.toFixed(decimals)}
                 </span>
               )}
             </div>
-            {diff !== null && (
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.04em', lineHeight: 1, color: diff > 0 ? 'var(--green)' : diff < 0 ? 'var(--red)' : 'var(--text3)' }}>
-                {diff > 0 ? '+' : ''}{diff.toFixed(decimals)}
+            {value12mAgo !== undefined && (
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text4)', letterSpacing: '.06em', lineHeight: 1.3 }}>
+                12m: {value12mAgo.toFixed(decimals)}
+                {diff12m !== null && (
+                  <span style={{ color: diff12m > 0 ? 'var(--green)' : diff12m < 0 ? 'var(--red)' : 'var(--text4)' }}>
+                    {', '}{diff12m > 0 ? '+' : ''}{diff12m.toFixed(decimals)}
+                  </span>
+                )}
               </div>
             )}
           </div>

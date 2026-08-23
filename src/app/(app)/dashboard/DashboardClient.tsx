@@ -327,8 +327,10 @@ export default function DashboardClient({
       for (const entry of entries) {
         const w = entry.contentRect.width;
         const h = entry.contentRect.height;
-        // Reserve 60px vertical buffer so nodes at the orbital edges don't get clipped
-        setOrbitalScale(Math.min(1, Math.min(w, h - 60) / 480));
+        // VOICE sits at top:15 with its label above it — unscaled that pokes ~57px
+        // above the 480px orbital box. Reserve enough vertical buffer that even at
+        // scale 1 the label clears the box, not just the node circle.
+        setOrbitalScale(Math.min(1, Math.min(w, h - 140) / 480));
       }
     });
     obs.observe(orbitalWrapRef.current);
