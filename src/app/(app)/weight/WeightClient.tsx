@@ -33,14 +33,12 @@ function linearRegression(xs: number[], ys: number[]): { slope: number; intercep
   return { slope, intercept: my - slope * mx };
 }
 
-function chartPaths(logs: WeightEntry[], w: number, h: number): { actual: string; prediction: string; predVal: number } {
+function chartPaths(logs: WeightEntry[], w: number, h: number, visibleDays: number): { actual: string; prediction: string; predVal: number } {
   const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
   if (sorted.length < 2) return { actual: '', prediction: '', predVal: 0 };
 
-  const vals = sorted.map(l => l.value);
-  const allProjected: number[] = [];
-
-  // Regresión sobre los últimos 30 puntos
+  // La regresión usa siempre el historial completo (hasta 30 puntos) — más datos, mejor tendencia.
+  // Sólo la ventana visible de la línea "real" cambia con el rango elegido.
   const recent = sorted.slice(-30);
   const xs = recent.map((_, i) => i);
   const ys = recent.map(l => l.value);
@@ -51,9 +49,14 @@ function chartPaths(logs: WeightEntry[], w: number, h: number): { actual: string
   const projVals = Array.from({ length: projDays + 1 }, (_, i) =>
     intercept + slope * (xs.length - 1 + i)
   );
-  allProjected.push(...projVals);
 
-  const allVals = [...vals, ...allProjected];
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - visibleDays);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  const visible = sorted.filter(l => l.date >= cutoffStr);
+  const vals = (visible.length >= 2 ? visible : sorted).map(l => l.value);
+
+  const allVals = [...vals, ...projVals];
   const min = Math.min(...allVals) - 0.5;
   const max = Math.max(...allVals) + 0.5;
   const toY = (v: number) => h - ((v - min) / (max - min)) * h;
@@ -125,12 +128,20 @@ function EntryForm({ onSaved }: { onSaved: (e: WeightEntry) => void }) {
   );
 }
 
+const RANGES = [
+  { days: 7,  label: 'SEMANA' },
+  { days: 15, label: 'QUINCENA' },
+  { days: 30, label: 'MES' },
+  { days: 90, label: 'TODO' },
+];
+
 export default function WeightClient({ initialLogs }: { initialLogs: WeightEntry[] }) {
   const router = useRouter();
   const [logs, setLogs] = useState(initialLogs);
+  const [range, setRange] = useState(30);
   const sorted = [...logs].sort((a, b) => b.date.localeCompare(a.date));
   const W = 400; const H = 80;
-  const { actual: path, prediction: predPath, predVal } = chartPaths(logs, W, H);
+  const { actual: path, prediction: predPath, predVal } = chartPaths(logs, W, H, range);
   const latest = sorted[0];
   const prev = sorted[1];
   const trend = latest && prev
@@ -173,6 +184,24 @@ export default function WeightClient({ initialLogs }: { initialLogs: WeightEntry
                 {trend.label}
               </div>
             )}
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+            {RANGES.map(r => (
+              <button
+                key={r.days}
+                onClick={() => setRange(r.days)}
+                style={{
+                  padding: '4px 10px', borderRadius: 999,
+                  border: `.5px solid ${range === r.days ? 'var(--gold2)' : 'var(--bg4)'}`,
+                  background: range === r.days ? 'var(--gold-subtle)' : 'transparent',
+                  color: range === r.days ? 'var(--gold2)' : 'var(--text3)',
+                  fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.1em',
+                  cursor: 'pointer',
+                }}
+              >
+                {r.label}
+              </button>
+            ))}
           </div>
           <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', overflow: 'visible' }}>
             <path d={path} fill="none" stroke="var(--green)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />

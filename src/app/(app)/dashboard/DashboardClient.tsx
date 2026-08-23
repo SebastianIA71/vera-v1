@@ -497,7 +497,7 @@ export default function DashboardClient({
 
 
           {/* Orbital map */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', overflow: 'visible' }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', paddingTop: 16, overflow: 'visible' }}>
 
             {/* ── LEFT: KPI zone (30%) ── */}
             <div style={{ flex: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', padding: '0 8px' }}>

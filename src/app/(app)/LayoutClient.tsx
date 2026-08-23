@@ -7,10 +7,10 @@ import { ToastProvider } from '@/components/ui/Toast';
 import OfflineBanner from '@/components/ui/OfflineBanner';
 import { SearchProvider } from '@/components/ui/SearchModal';
 
-export default function LayoutClient({ children, tasksCount = 0, inboxCount = 0 }: { children: React.ReactNode; tasksCount?: number; inboxCount?: number }) {
+export default function LayoutClient({ children, tasksCount = 0, urgentTasksCount = 0, inboxCount = 0 }: { children: React.ReactNode; tasksCount?: number; urgentTasksCount?: number; inboxCount?: number }) {
   return (
     <ThemeProvider>
-      <NavCountsProvider tasksCount={tasksCount} inboxCount={inboxCount}>
+      <NavCountsProvider tasksCount={tasksCount} urgentTasksCount={urgentTasksCount} inboxCount={inboxCount}>
         <ToastProvider>
           <SearchProvider>
             <OfflineBanner />

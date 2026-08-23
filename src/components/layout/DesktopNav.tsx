@@ -27,7 +27,7 @@ function NavItem({ icon, label, active, badge, badgeColor = 'var(--red)', onClic
   icon: string;
   label: string;
   active?: boolean;
-  badge?: number;
+  badge?: number | string;
   badgeColor?: string;
   onClick?: () => void;
 }) {
@@ -58,7 +58,7 @@ function NavItem({ icon, label, active, badge, badgeColor = 'var(--red)', onClic
       }}>
         {label}
       </span>
-      {badge !== undefined && badge > 0 && (
+      {badge !== undefined && badge !== 0 && (
         <span style={{
           marginLeft: 'auto', background: badgeColor, color: '#fff',
           fontFamily: 'var(--font-dm-mono)', fontSize: '11px',
@@ -80,7 +80,8 @@ export default function DesktopNav({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { tasksCount, inboxCount } = useNavCounts();
+  const { tasksCount, urgentTasksCount, inboxCount } = useNavCounts();
+  const tasksBadge = tasksCount > 0 ? (urgentTasksCount > 0 ? `${tasksCount} · ${urgentTasksCount}` : tasksCount) : undefined;
 
   const isActive = (path: string) => {
     if (activeOverride) return activeOverride === path;
@@ -107,7 +108,7 @@ export default function DesktopNav({
       }}
     >
       <NavItem icon="command"  label="COMMAND"    active={isActive('/dashboard')} onClick={() => router.push('/dashboard')} />
-      <NavItem icon="tasks"    label="TAREAS"      active={isActive('/tasks')}      badge={tasksCount  > 0 ? tasksCount  : undefined} badgeColor="var(--red)"   onClick={() => router.push('/tasks')} />
+      <NavItem icon="tasks"    label="TAREAS"      active={isActive('/tasks')}      badge={tasksBadge} badgeColor={urgentTasksCount > 0 ? 'var(--red)' : 'var(--text3)'} onClick={() => router.push('/tasks')} />
       <NavItem icon="inbox"    label="INBOX"       active={isActive('/inbox')}      badge={inboxCount  > 0 ? inboxCount  : undefined} badgeColor="var(--amber)" onClick={() => router.push('/inbox')} />
       <NavItem icon="trips"    label="EVENTOS"     active={isActive('/trips')}      onClick={() => router.push('/trips')} />
       <NavItem icon="props"    label="PROPIEDADES" active={isActive('/properties')} onClick={() => router.push('/properties')} />
