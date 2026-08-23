@@ -12,12 +12,13 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const force = searchParams.get('force') === '1';
+  const requestedTaskId = searchParams.get('taskId') ? parseInt(searchParams.get('taskId')!) : null;
 
   const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Madrid' });
   const key = `daily_insight_${today}`;
 
-  // Devolver cached si ya existe hoy (salvo que force=1)
-  if (!force) {
+  // Devolver cached si ya existe hoy (salvo que force=1 o se pida una tarea concreta)
+  if (!force && requestedTaskId === null) {
     const [cached] = await db.select().from(memory).where(eq(memory.key, key)).limit(1);
     if (cached?.value) {
       return NextResponse.json(JSON.parse(cached.value));
@@ -33,13 +34,21 @@ export async function GET(req: Request) {
   const candidates = allActive.filter(t => (t.prioFinal ?? 0) >= 1 && (t.prioFinal ?? 0) <= 6);
 
   if (candidates.length === 0) {
-    return NextResponse.json({ taskTitle: null, taskPrio: 0, mode: 'no_tasks', ideas: [], date: today });
+    return NextResponse.json({ taskTitle: null, taskPrio: 0, mode: 'no_tasks', ideas: [], date: today, candidates: [] });
   }
 
-  // En regeneración forzada, elegir tarea diferente (aleatoria)
-  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
-  const idx = force ? Math.floor(Math.random() * candidates.length) : dayOfYear % candidates.length;
-  const task = candidates[idx];
+  let task = candidates.find(t => t.id === requestedTaskId);
+  if (!task) {
+    // En regeneración forzada, elegir tarea diferente (aleatoria)
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+    const idx = force ? Math.floor(Math.random() * candidates.length) : dayOfYear % candidates.length;
+    task = candidates[idx];
+  }
+
+  // Recordar la selección para que Vera (Jarvis) pueda referirse a "esta tarea"
+  await db.insert(memory).values({ key: 'pick_selected_task_id', value: String(task.id), updatedAt: new Date() })
+    .onConflictDoUpdate({ target: memory.key, set: { value: String(task.id), updatedAt: new Date() } })
+    .catch(() => {});
 
   const searchResult = await runSearchAgent(`${task.title} opciones consejos guía`);
 
@@ -83,10 +92,16 @@ export async function GET(req: Request) {
     return trimmed;
   }).filter((_, i) => totalLen < 600 && i < 3);
 
-  const insight = { taskTitle: task.title, taskPrio: task.prioFinal ?? 0, mode, ideas: trimmedIdeas, date: today };
+  const insight = {
+    taskId: task.id, taskTitle: task.title, taskPrio: task.prioFinal ?? 0, mode, ideas: trimmedIdeas, date: today,
+    candidates: candidates.map(c => ({ id: c.id, title: c.title, prioFinal: c.prioFinal ?? 0 })),
+  };
 
-  await db.insert(memory).values({ key, value: JSON.stringify(insight), updatedAt: new Date() })
-    .onConflictDoUpdate({ target: memory.key, set: { value: JSON.stringify(insight), updatedAt: new Date() } });
+  // Sólo cachear como "el pick del día" cuando es la selección natural, no una navegación manual
+  if (requestedTaskId === null) {
+    await db.insert(memory).values({ key, value: JSON.stringify(insight), updatedAt: new Date() })
+      .onConflictDoUpdate({ target: memory.key, set: { value: JSON.stringify(insight), updatedAt: new Date() } });
+  }
 
   return NextResponse.json(insight);
 }

@@ -1,6 +1,6 @@
 import { callClaude } from '@/lib/claude';
 import { db } from '@/lib/db';
-import { tasks, events, weightLog, inbox, projects, contacts, notifications } from '@/lib/db/schema';
+import { tasks, events, weightLog, inbox, projects, contacts, notifications, memory } from '@/lib/db/schema';
 import { ne, desc, eq, and, gte } from 'drizzle-orm';
 import { sendPush } from '@/lib/push';
 import { runSearchAgent } from '@/lib/agents/SearchAgent';
@@ -27,6 +27,7 @@ interface JarvisContext {
   inboxPending:    number;
   activeProjects:  string;
   overdueContacts: string;
+  pickSelectedTask: string;
 }
 
 async function buildContext(): Promise<JarvisContext> {
@@ -40,7 +41,7 @@ async function buildContext(): Promise<JarvisContext> {
   const today = `${DAYS[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]} · ${hh}:${mm}h`;
 
   // Consultas en paralelo
-  const [urgentRows, allEvents, weightRows, inboxRows, projectRows, contactRows] = await Promise.all([
+  const [urgentRows, allEvents, weightRows, inboxRows, projectRows, contactRows, pickRow] = await Promise.all([
     db.select({ title: tasks.title, prioFinal: tasks.prioFinal, propertyId: tasks.propertyId })
       .from(tasks)
       .where(and(ne(tasks.status, 'archived'), ne(tasks.status, 'done'), gte(tasks.prioFinal, 7)))
@@ -66,7 +67,17 @@ async function buildContext(): Promise<JarvisContext> {
     db.select({ name: contacts.name, lastContactAt: contacts.lastContactAt, frequencyDays: contacts.frequencyDays })
       .from(contacts)
       .limit(20),
+    db.select({ value: memory.value }).from(memory).where(eq(memory.key, 'pick_selected_task_id')).limit(1),
   ]);
+
+  // Tarea seleccionada actualmente en el widget PICK del dashboard
+  let pickSelectedTask = 'ninguna';
+  const pickTaskId = pickRow[0]?.value ? parseInt(pickRow[0].value) : null;
+  if (pickTaskId) {
+    const [pt] = await db.select({ title: tasks.title, detail: tasks.detail, prioFinal: tasks.prioFinal })
+      .from(tasks).where(eq(tasks.id, pickTaskId)).limit(1);
+    if (pt) pickSelectedTask = `"${pt.title}"${pt.detail ? ` — ${pt.detail}` : ''} [p${pt.prioFinal ?? 0}]`;
+  }
 
   // Tareas urgentes
   const urgentTasks = urgentRows.length === 0
@@ -114,7 +125,7 @@ async function buildContext(): Promise<JarvisContext> {
   return {
     today, urgentTasks, nextTrip, lastWeight,
     inboxPending: inboxRows.length,
-    activeProjects, overdueContacts,
+    activeProjects, overdueContacts, pickSelectedTask,
   };
 }
 
@@ -149,6 +160,7 @@ Tareas urgentes (prio ≥7): ${ctx.urgentTasks}
 Inbox sin procesar: ${ctx.inboxPending} capturas
 Proyectos activos: ${ctx.activeProjects}
 Contactos sociales pendientes: ${ctx.overdueContacts}
+Tarea seleccionada ahora mismo en el widget PICK del dashboard: ${ctx.pickSelectedTask}
 ${searchSnippet ? `\n## Resultados de búsqueda relevantes\n${searchSnippet}` : ''}
 ## Principio de Sebastián
 Antes de gastar, agotar opciones propias: gratis → propio → conocido → búsqueda → profesional.
@@ -156,6 +168,8 @@ Antes de gastar, agotar opciones propias: gratis → propio → conocido → bú
 ## Respuesta
 Usa el contexto para dar respuestas específicas a SU vida, no genéricas.
 Si puedes cruzar la pregunta con su contexto actual (tareas, viajes, propiedades), hazlo.
+Si la pregunta es ambigua o usa referencias como "esto", "esta tarea" o "lo que tengo seleccionado",
+asume que se refiere a la tarea seleccionada en PICK indicada arriba.
 
 Al terminar añade exactamente estas dos líneas (obligatorio):
 TASK_TITLE: [título de 3-8 palabras para la tarea creada en Vera]

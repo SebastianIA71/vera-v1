@@ -21,8 +21,8 @@ function Sparkline({ values, compareValues, color, height = 28 }: { values: numb
     <svg viewBox={`0 0 ${W} ${height}`} width="100%" height={height}
       preserveAspectRatio="none" style={{ display: 'block', overflow: 'visible' }}>
       {hasCompare && (
-        <polyline points={toPts(compareValues!)} fill="none" stroke="var(--text3)" strokeWidth="1.3"
-          strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.4"
+        <polyline points={toPts(compareValues!)} fill="none" stroke="#8a8a8a" strokeWidth="1.5"
+          strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.85"
           vectorEffect="non-scaling-stroke" />
       )}
       <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8"

@@ -32,6 +32,7 @@ type Task = {
 };
 type CompletingTask = Task & { completingAt: number };
 type WeightLogEntry = { date: string; value: number };
+type VehicleSummary = { id: number; name: string; latestKm: number | null; contractKmTotal: number | null; pct: number | null };
 
 /* ─── Constants ─────────────────────────────────────── */
 const DAYS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
@@ -59,6 +60,27 @@ function AgentIcon({ icon }: { icon: string }) {
     case 'search': return <svg viewBox="0 0 24 24" width={20} height={20} {...s}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
     default:       return null;
   }
+}
+
+/* ─── Mini sparkline (peso) ─────────────────────────── */
+function MiniSparkline({ values, color, width = 100, height = 32 }: { values: number[]; color: string; width?: number; height?: number }) {
+  if (values.length < 2) return null;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const pad = 3;
+  const pts = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * width;
+    const y = height - pad - ((v - min) / range) * (height - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const lastY = height - pad - ((values[values.length - 1] - min) / range) * (height - pad * 2);
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} preserveAspectRatio="none" style={{ display: 'block', overflow: 'visible' }}>
+      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.6" vectorEffect="non-scaling-stroke" />
+      <circle cx={width} cy={lastY} r="2.5" fill={color} vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
 }
 
 /* ─── Right Panel ───────────────────────────────────── */
@@ -278,6 +300,7 @@ export default function DashboardClient({
   todaySnm = [],
   financeRecords = [],
   weightLogs = [],
+  vehicles = [],
 }: {
   initialTasks: Task[];
   urgentCount: number;
@@ -289,6 +312,7 @@ export default function DashboardClient({
   todaySnm?: string[];
   financeRecords?: { calcD: number|null; calcB: number|null; calcA: number|null; calcE: number|null }[];
   weightLogs?: WeightLogEntry[];
+  vehicles?: VehicleSummary[];
 }) {
   const router = useRouter();
   const [time, setTime] = useState('');
@@ -631,6 +655,52 @@ export default function DashboardClient({
               </div>
             </div>
 
+          </div>
+
+          {/* Peso + Vehículos */}
+          <div style={{ padding: '4px 24px 0', display: 'flex', gap: 16, flexShrink: 0 }}>
+            {/* Peso */}
+            <div style={{ flex: 1, minWidth: 0, background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '10px 14px', cursor: 'pointer' }} onClick={() => router.push('/weight')}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text3)' }}>PESO</div>
+                {wTrendLabel && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: wTrendColor }}>
+                    <span style={{ width: 4, height: 4, borderRadius: '50%', background: wTrendColor, display: 'inline-block' }} />
+                    {wTrendLabel}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 22, color: 'var(--text)', flexShrink: 0 }}>
+                  {latestW ? `${latestW.value}` : '—'}<span style={{ fontSize: 11, color: 'var(--text3)', marginLeft: 3 }}>kg</span>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <MiniSparkline values={[...weightLogs].reverse().map(w => w.value)} color="var(--amber)" height={30} />
+                </div>
+              </div>
+            </div>
+
+            {/* Vehículos */}
+            <div style={{ flex: 1, minWidth: 0, background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '10px 14px', cursor: 'pointer' }} onClick={() => router.push('/vehicles')}>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text3)', marginBottom: 6 }}>VEHÍCULOS</div>
+              {vehicles.length === 0 ? (
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)' }}>—</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  {vehicles.slice(0, 2).map(v => (
+                    <div key={v.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {v.name}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', flexShrink: 0 }}>
+                        {v.latestKm !== null ? `${v.latestKm.toLocaleString('es')} km` : 'sin km'}
+                        {v.pct !== null && <span style={{ color: 'var(--cyan)', marginLeft: 6 }}>{v.pct}%</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Briefing diario */}

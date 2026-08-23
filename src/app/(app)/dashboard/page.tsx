@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { tasks, events, inbox, properties, weightLog, projects, financeRecords, vehicles, contracts } from '@/lib/db/schema';
+import { tasks, events, inbox, properties, weightLog, projects, financeRecords, vehicles, contracts, kmLogs } from '@/lib/db/schema';
 import { ne, desc, sql, and, or, isNull, lte, eq } from 'drizzle-orm';
 import DashboardClient from './DashboardClient';
 
@@ -8,24 +8,25 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage() {
   const now = new Date();
 
-  const [allTasks, allEvents, allProperties, weightLogs, allProjects, financeData, allVehicles, allContracts] = await Promise.all([
+  const [allTasks, doneCountRows, allEvents, allProperties, weightLogs, allProjects, financeData, allVehicles, allContracts, allKmLogs] = await Promise.all([
     db.select().from(tasks).where(and(
       ne(tasks.status, 'archived'),
+      ne(tasks.status, 'done'),
       or(isNull(tasks.snoozedUntil), lte(tasks.snoozedUntil, now))!,
     )).orderBy(desc(tasks.prioFinal), desc(tasks.prio)).limit(100),
+    db.select({ count: sql<number>`count(*)` }).from(tasks).where(eq(tasks.status, 'done')),
     db.select().from(events).orderBy(desc(events.startDate)).limit(20),
     db.select().from(properties),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(14),
     db.select({ id: projects.id }).from(projects).where(ne(projects.status, 'archived')),
     db.select({ calcD: financeRecords.calcD, calcB: financeRecords.calcB, calcA: financeRecords.calcA, calcE: financeRecords.calcE })
       .from(financeRecords).orderBy(desc(financeRecords.date)).limit(24),
-    db.select({ id: vehicles.id }).from(vehicles).where(eq(vehicles.active, true)),
+    db.select().from(vehicles).where(eq(vehicles.active, true)),
     db.select({ id: contracts.id }).from(contracts).where(eq(contracts.active, true)),
+    db.select().from(kmLogs).orderBy(desc(kmLogs.date)),
   ]);
 
-  const urgentTasks = allTasks.filter(t =>
-    (t.prioFinal ?? 0) >= 8 && t.status !== 'done' && t.status !== 'archived'
-  );
+  const urgentTasks = allTasks.filter(t => (t.prioFinal ?? 0) >= 8);
 
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -42,8 +43,8 @@ export default async function DashboardPage() {
   const inboxCount = allInboxItems.filter(i => !i.processed).length;
 
   const upcomingEvents = allEvents.filter(e => e.startDate && e.startDate >= todayStart);
-  const tasksActive   = allTasks.filter(t => t.status !== 'done').length;
-  const tasksDone     = allTasks.filter(t => t.status === 'done').length;
+  const tasksActive   = allTasks.length;
+  const tasksDone     = doneCountRows[0]?.count ?? 0;
   const tripsCount    = upcomingEvents.filter(e => e.type === 'viaje').length;
   const eventsCount   = upcomingEvents.filter(e => e.type !== 'viaje').length;
   const propsCount    = allProperties.length;
@@ -69,6 +70,12 @@ export default async function DashboardPage() {
     ? Math.ceil((nextEventItem.startDate.getTime() - now.getTime()) / 86400000)
     : null;
 
+  const vehicleSummaries = allVehicles.map(v => {
+    const latestKm = allKmLogs.find(k => k.vehicleId === v.id)?.km ?? null;
+    const pct = latestKm !== null && v.contractKmTotal ? Math.min(100, Math.round((latestKm / v.contractKmTotal) * 100)) : null;
+    return { id: v.id, name: v.name, latestKm, contractKmTotal: v.contractKmTotal, pct };
+  });
+
   return (
     <DashboardClient
       initialTasks={allTasks}
@@ -81,6 +88,7 @@ export default async function DashboardPage() {
       todaySnm={todaySnm}
       kpis={{ tasksActive, tasksDone, inboxPending: inboxCount, tripsCount, eventsCount, propsCount, projectsCount, currentWeight, vehiclesCount: allVehicles.length, contractsActive: allContracts.length }}
       financeRecords={financeData}
+      vehicles={vehicleSummaries}
     />
   );
 }
