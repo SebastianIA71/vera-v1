@@ -6,6 +6,7 @@ import { OBJECTIVE_TIERS, TIER_LABEL, type ObjectiveTier } from '@/lib/objective
 type Project = {
   id: number; name: string; description: string | null; color: string | null; icon: string | null; status: string | null;
   dueDate: Date | string | null;
+  iconUrl?: string | null;
   isObjective?: boolean | null;
   objectiveTier?: string | null;
   objectiveStartedAt?: Date | string | null;
@@ -62,6 +63,10 @@ export default function NewProjectSheet({
   const isEdit = !!editProject;
   const canSave = form.name.trim().length > 0;
 
+  const [iconUrl, setIconUrl] = useState<string | null>(editProject?.iconUrl ?? null);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
+  const [iconError, setIconError] = useState<string | null>(null);
+
   const save = async () => {
     if (!canSave || saving) return;
     setSaving(true);
@@ -82,6 +87,42 @@ export default function NewProjectSheet({
     } finally { setSaving(false); }
   };
 
+  const uploadIcon = async (file: File) => {
+    if (!editProject) return;
+    setIconError(null);
+    setUploadingIcon(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`/api/projects/${editProject.id}/icon`, { method: 'POST', body: fd });
+      const row = await res.json();
+      if (res.ok) {
+        setIconUrl(row.iconUrl);
+        onSaved?.({ ...editProject, iconUrl: row.iconUrl });
+        router.refresh();
+      } else {
+        setIconError(row.error ?? 'No se pudo subir la imagen');
+      }
+    } catch {
+      setIconError('No se pudo subir la imagen');
+    } finally {
+      setUploadingIcon(false);
+    }
+  };
+
+  const removeIcon = async () => {
+    if (!editProject) return;
+    setUploadingIcon(true);
+    try {
+      await fetch(`/api/projects/${editProject.id}/icon`, { method: 'DELETE' });
+      setIconUrl(null);
+      onSaved?.({ ...editProject, iconUrl: null });
+      router.refresh();
+    } finally {
+      setUploadingIcon(false);
+    }
+  };
+
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 200, backdropFilter: 'blur(2px)' }} />
@@ -93,8 +134,10 @@ export default function NewProjectSheet({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {/* Header preview */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 12, background: `${form.color}22`, border: `.5px solid ${form.color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>
-              {form.icon || <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, color: form.color, opacity: 0.5 }}>◆</span>}
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: `${form.color}22`, border: `.5px solid ${form.color}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, overflow: 'hidden' }}>
+              {iconUrl
+                ? <img src={iconUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : (form.icon || <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 18, color: form.color, opacity: 0.5 }}>◆</span>)}
             </div>
             <input autoFocus value={form.name} onChange={e => set('name', e.target.value)} onKeyDown={e => e.key === 'Enter' && save()} placeholder="Nombre del proyecto..." style={{ ...INPUT, fontSize: 17, fontFamily: 'var(--font-syne)', fontWeight: 500 }} />
           </div>
@@ -103,29 +146,65 @@ export default function NewProjectSheet({
 
           <div>
             <label style={LABEL}>ICONO</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 4, marginBottom: 8, maxHeight: 76, overflowY: 'auto' }}>
-              {PROJECT_ICONS.map(ic => (
+
+            {iconUrl ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <img src={iconUrl} alt="" style={{ width: 44, height: 44, borderRadius: 12, objectFit: 'cover', border: '.5px solid var(--bg4)', flexShrink: 0 }} />
                 <button
-                  key={ic}
-                  onClick={() => set('icon', form.icon === ic ? '' : ic)}
-                  style={{
-                    width: '100%', aspectRatio: '1', borderRadius: 6, fontSize: 16, cursor: 'pointer',
-                    border: form.icon === ic ? `.5px solid ${form.color}` : '.5px solid transparent',
-                    background: form.icon === ic ? `${form.color}20` : 'var(--bg3)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'background .1s', padding: 0,
-                  }}
+                  type="button"
+                  onClick={removeIcon}
+                  disabled={uploadingIcon}
+                  style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.14em', padding: '7px 12px', borderRadius: 8, border: '.5px solid var(--bg4)', background: 'transparent', color: 'var(--text3)', cursor: uploadingIcon ? 'default' : 'pointer', opacity: uploadingIcon ? 0.5 : 1 }}
                 >
-                  {ic}
+                  {uploadingIcon ? '...' : 'QUITAR IMAGEN'}
                 </button>
-              ))}
-            </div>
-            <input
-              value={form.icon}
-              onChange={e => set('icon', e.target.value.slice(0, 5))}
-              placeholder="O escribe cualquier emoji..."
-              style={{ ...INPUT, fontSize: 13 }}
-            />
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: 4, marginBottom: 8, maxHeight: 76, overflowY: 'auto' }}>
+                  {PROJECT_ICONS.map(ic => (
+                    <button
+                      key={ic}
+                      onClick={() => set('icon', form.icon === ic ? '' : ic)}
+                      style={{
+                        width: '100%', aspectRatio: '1', borderRadius: 6, fontSize: 16, cursor: 'pointer',
+                        border: form.icon === ic ? `.5px solid ${form.color}` : '.5px solid transparent',
+                        background: form.icon === ic ? `${form.color}20` : 'var(--bg3)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'background .1s', padding: 0,
+                      }}
+                    >
+                      {ic}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  value={form.icon}
+                  onChange={e => set('icon', e.target.value.slice(0, 5))}
+                  placeholder="O escribe cualquier emoji..."
+                  style={{ ...INPUT, fontSize: 13 }}
+                />
+                {isEdit ? (
+                  <label style={{ display: 'inline-block', marginTop: 8, fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em', color: uploadingIcon ? 'var(--text3)' : 'var(--gold2)', cursor: uploadingIcon ? 'default' : 'pointer' }}>
+                    {uploadingIcon ? 'SUBIENDO...' : 'O SUBE UNA IMAGEN (JPG · PNG · GIF · WEBP)'}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/gif,image/webp"
+                      disabled={uploadingIcon}
+                      onChange={e => { const f = e.target.files?.[0]; if (f) uploadIcon(f); e.target.value = ''; }}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                ) : (
+                  <div style={{ marginTop: 8, fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.08em', color: 'var(--text3)' }}>
+                    PODRÁS SUBIR UNA IMAGEN PERSONALIZADA DESPUÉS DE CREAR EL PROYECTO
+                  </div>
+                )}
+                {iconError && (
+                  <div style={{ marginTop: 6, fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.06em', color: 'var(--red)' }}>{iconError}</div>
+                )}
+              </>
+            )}
           </div>
 
           <div>

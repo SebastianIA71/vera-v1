@@ -50,7 +50,7 @@ export default async function MorningPage() {
     .filter(p => p.isObjective && p.objectiveTier && p.dueDate)
     .map(p => {
       const daysTo = Math.ceil((p.dueDate!.getTime() - now.getTime()) / 86400000);
-      return { id: p.id, name: p.name, color: p.color, icon: p.icon, daysTo, tier: p.objectiveTier as ObjectiveTier } as Objective;
+      return { id: p.id, name: p.name, color: p.color, icon: p.icon, iconUrl: p.iconUrl, daysTo, tier: p.objectiveTier as ObjectiveTier } as Objective;
     });
 
   const byTier = (tier: ObjectiveTier, limit: number) =>

@@ -127,6 +127,10 @@ export async function runAutoMigrations(): Promise<void> {
       id:  'projects.objective_renewals',
       sql: 'ALTER TABLE projects ADD COLUMN objective_renewals INTEGER DEFAULT 0',
     },
+    {
+      id:  'projects.icon_url',
+      sql: 'ALTER TABLE projects ADD COLUMN icon_url TEXT',
+    },
   ];
 
   for (const m of migrations) {

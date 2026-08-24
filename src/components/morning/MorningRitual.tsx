@@ -28,6 +28,7 @@ export type Objective = {
   name: string;
   color?: string | null;
   icon?: string | null;
+  iconUrl?: string | null;
   daysTo: number;
   tier: ObjectiveTier;
 };
@@ -134,7 +135,9 @@ function ObjectiveCard({ objective, index }: { objective: Objective; index: numb
   const dotColor = objective.color ?? 'var(--gold)';
   return (
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: index === 0 ? 14 : 10 }}>
-      {objective.icon ? (
+      {objective.iconUrl ? (
+        <img src={objective.iconUrl} alt="" style={{ width: Math.round(sizeMeta.fontSize * 1.1), height: Math.round(sizeMeta.fontSize * 1.1), borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+      ) : objective.icon ? (
         <span style={{ fontSize: Math.round(sizeMeta.fontSize * 0.85), lineHeight: 1.15, flexShrink: 0 }}>{objective.icon}</span>
       ) : (
         <span style={{ width: 7, height: 7, borderRadius: '50%', background: dotColor, marginTop: Math.round(sizeMeta.fontSize * 0.45), flexShrink: 0 }} />

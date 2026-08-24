@@ -13,6 +13,7 @@ const NewTaskModal    = dynamic(() => import('@/components/tasks/NewTaskModal'),
 type Project = {
   id: number; name: string; description: string | null; color: string | null; icon: string | null; status: string | null;
   dueDate: Date | null; createdAt: Date | null;
+  iconUrl?: string | null;
   isObjective?: boolean | null;
   objectiveTier?: string | null;
   objectiveStartedAt?: Date | null;
@@ -55,9 +56,11 @@ function ProjectCard({ project, selected, tasks, onClick }: { project: Project; 
       onMouseLeave={e => { if (!selected) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-        {project.icon
-          ? <span style={{ fontSize: 14, flexShrink: 0, lineHeight: 1 }}>{project.icon}</span>
-          : <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />}
+        {project.iconUrl
+          ? <img src={project.iconUrl} alt="" style={{ width: 18, height: 18, borderRadius: 5, objectFit: 'cover', flexShrink: 0 }} />
+          : project.icon
+            ? <span style={{ fontSize: 14, flexShrink: 0, lineHeight: 1 }}>{project.icon}</span>
+            : <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />}
         <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.name}</span>
         {project.isObjective && project.objectiveTier && (
           <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--gold2)', flexShrink: 0, padding: '1px 6px', borderRadius: 999, border: '.5px solid rgba(196,168,106,.4)' }}>
@@ -126,9 +129,11 @@ function ProjectDetail({ project, tasks, onEdit, onArchive, onTaskCreated, onTas
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              {project.icon
-                ? <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>{project.icon}</span>
-                : <span style={{ width: 12, height: 12, borderRadius: '50%', background: color, flexShrink: 0 }} />}
+              {project.iconUrl
+                ? <img src={project.iconUrl} alt="" style={{ width: 26, height: 26, borderRadius: 7, objectFit: 'cover', flexShrink: 0 }} />
+                : project.icon
+                  ? <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>{project.icon}</span>
+                  : <span style={{ width: 12, height: 12, borderRadius: '50%', background: color, flexShrink: 0 }} />}
               <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: 20, color: 'var(--text)', letterSpacing: '-.01em' }}>
                 {project.name}
               </span>
