@@ -9,6 +9,7 @@ type Task = {
   title: string;
   detail?: string | null;
   propertyId?: string | null;
+  projectId?: number | null;
   prioFinal?: number | null;
   tags?: string | null;
   lastActionAt?: number | null;
@@ -21,6 +22,17 @@ type WeightLog = {
   notes?: string | null;
 };
 
+export type ObjectiveTier = 'semanal' | 'quincenal' | 'mensual' | 'trimestral';
+export type Objective = {
+  id: number;
+  name: string;
+  color?: string | null;
+  icon?: string | null;
+  daysTo: number;
+  tier: ObjectiveTier;
+};
+type ProjectMeta = { name: string; color: string | null };
+
 const SNM = [
   { key: 'snmAgua',     icon: '💧', label: 'Agua' },
   { key: 'snmCaminar',  icon: '🚶', label: 'Caminar' },
@@ -31,6 +43,21 @@ const SNM = [
 
 const WEIGHT_DELTAS = [-0.5, -0.2, 0, +0.2, +0.5];
 
+const TIER_LABEL: Record<ObjectiveTier, string> = {
+  semanal: 'ESTA SEMANA',
+  quincenal: 'QUINCENAL',
+  mensual: 'MENSUAL',
+  trimestral: 'TRIMESTRAL',
+};
+
+const OBJECTIVE_SIZES = [
+  { fontSize: 21, fontWeight: 700, color: 'var(--text)' },
+  { fontSize: 17, fontWeight: 600, color: 'var(--text)' },
+  { fontSize: 15, fontWeight: 500, color: '#c8c6be' },
+  { fontSize: 13, fontWeight: 400, color: 'var(--text2)' },
+  { fontSize: 12, fontWeight: 400, color: 'var(--text3)' },
+];
+
 function getTimeGreeting(): string {
   const h = new Date().getHours();
   if (h < 12) return 'Buenos días';
@@ -38,49 +65,50 @@ function getTimeGreeting(): string {
   return 'Buenas noches';
 }
 
-function buildFocusReason(task: Task, all: Task[]): string {
-  const prio = task.prioFinal ?? 0;
-  const n = all.length;
-  const now = Date.now();
+const PHONE_RE = /\d{2,3}[\s.-]?\d{2}[\s.-]?\d{2}[\s.-]?\d{2}(?:[\s.-]?\d{2})?/;
+const CALL_WORD_RE = /llama|llamar|teléfono|telefono/i;
 
-  const daysSinceAction = task.lastActionAt
-    ? Math.floor((now - task.lastActionAt) / 86400000)
-    : null;
-  const daysSinceCreated = task.createdAt
-    ? Math.floor((now - task.createdAt) / 86400000)
-    : null;
+function buildInsight(tasks: Task[], projectsById: Record<number, ProjectMeta>): string | null {
+  if (tasks.length === 0) return null;
 
-  // Determinar texto de antigüedad
-  const ageText = (() => {
-    if (daysSinceAction === null) {
-      if (daysSinceCreated === null) return null;
-      if (daysSinceCreated === 0) return 'creada hoy';
-      return `en lista hace ${daysSinceCreated} día${daysSinceCreated === 1 ? '' : 's'}`;
+  // Mismo inmueble
+  const propCounts: Record<string, number> = {};
+  tasks.forEach(t => { if (t.propertyId) propCounts[t.propertyId] = (propCounts[t.propertyId] ?? 0) + 1; });
+  const sharedProperty = Object.entries(propCounts).find(([, c]) => c >= 2);
+  if (sharedProperty) {
+    return `${sharedProperty[1]} de estas tareas son de ${sharedProperty[0].toUpperCase()}. Resuélvelas juntas, en la misma visita.`;
+  }
+
+  // Mismo proyecto/objetivo
+  const projCounts: Record<number, number> = {};
+  tasks.forEach(t => { if (t.projectId) projCounts[t.projectId] = (projCounts[t.projectId] ?? 0) + 1; });
+  const sharedProjectEntry = Object.entries(projCounts).find(([, c]) => c >= 2);
+  if (sharedProjectEntry) {
+    const pid = Number(sharedProjectEntry[0]);
+    const pname = projectsById[pid]?.name ?? 'el mismo proyecto';
+    return `${sharedProjectEntry[1]} tareas pertenecen a ${pname}. Agrúpalas y avanza el proyecto de una sentada.`;
+  }
+
+  // Varias llamadas
+  const callish = tasks.filter(t => {
+    const text = `${t.title} ${t.detail ?? ''}`;
+    return PHONE_RE.test(text) || CALL_WORD_RE.test(text);
+  });
+  if (callish.length >= 2) {
+    return `Tienes ${callish.length} llamadas pendientes. Hazlas seguidas — cuesta menos arrancar una vez que ya tienes el teléfono en la mano.`;
+  }
+
+  // Una domina claramente en prioridad
+  if (tasks.length >= 2) {
+    const top = tasks[0];
+    const topPrio = top.prioFinal ?? 0;
+    const secondPrio = tasks[1].prioFinal ?? 0;
+    if (topPrio >= 8 && topPrio - secondPrio >= 3) {
+      return `"${top.title}" está muy por delante en prioridad. Resuélvela primero — decidir sobre el resto te costará menos después.`;
     }
-    if (daysSinceAction === 0) return 'tocada hoy';
-    if (daysSinceAction === 1) return 'sin mover desde ayer';
-    return `sin mover hace ${daysSinceAction} días`;
-  })();
+  }
 
-  if (prio >= 9) {
-    if (ageText && daysSinceAction !== null && daysSinceAction > 3)
-      return `Prio ${prio} — ${ageText}. La más crítica de ${n} activas. Hoy sí o sí.`;
-    return `La más crítica de ${n} activas con prio ${prio}. No puede esperar.`;
-  }
-  if (prio >= 8) {
-    if (ageText && daysSinceAction !== null && daysSinceAction > 7)
-      return `${ageText} y sigue en prio ${prio}. Entre ${n} urgentes, es la de mayor impacto hoy.`;
-    return `Prio ${prio} entre ${n} urgentes — la de mayor impacto si la mueves hoy.`;
-  }
-  if (prio >= 7) {
-    if (ageText && daysSinceAction !== null && daysSinceAction > 10)
-      return `${ageText}. Con ${n} urgentes en lista, esta va primero.`;
-    if (ageText)
-      return `Prio ${prio}, ${ageText}. Con ${n} urgentes — empieza aquí.`;
-    return `Con ${n} urgentes encima, esta va primero. Prio ${prio}.`;
-  }
-  if (ageText) return `La más relevante ahora. ${ageText}.${n > 1 ? ` El resto puede esperar.` : ''}`;
-  return `La más relevante ahora mismo.${n > 1 ? ` El resto puede esperar.` : ''}`;
+  return null;
 }
 
 function taskColor(prio: number): string {
@@ -101,29 +129,59 @@ function ProgressBar({ step }: { step: number }) {
   );
 }
 
-function FocusTaskCard({ task, isFocus }: { task: Task; isFocus: boolean }) {
+function ObjectiveCard({ objective, index }: { objective: Objective; index: number }) {
+  const sizeMeta = OBJECTIVE_SIZES[Math.min(index, OBJECTIVE_SIZES.length - 1)];
+  const dotColor = objective.color ?? 'var(--gold)';
+  return (
+    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: index === 0 ? 14 : 10 }}>
+      {objective.icon ? (
+        <span style={{ fontSize: Math.round(sizeMeta.fontSize * 0.85), lineHeight: 1.15, flexShrink: 0 }}>{objective.icon}</span>
+      ) : (
+        <span style={{ width: 7, height: 7, borderRadius: '50%', background: dotColor, marginTop: Math.round(sizeMeta.fontSize * 0.45), flexShrink: 0 }} />
+      )}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontFamily: 'var(--font-syne)', fontWeight: sizeMeta.fontWeight, fontSize: sizeMeta.fontSize, lineHeight: 1.25, letterSpacing: '-.01em', color: sizeMeta.color }}>
+          {objective.name}
+        </div>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.18em', color: 'var(--text3)', marginTop: 3 }}>
+          {TIER_LABEL[objective.tier]} · {objective.daysTo <= 0 ? 'VENCE HOY' : `${objective.daysTo} DÍA${objective.daysTo === 1 ? '' : 'S'}`}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PriorityTaskCard({ task, rank, projectsById }: { task: Task; rank: number; projectsById: Record<number, ProjectMeta> }) {
   const prio = task.prioFinal ?? 0;
   const color = taskColor(prio);
+  const isTop = rank === 0;
+  const project = task.projectId ? projectsById[task.projectId] : null;
   return (
     <div style={{
-      background: isFocus ? 'var(--bg2)' : 'transparent',
-      border: `.5px solid ${isFocus ? color : 'var(--bg4)'}`,
-      borderLeft: isFocus ? `2px solid ${color}` : '.5px solid var(--bg4)',
+      background: isTop ? 'var(--bg2)' : 'transparent',
+      border: `.5px solid ${isTop ? color : 'var(--bg4)'}`,
+      borderLeft: isTop ? `2px solid ${color}` : '.5px solid var(--bg4)',
       borderRadius: 11, padding: '10px 12px', marginBottom: 6,
-      opacity: isFocus ? 1 : 0.45,
       display: 'flex', gap: 8, alignItems: 'flex-start',
     }}>
-      <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 12, color: isFocus ? color : 'var(--text3)', minWidth: 16 }}>
-        {task.prioFinal}
+      <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 12, color: isTop ? color : 'var(--text3)', minWidth: 16 }}>
+        {prio}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        {isFocus && (
+        {isTop && (
           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.18em', color, marginBottom: 3 }}>FOCO</div>
         )}
         <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, lineHeight: 1.3, color: 'var(--text)' }}>{task.title}</div>
-        {task.propertyId && (
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', color: 'var(--text2)', marginTop: 3 }}>
-            {task.propertyId.toUpperCase()}
+        {(task.propertyId || project) && (
+          <div style={{ display: 'flex', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
+            {task.propertyId && (
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', color: 'var(--gold2)' }}>{task.propertyId.toUpperCase()}</span>
+            )}
+            {project && (
+              <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.1em', color: project.color ?? 'var(--purple)' }}>
+                {task.propertyId ? '· ' : ''}{project.name.toUpperCase()}
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -132,11 +190,15 @@ function FocusTaskCard({ task, isFocus }: { task: Task; isFocus: boolean }) {
 }
 
 export default function MorningRitual({
-  urgentTasks,
+  top3Tasks,
+  objectives,
+  projectsById,
   nextTrip,
   weightHistory,
 }: {
-  urgentTasks: Task[];
+  top3Tasks: Task[];
+  objectives: Objective[];
+  projectsById: Record<number, ProjectMeta>;
   nextTrip: { title: string; daysTo: number } | null;
   weightHistory: WeightLog[];
 }) {
@@ -267,7 +329,6 @@ export default function MorningRitual({
 
   const now = new Date();
   const DAYS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
-  const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
   const timeStr = `${DAYS[now.getDay()].toUpperCase()} · ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
   const h1Style: React.CSSProperties = { fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 20, lineHeight: 1.2, letterSpacing: '-.01em', color: 'var(--text)', marginBottom: 4 };
@@ -276,13 +337,15 @@ export default function MorningRitual({
   const stepIdStyle: React.CSSProperties = { fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.26em', color: 'var(--text4)' };
   const skipStyle: React.CSSProperties = { fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--text3)', cursor: 'pointer', background: 'none', border: 'none' };
 
+  const insight = buildInsight(top3Tasks, projectsById);
+
   return (
     <div style={{ minHeight: '100dvh', paddingBottom: 80, background: 'var(--bg)', display: 'flex', flexDirection: 'column', position: 'relative', maxWidth: 640, margin: '0 auto' }}>
       <ProgressBar step={step} />
 
       <div style={{ flex: 1, padding: '42px 18px 24px', display: 'flex', flexDirection: 'column', overflow: 'auto' }}>
 
-        {/* ── PASO 1: Saludo + urgentes ── */}
+        {/* ── PASO 1: Saludo + objetivos ── */}
         {step === 1 && (
           <>
             <div style={metaStyle}>
@@ -290,11 +353,23 @@ export default function MorningRitual({
               <button style={skipStyle} onClick={next}>SALTAR →</button>
             </div>
             <h1 style={h1Style}>{getTimeGreeting()},<br /><em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Sebastián.</em></h1>
-            <p style={subStyle}>{timeStr} · {urgentTasks.length} URGENTES</p>
+            <p style={subStyle}>
+              {timeStr} · {objectives.length > 0 ? `${objectives.length} OBJETIVO${objectives.length === 1 ? '' : 'S'} ACTIVO${objectives.length === 1 ? '' : 'S'}` : 'SIN OBJETIVOS ACTIVOS'}
+            </p>
 
-            {urgentTasks.map((t, i) => (
-              <FocusTaskCard key={t.id} task={t} isFocus={i < 3} />
-            ))}
+            {objectives.length > 0 ? (
+              objectives.map((o, i) => <ObjectiveCard key={o.id} objective={o} index={i} />)
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: 10 }}>
+                <div style={{ fontSize: 36, lineHeight: 1, color: 'var(--gold)' }}>✦</div>
+                <div style={{ fontFamily: 'var(--font-syne)', fontSize: 15, color: 'var(--text)', textAlign: 'center', lineHeight: 1.4 }}>
+                  Sin objetivos con fecha esta temporada.
+                </div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', color: 'var(--text3)', textAlign: 'center' }}>
+                  MARCA UNA FECHA A UN PROYECTO PARA VERLO AQUÍ
+                </div>
+              </div>
+            )}
 
             <div style={{ marginTop: 'auto', textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--text3)', paddingTop: 16 }}>DESLIZA →</div>
           </>
@@ -412,45 +487,43 @@ export default function MorningRitual({
         )}
 
         {/* ── PASO 3: Foco ── */}
-        {step === 3 && (() => {
-          const focusTask = urgentTasks[0] ?? null;
-          const reason = focusTask ? buildFocusReason(focusTask, urgentTasks) : null;
-          return (
-            <>
-              <div style={metaStyle}>
-                <span style={stepIdStyle}>RITUAL · 3 DE 5</span>
-                <button style={skipStyle} onClick={next}>SALTAR →</button>
-              </div>
-              <h1 style={h1Style}>Foco de<br /><em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>hoy.</em></h1>
-              <p style={subStyle}>
-                {focusTask ? `${urgentTasks.length} URGENTES · 1 DECIDIDA` : 'SIN TAREAS URGENTES'}
-              </p>
+        {step === 3 && (
+          <>
+            <div style={metaStyle}>
+              <span style={stepIdStyle}>RITUAL · 3 DE 5</span>
+              <button style={skipStyle} onClick={next}>SALTAR →</button>
+            </div>
+            <h1 style={h1Style}>Foco de<br /><em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>hoy.</em></h1>
+            <p style={subStyle}>
+              {top3Tasks.length > 0 ? `${top3Tasks.length} PRIORITARIA${top3Tasks.length === 1 ? '' : 'S'}` : 'SIN TAREAS PENDIENTES'}
+            </p>
 
-              {focusTask ? (
-                <>
-                  <FocusTaskCard task={focusTask} isFocus={true} />
+            {top3Tasks.length > 0 ? (
+              <>
+                {top3Tasks.map((t, i) => <PriorityTaskCard key={t.id} task={t} rank={i} projectsById={projectsById} />)}
+                {insight && (
                   <div style={{
                     background: 'transparent', border: '.5px solid rgba(196,168,106,.18)',
                     borderLeft: '2px solid var(--gold2)', borderRadius: 9, padding: '10px 13px', marginTop: 8,
                   }}>
                     <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.2em', color: 'var(--gold2)', marginBottom: 5 }}>VERA DICE</div>
-                    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, lineHeight: 1.55, color: '#c8c6be' }}>{reason}</div>
+                    <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, lineHeight: 1.55, color: 'var(--text)' }}>{insight}</div>
                   </div>
-                </>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: 10 }}>
-                  <div style={{ fontSize: 36, lineHeight: 1 }}>✦</div>
-                  <div style={{ fontFamily: 'var(--font-syne)', fontSize: 15, color: 'var(--text)', textAlign: 'center', lineHeight: 1.4 }}>
-                    Feliz día, Sebastián.
-                  </div>
-                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', color: 'var(--text3)', textAlign: 'center' }}>
-                    NADA URGENTE · PIENSA EN ALGO NUEVO
-                  </div>
+                )}
+              </>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: 10 }}>
+                <div style={{ fontSize: 36, lineHeight: 1 }}>✦</div>
+                <div style={{ fontFamily: 'var(--font-syne)', fontSize: 15, color: 'var(--text)', textAlign: 'center', lineHeight: 1.4 }}>
+                  Feliz día, Sebastián.
                 </div>
-              )}
-            </>
-          );
-        })()}
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', color: 'var(--text3)', textAlign: 'center' }}>
+                  NADA URGENTE · PIENSA EN ALGO NUEVO
+                </div>
+              </div>
+            )}
+          </>
+        )}
 
         {/* ── PASO 4: Briefing ── */}
         {step === 4 && (
@@ -468,9 +541,9 @@ export default function MorningRitual({
               {briefingLoading ? (
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--gold2)', letterSpacing: '.1em' }}>···</div>
               ) : briefing ? (
-                <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 12, lineHeight: 1.6, color: '#c8c6be' }}>{briefing}</div>
+                <div style={{ fontFamily: 'var(--font-dm-sans)', fontWeight: 400, fontSize: 13, lineHeight: 1.65, color: 'var(--text)' }}>{briefing}</div>
               ) : (
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.1em' }}>Briefing no disponible hoy.</div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text2)', letterSpacing: '.1em' }}>Briefing no disponible hoy.</div>
               )}
             </div>
 
@@ -513,7 +586,7 @@ export default function MorningRitual({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 5, marginBottom: 12 }}>
               {[
                 { v: weightVal ? `${weightVal}` : '—', k: 'KG HOY' },
-                { v: String(Math.min(urgentTasks.length, 3)), k: 'FOCO DÍA' },
+                { v: String(Math.min(top3Tasks.length, 3)), k: 'FOCO DÍA' },
                 { v: String(Object.values(snm).filter(Boolean).length) + '/5', k: 'SNM ACTIVO', color: 'var(--green)' },
                 { v: nextTrip ? String(nextTrip.daysTo) : '—', k: 'DÍAS PRÓX. VIAJE', color: 'var(--blue)' },
               ].map(stat => (
@@ -523,6 +596,18 @@ export default function MorningRitual({
                 </div>
               ))}
             </div>
+
+            {objectives.length > 0 && (
+              <div style={{ background: 'transparent', border: '.5px solid rgba(196,168,106,.18)', borderRadius: 9, padding: 11, textAlign: 'center', marginBottom: 11 }}>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.22em', color: 'var(--gold2)', marginBottom: 5 }}>OBJETIVOS ACTIVOS</div>
+                <p style={{ fontFamily: 'var(--font-syne)', fontWeight: 400, fontSize: 12, color: 'var(--text)', lineHeight: 1.45 }}>
+                  {objectives[0].name} — <em style={{ color: 'var(--gold)', fontStyle: 'italic' }}>
+                    {objectives[0].daysTo <= 0 ? 'vence hoy' : `${objectives[0].daysTo} días`}
+                  </em>
+                  {objectives.length > 1 && <span style={{ color: 'var(--text3)' }}> · +{objectives.length - 1} más</span>}
+                </p>
+              </div>
+            )}
 
             {nextTrip && (
               <div style={{ background: 'transparent', border: '.5px solid #2d2640', borderRadius: 9, padding: 11, textAlign: 'center', marginBottom: 11 }}>
