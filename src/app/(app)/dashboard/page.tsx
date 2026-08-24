@@ -1,7 +1,8 @@
 import { db } from '@/lib/db';
 import { tasks, events, inbox, properties, weightLog, projects, financeRecords, vehicles, contracts, kmLogs } from '@/lib/db/schema';
-import { ne, desc, sql, and, or, isNull, lte, eq } from 'drizzle-orm';
+import { ne, desc, asc, sql, and, or, isNull, lte, gte, eq } from 'drizzle-orm';
 import { renewOverdueObjectives, buildObjectivesList } from '@/lib/objectives';
+import { ensureDollarEvents, DOLLAR_EVENT_TITLE } from '@/lib/dollarEvent';
 import DashboardClient from './DashboardClient';
 
 export const dynamic = 'force-dynamic';
@@ -11,9 +12,10 @@ function monthsBetween(a: Date, b: Date): number {
 }
 
 export default async function DashboardPage() {
-  await renewOverdueObjectives();
+  await Promise.all([renewOverdueObjectives(), ensureDollarEvents()]);
 
   const now = new Date();
+  const eventsWindowStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
   const [allTasks, doneCountRows, allEvents, allProperties, weightLogs, allProjects, financeData, allVehicles, allContracts, allKmLogs] = await Promise.all([
     db.select().from(tasks).where(and(
@@ -22,7 +24,7 @@ export default async function DashboardPage() {
       or(isNull(tasks.snoozedUntil), lte(tasks.snoozedUntil, now))!,
     )).orderBy(desc(tasks.prioFinal), desc(tasks.prio)).limit(100),
     db.select({ count: sql<number>`count(*)` }).from(tasks).where(eq(tasks.status, 'done')),
-    db.select().from(events).orderBy(desc(events.startDate)).limit(20),
+    db.select().from(events).where(gte(events.startDate, eventsWindowStart)).orderBy(asc(events.startDate)).limit(60),
     db.select().from(properties),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(14),
     db.select().from(projects).where(ne(projects.status, 'archived')),
@@ -71,7 +73,7 @@ export default async function DashboardPage() {
   }
 
   const nextEventItem = allEvents
-    .filter(e => e.type !== 'viaje' && e.startDate && e.startDate >= todayStart)
+    .filter(e => e.type !== 'viaje' && e.title !== DOLLAR_EVENT_TITLE && e.startDate && e.startDate >= todayStart)
     .sort((a, b) => (a.startDate?.getTime() ?? 0) - (b.startDate?.getTime() ?? 0))[0] ?? null;
   const daysToNextEvent = nextEventItem?.startDate
     ? Math.ceil((nextEventItem.startDate.getTime() - now.getTime()) / 86400000)

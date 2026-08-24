@@ -43,6 +43,14 @@ type ProjectSummary  = { id: number; name: string; icon: string | null; iconUrl:
 
 const TIER_LABEL: Record<ObjectiveTier, string> = { semanal: 'SEMANAL', quincenal: 'QUINCENAL', mensual: 'MENSUAL', trimestral: 'TRIMESTRAL' };
 
+function formatYearsMonths(totalMonths: number): string {
+  const years = Math.floor(totalMonths / 12);
+  const rem = totalMonths % 12;
+  if (years > 0 && rem > 0) return `${years}A ${rem}M`;
+  if (years > 0) return `${years}A`;
+  return `${rem}M`;
+}
+
 /* ─── Constants ─────────────────────────────────────── */
 const DAYS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
 const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
@@ -98,9 +106,9 @@ function EntityBadge({ icon, iconUrl, color, count, label, onClick }: {
 }) {
   const c = color ?? 'var(--gold2)';
   return (
-    <div onClick={onClick} title={label} style={{ position: 'relative', width: 32, height: 32, borderRadius: 9, background: 'var(--bg3)', border: `.5px solid ${c}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, cursor: 'pointer', flexShrink: 0, overflow: 'hidden' }}>
+    <div onClick={onClick} title={label} style={{ position: 'relative', width: 32, height: 32, borderRadius: 9, background: 'var(--bg3)', border: `.5px solid ${c}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, cursor: 'pointer', flexShrink: 0 }}>
       {iconUrl
-        ? <img src={iconUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ? <img src={iconUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} />
         : icon
           ? <span>{icon}</span>
           : <span style={{ width: 7, height: 7, borderRadius: '50%', background: c }} />}
@@ -538,22 +546,24 @@ export default function DashboardClient({
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div style={{ padding: '16px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexShrink: 0 }}>
             <div>
-              <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: '26px', color: 'var(--text)', letterSpacing: '-.01em' }}>
-                Command <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Centre</em>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 500, fontSize: '26px', color: 'var(--text)', letterSpacing: '-.01em' }}>
+                  Command <em style={{ fontStyle: 'italic', color: 'var(--gold)' }}>Centre</em>
+                </div>
+                <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: '13px', color: 'var(--text3)', letterSpacing: '.01em' }}>
+                  good {getGreeting()},{' '}
+                  <a
+                    href={personaSearchUrl(persona)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--text2)', fontWeight: 300, textDecoration: 'none', borderBottom: '.5px solid var(--border-subtle)', cursor: 'pointer', transition: 'color .15s, border-color .15s' }}
+                    onMouseEnter={e => { (e.target as HTMLAnchorElement).style.color = 'var(--text)'; (e.target as HTMLAnchorElement).style.borderBottomColor = 'var(--text2)'; }}
+                    onMouseLeave={e => { (e.target as HTMLAnchorElement).style.color = 'var(--text2)'; (e.target as HTMLAnchorElement).style.borderBottomColor = 'var(--border-subtle)'; }}
+                  >{persona}</a>.
+                </div>
               </div>
               <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: '14px', color: 'var(--text3)', letterSpacing: '.01em', marginTop: 3, lineHeight: 1.5 }}>
                 {renderQuote(quote)}
-              </div>
-              <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 300, fontSize: '13px', color: 'var(--text3)', letterSpacing: '.01em', marginTop: 4 }}>
-                good {getGreeting()},{' '}
-                <a
-                  href={personaSearchUrl(persona)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: 'var(--text2)', fontWeight: 300, textDecoration: 'none', borderBottom: '.5px solid var(--border-subtle)', cursor: 'pointer', transition: 'color .15s, border-color .15s' }}
-                  onMouseEnter={e => { (e.target as HTMLAnchorElement).style.color = 'var(--text)'; (e.target as HTMLAnchorElement).style.borderBottomColor = 'var(--text2)'; }}
-                  onMouseLeave={e => { (e.target as HTMLAnchorElement).style.color = 'var(--text2)'; (e.target as HTMLAnchorElement).style.borderBottomColor = 'var(--border-subtle)'; }}
-                >{persona}</a>.
               </div>
             </div>
             <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: '11px', letterSpacing: '.2em', color: 'var(--text4)' }}>
@@ -563,7 +573,7 @@ export default function DashboardClient({
 
 
           {/* Orbital map */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'flex-start', paddingTop: 16, overflow: 'visible' }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', paddingTop: 8, overflow: 'visible' }}>
 
             {/* ── LEFT: KPI zone (30%) ── */}
             <div style={{ flex: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', padding: '0 8px' }}>
@@ -802,6 +812,7 @@ export default function DashboardClient({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {vehicles.slice(0, 2).map(v => {
                     const subtitle = [v.brand, v.model].filter(Boolean).join(' ');
+                    const remaining = v.monthsLeft !== null && v.monthsLeft !== undefined ? `${formatYearsMonths(v.monthsLeft)} RESTANTES` : null;
                     return (
                       <div key={v.id}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
@@ -813,9 +824,9 @@ export default function DashboardClient({
                             {v.pct !== null && <span style={{ color: 'var(--cyan)', marginLeft: 6 }}>{v.pct}%</span>}
                           </div>
                         </div>
-                        {(subtitle || v.plate || v.monthsLeft !== null) && (
+                        {(subtitle || remaining) && (
                           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.08em', color: 'var(--text3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {[subtitle, v.plate, v.monthsLeft !== null && v.monthsLeft !== undefined ? `${v.monthsLeft}M RESTANTES` : null].filter(Boolean).join(' · ')}
+                            {[subtitle, remaining].filter(Boolean).join(' · ')}
                           </div>
                         )}
                       </div>

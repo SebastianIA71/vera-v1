@@ -2,11 +2,14 @@ import { db } from '@/lib/db';
 import { events, tasks } from '@/lib/db/schema';
 import { asc, desc, ne, gte } from 'drizzle-orm';
 import { getUrgentAndStaleCounts } from '@/lib/queries';
+import { ensureDollarEvents } from '@/lib/dollarEvent';
 import TripsClient from './TripsClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function TripsPage() {
+  await ensureDollarEvents();
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
