@@ -809,26 +809,27 @@ export default function DashboardClient({
               {vehicles.length === 0 ? (
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)' }}>—</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {vehicles.slice(0, 2).map(v => {
                     const subtitle = [v.brand, v.model].filter(Boolean).join(' ');
                     const remaining = v.monthsLeft !== null && v.monthsLeft !== undefined ? `${formatYearsMonths(v.monthsLeft)} RESTANTES` : null;
+                    const detail = [subtitle, remaining].filter(Boolean).join(' · ');
                     return (
-                      <div key={v.id}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div key={v.id} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0, flex: 1 }}>
+                          <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)', flexShrink: 0 }}>
                             {v.name}
-                          </div>
-                          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', flexShrink: 0 }}>
-                            {v.latestKm !== null ? `${v.latestKm.toLocaleString('es')} km` : 'sin km'}
-                            {v.pct !== null && <span style={{ color: 'var(--cyan)', marginLeft: 6 }}>{v.pct}%</span>}
-                          </div>
+                          </span>
+                          {detail && (
+                            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.06em', color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                              · {detail}
+                            </span>
+                          )}
                         </div>
-                        {(subtitle || remaining) && (
-                          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.08em', color: 'var(--text3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {[subtitle, remaining].filter(Boolean).join(' · ')}
-                          </div>
-                        )}
+                        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', flexShrink: 0 }}>
+                          {v.latestKm !== null ? `${v.latestKm.toLocaleString('es')} km` : 'sin km'}
+                          {v.pct !== null && <span style={{ color: 'var(--cyan)', marginLeft: 6 }}>{v.pct}%</span>}
+                        </div>
                       </div>
                     );
                   })}
