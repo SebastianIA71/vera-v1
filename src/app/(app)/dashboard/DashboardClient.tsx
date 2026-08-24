@@ -32,7 +32,16 @@ type Task = {
 };
 type CompletingTask = Task & { completingAt: number };
 type WeightLogEntry = { date: string; value: number };
-type VehicleSummary = { id: number; name: string; latestKm: number | null; contractKmTotal: number | null; pct: number | null };
+type VehicleSummary = {
+  id: number; name: string; brand?: string | null; model?: string | null; plate?: string | null;
+  latestKm: number | null; contractKmTotal: number | null; pct: number | null; monthsLeft?: number | null;
+};
+type ObjectiveTier = 'semanal' | 'quincenal' | 'mensual' | 'trimestral';
+type ObjectiveSummary = { id: number; name: string; color: string | null; icon: string | null; iconUrl: string | null; daysTo: number; tier: ObjectiveTier };
+type PropertySummary = { id: string; name: string; icon: string | null; color: string | null; taskCount: number };
+type ProjectSummary  = { id: number; name: string; icon: string | null; iconUrl: string | null; color: string | null; taskCount: number };
+
+const TIER_LABEL: Record<ObjectiveTier, string> = { semanal: 'SEMANAL', quincenal: 'QUINCENAL', mensual: 'MENSUAL', trimestral: 'TRIMESTRAL' };
 
 /* ─── Constants ─────────────────────────────────────── */
 const DAYS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
@@ -80,6 +89,33 @@ function MiniSparkline({ values, color, width = 100, height = 32 }: { values: nu
       <polyline points={pts} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" strokeOpacity="0.6" vectorEffect="non-scaling-stroke" />
       <circle cx={width} cy={lastY} r="2.5" fill={color} vectorEffect="non-scaling-stroke" />
     </svg>
+  );
+}
+
+/* ─── Badge entidad (propiedad / proyecto) con contador de tareas ──── */
+function EntityBadge({ icon, iconUrl, color, count, label, onClick }: {
+  icon: string | null; iconUrl?: string | null; color: string | null; count: number; label: string; onClick: () => void;
+}) {
+  const c = color ?? 'var(--gold2)';
+  return (
+    <div onClick={onClick} title={label} style={{ position: 'relative', width: 32, height: 32, borderRadius: 9, background: 'var(--bg3)', border: `.5px solid ${c}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, cursor: 'pointer', flexShrink: 0, overflow: 'hidden' }}>
+      {iconUrl
+        ? <img src={iconUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        : icon
+          ? <span>{icon}</span>
+          : <span style={{ width: 7, height: 7, borderRadius: '50%', background: c }} />}
+      {count > 0 && (
+        <span style={{
+          position: 'absolute', top: -5, right: -5, minWidth: 15, height: 15, padding: '0 3px',
+          borderRadius: 999, background: c, color: '#07080a',
+          fontFamily: 'var(--font-dm-mono)', fontSize: 9, fontWeight: 600,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: '1.5px solid var(--bg2)', lineHeight: 1,
+        }}>
+          {count}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -301,6 +337,9 @@ export default function DashboardClient({
   financeRecords = [],
   weightLogs = [],
   vehicles = [],
+  objectives = [],
+  propertySummaries = [],
+  projectSummaries = [],
 }: {
   initialTasks: Task[];
   urgentCount: number;
@@ -313,6 +352,9 @@ export default function DashboardClient({
   financeRecords?: { calcD: number|null; calcB: number|null; calcA: number|null; calcE: number|null }[];
   weightLogs?: WeightLogEntry[];
   vehicles?: VehicleSummary[];
+  objectives?: ObjectiveSummary[];
+  propertySummaries?: PropertySummary[];
+  projectSummaries?: ProjectSummary[];
 }) {
   const router = useRouter();
   const [time, setTime] = useState('');
@@ -657,8 +699,79 @@ export default function DashboardClient({
 
           </div>
 
-          {/* Peso + Vehículos */}
+          {/* Objetivos + Propiedades/Proyectos */}
           <div style={{ padding: '4px 24px 0', display: 'flex', gap: 16, flexShrink: 0 }}>
+            {/* Objetivos */}
+            <div style={{ flex: 1, minWidth: 0, background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '10px 14px', cursor: 'pointer' }} onClick={() => router.push('/projects')}>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text3)', marginBottom: 6 }}>OBJETIVOS</div>
+              {objectives.length === 0 ? (
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)' }}>SIN OBJETIVOS ACTIVOS</div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {objectives[0].iconUrl
+                      ? <img src={objectives[0].iconUrl} alt="" style={{ width: 20, height: 20, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+                      : objectives[0].icon
+                        ? <span style={{ fontSize: 16, flexShrink: 0 }}>{objectives[0].icon}</span>
+                        : null}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: 15, color: 'var(--text)', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {objectives[0].name}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: objectives[0].color ?? 'var(--gold2)' }}>
+                        {TIER_LABEL[objectives[0].tier]} · {objectives[0].daysTo <= 0 ? 'HOY' : `${objectives[0].daysTo}D`}
+                      </div>
+                    </div>
+                  </div>
+                  {objectives[1] && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, paddingTop: 7, borderTop: '.5px solid var(--bg4)' }}>
+                      {objectives[1].iconUrl
+                        ? <img src={objectives[1].iconUrl} alt="" style={{ width: 14, height: 14, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }} />
+                        : objectives[1].icon
+                          ? <span style={{ fontSize: 12, flexShrink: 0 }}>{objectives[1].icon}</span>
+                          : null}
+                      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, color: 'var(--text2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                        {objectives[1].name}
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--text3)', flexShrink: 0 }}>
+                        {objectives[1].daysTo <= 0 ? 'HOY' : `${objectives[1].daysTo}D`}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Propiedades + Proyectos */}
+            <div style={{ flex: 1, minWidth: 0, background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '10px 14px' }}>
+              <div style={{ display: 'flex', gap: 16 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text3)', marginBottom: 6 }}>PROPIEDADES</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {propertySummaries.length === 0
+                      ? <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)' }}>—</div>
+                      : propertySummaries.map(p => (
+                          <EntityBadge key={p.id} icon={p.icon} color={p.color} count={p.taskCount} label={p.name} onClick={() => router.push('/properties')} />
+                        ))}
+                  </div>
+                </div>
+                <div style={{ width: 1, alignSelf: 'stretch', background: 'var(--bg4)' }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text3)', marginBottom: 6 }}>PROYECTOS</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {projectSummaries.length === 0
+                      ? <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)' }}>—</div>
+                      : projectSummaries.map(p => (
+                          <EntityBadge key={p.id} icon={p.icon} iconUrl={p.iconUrl} color={p.color} count={p.taskCount} label={p.name} onClick={() => router.push('/projects')} />
+                        ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Peso + Vehículos */}
+          <div style={{ padding: '8px 24px 0', display: 'flex', gap: 16, flexShrink: 0 }}>
             {/* Peso */}
             <div style={{ flex: 1, minWidth: 0, background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '10px 14px', cursor: 'pointer' }} onClick={() => router.push('/weight')}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
@@ -686,25 +799,35 @@ export default function DashboardClient({
               {vehicles.length === 0 ? (
                 <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, color: 'var(--text3)' }}>—</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                  {vehicles.slice(0, 2).map(v => (
-                    <div key={v.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {v.name}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {vehicles.slice(0, 2).map(v => {
+                    const subtitle = [v.brand, v.model].filter(Boolean).join(' ');
+                    return (
+                      <div key={v.id}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {v.name}
+                          </div>
+                          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', flexShrink: 0 }}>
+                            {v.latestKm !== null ? `${v.latestKm.toLocaleString('es')} km` : 'sin km'}
+                            {v.pct !== null && <span style={{ color: 'var(--cyan)', marginLeft: 6 }}>{v.pct}%</span>}
+                          </div>
+                        </div>
+                        {(subtitle || v.plate || v.monthsLeft !== null) && (
+                          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.08em', color: 'var(--text3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {[subtitle, v.plate, v.monthsLeft !== null && v.monthsLeft !== undefined ? `${v.monthsLeft}M RESTANTES` : null].filter(Boolean).join(' · ')}
+                          </div>
+                        )}
                       </div>
-                      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', flexShrink: 0 }}>
-                        {v.latestKm !== null ? `${v.latestKm.toLocaleString('es')} km` : 'sin km'}
-                        {v.pct !== null && <span style={{ color: 'var(--cyan)', marginLeft: 6 }}>{v.pct}%</span>}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
 
           {/* Briefing diario */}
-          <div style={{ padding: '0 16px 16px', flexShrink: 0 }}>
+          <div style={{ padding: '10px 16px 16px', flexShrink: 0 }}>
             <DailyBriefing compact={true} />
           </div>
         </div>

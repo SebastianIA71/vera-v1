@@ -1,8 +1,8 @@
 import { db } from '@/lib/db';
 import { tasks, events, weightLog, projects as projectsTable } from '@/lib/db/schema';
 import { ne, desc, asc, eq } from 'drizzle-orm';
-import { renewOverdueObjectives, type ObjectiveTier } from '@/lib/objectives';
-import MorningRitual, { type Objective } from '@/components/morning/MorningRitual';
+import { renewOverdueObjectives, buildObjectivesList } from '@/lib/objectives';
+import MorningRitual from '@/components/morning/MorningRitual';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,22 +46,7 @@ export default async function MorningPage() {
     : null;
 
   // Objetivos: proyectos marcados explícitamente como objetivo, con periodicidad propia
-  const withTier = activeProjects
-    .filter(p => p.isObjective && p.objectiveTier && p.dueDate)
-    .map(p => {
-      const daysTo = Math.ceil((p.dueDate!.getTime() - now.getTime()) / 86400000);
-      return { id: p.id, name: p.name, color: p.color, icon: p.icon, iconUrl: p.iconUrl, daysTo, tier: p.objectiveTier as ObjectiveTier } as Objective;
-    });
-
-  const byTier = (tier: ObjectiveTier, limit: number) =>
-    withTier.filter(o => o.tier === tier).sort((a, b) => a.daysTo - b.daysTo).slice(0, limit);
-
-  const objectives: Objective[] = [
-    ...byTier('semanal', 2),
-    ...byTier('quincenal', 1),
-    ...byTier('mensual', 1),
-    ...byTier('trimestral', 1),
-  ];
+  const objectives = buildObjectivesList(activeProjects, now);
 
   const projectsById = Object.fromEntries(activeProjects.map(p => [p.id, { name: p.name, color: p.color }]));
 
