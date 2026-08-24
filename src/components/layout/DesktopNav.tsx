@@ -108,11 +108,11 @@ export default function DesktopNav({
       }}
     >
       <NavItem icon="command"  label="COMMAND"    active={isActive('/dashboard')} onClick={() => router.push('/dashboard')} />
+      <NavItem icon="projects" label="PROYECTOS"   active={isActive('/projects')}   onClick={() => router.push('/projects')} />
       <NavItem icon="tasks"    label="TAREAS"      active={isActive('/tasks')}      badge={tasksBadge} badgeColor={urgentTasksCount > 0 ? 'var(--red)' : 'var(--text3)'} onClick={() => router.push('/tasks')} />
       <NavItem icon="inbox"    label="INBOX"       active={isActive('/inbox')}      badge={inboxCount  > 0 ? inboxCount  : undefined} badgeColor="var(--amber)" onClick={() => router.push('/inbox')} />
       <NavItem icon="trips"    label="EVENTOS"     active={isActive('/trips')}      onClick={() => router.push('/trips')} />
       <NavItem icon="props"    label="PROPIEDADES" active={isActive('/properties')} onClick={() => router.push('/properties')} />
-      <NavItem icon="projects" label="PROYECTOS"   active={isActive('/projects')}   onClick={() => router.push('/projects')} />
 
       <div style={{ height: .5, background: 'var(--bg4)', margin: '6px 14px' }} />
 

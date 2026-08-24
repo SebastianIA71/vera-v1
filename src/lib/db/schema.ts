@@ -26,7 +26,15 @@ export const projects = sqliteTable('projects', {
   status:      text('status').default('active'),
   color:       text('color'),
   icon:        text('icon'),
-  dueDate:     integer('due_date', { mode: 'timestamp' }),
+  // Un proyecto plano no tiene fecha final. `dueDate` sólo se usa cuando
+  // isObjective=true: representa el fin esperado del periodo ACTUAL —
+  // se prorroga automáticamente al vencer (ver src/lib/objectives.ts).
+  dueDate:                   integer('due_date', { mode: 'timestamp' }),
+  isObjective:               integer('is_objective', { mode: 'boolean' }).default(false),
+  objectiveTier:              text('objective_tier'), // 'semanal'|'quincenal'|'mensual'|'trimestral'
+  objectiveOriginalStartAt:  integer('objective_original_start_at', { mode: 'timestamp' }), // primera vez marcado como objetivo
+  objectiveStartedAt:        integer('objective_started_at', { mode: 'timestamp' }),        // inicio del periodo actual
+  objectiveRenewals:         integer('objective_renewals').default(0),                       // veces prorrogado
   createdAt:   integer('created_at', { mode: 'timestamp' }).defaultNow(),
   updatedAt:   integer('updated_at', { mode: 'timestamp' }).defaultNow(),
 });

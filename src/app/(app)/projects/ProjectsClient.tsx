@@ -5,11 +5,20 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import DesktopShell from '@/components/layout/DesktopShell';
 import TaskDetailPanel, { TaskDetail } from '@/components/tasks/TaskDetailPanel';
+import { TIER_LABEL, type ObjectiveTier } from '@/lib/objectiveTiers';
 
 const NewProjectSheet = dynamic(() => import('@/components/projects/NewProjectSheet'), { ssr: false });
 const NewTaskModal    = dynamic(() => import('@/components/tasks/NewTaskModal'),        { ssr: false });
 
-type Project = { id: number; name: string; description: string | null; color: string | null; icon: string | null; status: string | null; dueDate: Date | null; createdAt: Date | null };
+type Project = {
+  id: number; name: string; description: string | null; color: string | null; icon: string | null; status: string | null;
+  dueDate: Date | null; createdAt: Date | null;
+  isObjective?: boolean | null;
+  objectiveTier?: string | null;
+  objectiveStartedAt?: Date | null;
+  objectiveOriginalStartAt?: Date | null;
+  objectiveRenewals?: number | null;
+};
 type Task    = TaskDetail & { projectId?: number | null };
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
@@ -22,6 +31,11 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 function daysUntil(d: Date | null | undefined): number | null {
   if (!d) return null;
   return Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
+}
+
+function fmtDate(d: Date | string | null | undefined): string {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase();
 }
 
 function ProjectCard({ project, selected, tasks, onClick }: { project: Project; selected: boolean; tasks: Task[]; onClick: () => void }) {
@@ -45,6 +59,11 @@ function ProjectCard({ project, selected, tasks, onClick }: { project: Project; 
           ? <span style={{ fontSize: 14, flexShrink: 0, lineHeight: 1 }}>{project.icon}</span>
           : <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />}
         <span style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{project.name}</span>
+        {project.isObjective && project.objectiveTier && (
+          <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--gold2)', flexShrink: 0, padding: '1px 6px', borderRadius: 999, border: '.5px solid rgba(196,168,106,.4)' }}>
+            {TIER_LABEL[project.objectiveTier as ObjectiveTier]}
+          </span>
+        )}
         <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.12em', color: sm.color, flexShrink: 0 }}>{sm.label}</span>
       </div>
       <div style={{ display: 'flex', gap: 10, paddingLeft: 16 }}>
@@ -122,10 +141,23 @@ function ProjectDetail({ project, tasks, onEdit, onArchive, onTaskCreated, onTas
                 {project.description}
               </div>
             )}
-            {due !== null && (
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: due <= 14 ? 'var(--red)' : due <= 30 ? 'var(--amber)' : 'var(--text3)', paddingLeft: 22 }}>
-                DEADLINE: {due > 0 ? `${due}D` : due === 0 ? 'HOY' : 'VENCIDO'}
-                {project.dueDate && ` · ${new Date(project.dueDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).toUpperCase()}`}
+            {project.isObjective && project.objectiveTier && (
+              <div style={{ paddingLeft: 22 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', color: 'var(--gold2)', padding: '2px 7px', borderRadius: 999, border: '.5px solid rgba(196,168,106,.4)' }}>
+                    OBJETIVO {TIER_LABEL[project.objectiveTier as ObjectiveTier]}
+                  </span>
+                  {due !== null && (
+                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: due <= 2 ? 'var(--red)' : due <= 7 ? 'var(--amber)' : 'var(--text3)' }}>
+                      {due > 0 ? `${due}D RESTANTES` : due === 0 ? 'VENCE HOY' : 'VENCIDO'}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.06em', color: 'var(--text3)', lineHeight: 1.7 }}>
+                  INICIO: {fmtDate(project.objectiveStartedAt)} · FIN ESPERADO: {fmtDate(project.dueDate)}
+                  {(project.objectiveRenewals ?? 0) > 0 && ` · PRORROGADO ${project.objectiveRenewals}×`}
+                  <br />OBJETIVO DESDE: {fmtDate(project.objectiveOriginalStartAt)}
+                </div>
               </div>
             )}
           </div>

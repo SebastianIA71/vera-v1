@@ -107,6 +107,26 @@ export async function runAutoMigrations(): Promise<void> {
         created_at INTEGER
       )`,
     },
+    {
+      id:  'projects.is_objective',
+      sql: 'ALTER TABLE projects ADD COLUMN is_objective INTEGER DEFAULT 0',
+    },
+    {
+      id:  'projects.objective_tier',
+      sql: 'ALTER TABLE projects ADD COLUMN objective_tier TEXT',
+    },
+    {
+      id:  'projects.objective_original_start_at',
+      sql: 'ALTER TABLE projects ADD COLUMN objective_original_start_at INTEGER',
+    },
+    {
+      id:  'projects.objective_started_at',
+      sql: 'ALTER TABLE projects ADD COLUMN objective_started_at INTEGER',
+    },
+    {
+      id:  'projects.objective_renewals',
+      sql: 'ALTER TABLE projects ADD COLUMN objective_renewals INTEGER DEFAULT 0',
+    },
   ];
 
   for (const m of migrations) {

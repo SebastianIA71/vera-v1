@@ -142,8 +142,8 @@ const NAV_ITEMS: NavItem[] = [
 type MoreItem = { href: string; label: string; icon: React.ComponentType<{ size: number; color: string }> }
 
 const MORE_ITEMS: MoreItem[] = [
-  { href: '/properties', label: 'Propiedades', icon: PropertiesIcon },
   { href: '/projects',   label: 'Proyectos',   icon: ProjectsIcon },
+  { href: '/properties', label: 'Propiedades', icon: PropertiesIcon },
   { href: '/finance',    label: 'Finanzas',    icon: FinanceIcon },
   { href: '/contracts',  label: 'Contratos',   icon: ContractsIcon },
   { href: '/vehicles',   label: 'Vehículos',   icon: VehiclesIcon },

@@ -1,8 +1,22 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { OBJECTIVE_TIERS, TIER_LABEL, type ObjectiveTier } from '@/lib/objectiveTiers';
 
-type Project = { id: number; name: string; description: string | null; color: string | null; icon: string | null; status: string | null; dueDate: Date | null };
+type Project = {
+  id: number; name: string; description: string | null; color: string | null; icon: string | null; status: string | null;
+  dueDate: Date | string | null;
+  isObjective?: boolean | null;
+  objectiveTier?: string | null;
+  objectiveStartedAt?: Date | string | null;
+  objectiveOriginalStartAt?: Date | string | null;
+  objectiveRenewals?: number | null;
+};
+
+function fmtDate(d: Date | string | null | undefined): string {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase();
+}
 
 const PROJECT_COLORS = [
   { value: '#9b7fe8', label: 'Púrpura' },
@@ -36,14 +50,13 @@ export default function NewProjectSheet({
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    name:        editProject?.name        ?? '',
-    description: editProject?.description ?? '',
-    color:       editProject?.color       ?? '#9b7fe8',
-    icon:        editProject?.icon        ?? '',
-    status:      editProject?.status      ?? 'active',
-    dueDate:     editProject?.dueDate
-                   ? new Date(editProject.dueDate).toISOString().slice(0, 10)
-                   : '',
+    name:          editProject?.name          ?? '',
+    description:   editProject?.description   ?? '',
+    color:         editProject?.color         ?? '#9b7fe8',
+    icon:          editProject?.icon          ?? '',
+    status:        editProject?.status        ?? 'active',
+    isObjective:   editProject?.isObjective   ?? false,
+    objectiveTier: (editProject?.objectiveTier as ObjectiveTier | null) ?? 'semanal',
   });
   const set = (k: keyof typeof form, v: string) => setForm(p => ({ ...p, [k]: v }));
   const isEdit = !!editProject;
@@ -115,7 +128,59 @@ export default function NewProjectSheet({
             />
           </div>
 
-          <div><label style={LABEL}>FECHA LÍMITE (opcional)</label><input type="date" value={form.dueDate} onChange={e => set('dueDate', e.target.value)} style={{ ...INPUT, colorScheme: 'dark' }} /></div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: form.isObjective ? 10 : 0 }}>
+              <label style={{ ...LABEL, marginBottom: 0 }}>ES UN OBJETIVO</label>
+              <button
+                type="button"
+                onClick={() => setForm(p => ({ ...p, isObjective: !p.isObjective }))}
+                style={{
+                  width: 40, height: 22, borderRadius: 11, border: 'none', cursor: 'pointer', position: 'relative', padding: 0,
+                  background: form.isObjective ? 'var(--gold2)' : 'var(--bg4)', transition: 'background .15s',
+                }}
+              >
+                <span style={{ position: 'absolute', top: 2, left: form.isObjective ? 20 : 2, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left .15s' }} />
+              </button>
+            </div>
+            {form.isObjective && (
+              <>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {OBJECTIVE_TIERS.map(t => {
+                    const sel = form.objectiveTier === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setForm(p => ({ ...p, objectiveTier: t }))}
+                        style={{
+                          padding: '6px 11px', borderRadius: 20, cursor: 'pointer',
+                          fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.12em',
+                          border: `.5px solid ${sel ? 'var(--gold2)' : 'var(--bg4)'}`,
+                          background: sel ? 'rgba(196,168,106,.12)' : 'transparent',
+                          color: sel ? 'var(--gold)' : 'var(--text3)',
+                        }}
+                      >
+                        {TIER_LABEL[t]}
+                      </button>
+                    );
+                  })}
+                </div>
+                {isEdit && editProject?.isObjective && editProject.objectiveTier === form.objectiveTier && (
+                  <div style={{ marginTop: 10, padding: '9px 11px', background: 'var(--bg3)', borderRadius: 8, fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.06em', color: 'var(--text3)', lineHeight: 1.8 }}>
+                    INICIO PERIODO: {fmtDate(editProject.objectiveStartedAt)}<br />
+                    FIN ESPERADO: {fmtDate(editProject.dueDate)}<br />
+                    {(editProject.objectiveRenewals ?? 0) > 0 && <>PRORROGADO: {editProject.objectiveRenewals}×<br /></>}
+                    OBJETIVO DESDE: {fmtDate(editProject.objectiveOriginalStartAt)}
+                  </div>
+                )}
+                {isEdit && editProject?.isObjective && editProject.objectiveTier !== form.objectiveTier && (
+                  <div style={{ marginTop: 10, fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.08em', color: 'var(--amber)', lineHeight: 1.6 }}>
+                    CAMBIAR LA PERIODICIDAD REINICIA EL PERIODO ACTUAL
+                  </div>
+                )}
+              </>
+            )}
+          </div>
           {isEdit && (
             <div>
               <label style={LABEL}>ESTADO</label>

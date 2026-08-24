@@ -1,26 +1,21 @@
 import { db } from '@/lib/db';
 import { tasks, events, weightLog, projects as projectsTable } from '@/lib/db/schema';
-import { ne, desc, asc, eq, and, isNotNull } from 'drizzle-orm';
-import MorningRitual, { type Objective, type ObjectiveTier } from '@/components/morning/MorningRitual';
+import { ne, desc, asc, eq } from 'drizzle-orm';
+import { renewOverdueObjectives, type ObjectiveTier } from '@/lib/objectives';
+import MorningRitual, { type Objective } from '@/components/morning/MorningRitual';
 
 export const dynamic = 'force-dynamic';
 
-function tierFor(daysTo: number): ObjectiveTier | null {
-  if (daysTo <= 7) return 'semanal';
-  if (daysTo <= 14) return 'quincenal';
-  if (daysTo <= 31) return 'mensual';
-  if (daysTo <= 92) return 'trimestral';
-  return null;
-}
-
 export default async function MorningPage() {
+  await renewOverdueObjectives();
+
   const now = new Date();
 
   const [allTasks, allEvents, weights, activeProjects] = await Promise.all([
     db.select().from(tasks).where(ne(tasks.status, 'archived')).orderBy(desc(tasks.prio)).limit(50),
     db.select().from(events).orderBy(asc(events.startDate)).limit(20),
     db.select().from(weightLog).orderBy(desc(weightLog.date)).limit(14),
-    db.select().from(projectsTable).where(and(eq(projectsTable.status, 'active'), isNotNull(projectsTable.dueDate))),
+    db.select().from(projectsTable).where(eq(projectsTable.status, 'active')),
   ]);
 
   const effectivePrio = (t: typeof allTasks[0]) => Math.max(t.prioFinal ?? 0, t.prio ?? 0);
@@ -50,15 +45,13 @@ export default async function MorningPage() {
     ? Math.ceil((nextTrip.startDate.getTime() - now.getTime()) / 86400000)
     : null;
 
-  // Objetivos: proyectos activos con fecha límite, agrupados por horizonte temporal
+  // Objetivos: proyectos marcados explícitamente como objetivo, con periodicidad propia
   const withTier = activeProjects
+    .filter(p => p.isObjective && p.objectiveTier && p.dueDate)
     .map(p => {
       const daysTo = Math.ceil((p.dueDate!.getTime() - now.getTime()) / 86400000);
-      const tier = tierFor(daysTo);
-      if (!tier) return null;
-      return { id: p.id, name: p.name, color: p.color, icon: p.icon, daysTo, tier } as Objective;
-    })
-    .filter((o): o is Objective => o !== null);
+      return { id: p.id, name: p.name, color: p.color, icon: p.icon, daysTo, tier: p.objectiveTier as ObjectiveTier } as Objective;
+    });
 
   const byTier = (tier: ObjectiveTier, limit: number) =>
     withTier.filter(o => o.tier === tier).sort((a, b) => a.daysTo - b.daysTo).slice(0, limit);
