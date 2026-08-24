@@ -128,6 +128,15 @@ function EntryForm({ onSaved }: { onSaved: (e: WeightEntry) => void }) {
   );
 }
 
+function averageLast(logs: WeightEntry[], days: number): number | null {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  const vals = logs.filter(l => l.date >= cutoffStr).map(l => l.value);
+  if (vals.length === 0) return null;
+  return Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10;
+}
+
 const RANGES = [
   { days: 7,  label: 'SEMANA' },
   { days: 15, label: 'QUINCENA' },
@@ -144,6 +153,8 @@ export default function WeightClient({ initialLogs }: { initialLogs: WeightEntry
   const { actual: path, prediction: predPath, predVal } = chartPaths(logs, W, H, range);
   const latest = sorted[0];
   const prev = sorted[1];
+  const avg7 = averageLast(logs, 7);
+  const avg14 = averageLast(logs, 14);
   const trend = latest && prev
     ? latest.value > prev.value ? { label: 'SUBIENDO', color: 'var(--amber)' }
     : latest.value < prev.value ? { label: 'BAJANDO', color: 'var(--green)' }
@@ -203,6 +214,20 @@ export default function WeightClient({ initialLogs }: { initialLogs: WeightEntry
               </button>
             ))}
           </div>
+          {(avg7 !== null || avg14 !== null) && (
+            <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
+              {avg7 !== null && (
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.08em' }}>
+                  MEDIA 7D <span style={{ color: 'var(--text)' }}>{avg7} kg</span>
+                </div>
+              )}
+              {avg14 !== null && (
+                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, color: 'var(--text3)', letterSpacing: '.08em' }}>
+                  MEDIA 14D <span style={{ color: 'var(--text)' }}>{avg14} kg</span>
+                </div>
+              )}
+            </div>
+          )}
           <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block', overflow: 'visible' }}>
             <path d={path} fill="none" stroke="var(--green)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             {predPath && <path d={predPath} fill="none" stroke="var(--purple)" strokeWidth="1" strokeDasharray="4 3" strokeLinecap="round" opacity={0.7} />}

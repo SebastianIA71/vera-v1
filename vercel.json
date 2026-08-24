@@ -1,7 +1,8 @@
 {
   "regions": ["fra1"],
   "crons": [
-    { "path": "/api/cron/prio",   "schedule": "30 6 * * *" },
-    { "path": "/api/cron/alerts", "schedule": "0 7 * * *" }
+    { "path": "/api/cron/prio",     "schedule": "30 6 * * *" },
+    { "path": "/api/cron/alerts",   "schedule": "0 7 * * *" },
+    { "path": "/api/cron/briefing", "schedule": "0 9 * * *" }
   ]
 }
