@@ -137,7 +137,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
   allEvents: { startDate: Date | null; type: string }[];
   onMarkDone: (id: number) => void;
   onNewTask: () => void;
-  router: any;
+  router: ReturnType<typeof useRouter>;
 }) {
   const now = new Date();
 
@@ -537,6 +537,12 @@ export default function DashboardClient({
         {/* LEFT PANEL — nav + song */}
         <div style={{ width: 260, flexShrink: 0, borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <DesktopNav activeOverride="dashboard" counts={{ tasks: kpis.tasksActive, trips: kpis.tripsCount, properties: kpis.propsCount, projects: kpis.projectsCount, agents: 6 }} />
+
+          <div style={{ padding: '10px 16px', flexShrink: 0 }}>
+            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text3)', marginBottom: 6 }}>NOTAS</div>
+            <NotesEditor minHeight={80} />
+          </div>
+
           <div style={{ height: '.5px', background: 'var(--bg4)', margin: '4px 16px' }} />
           <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px 20px' }}>
             <SongOfDay compact={true} />
@@ -708,14 +714,6 @@ export default function DashboardClient({
               </div>
             </div>
 
-          </div>
-
-          {/* Notas */}
-          <div style={{ padding: '4px 24px 0', flexShrink: 0 }}>
-            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '10px 14px' }}>
-              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text3)', marginBottom: 6 }}>NOTAS</div>
-              <NotesEditor minHeight={70} />
-            </div>
           </div>
 
           {/* Objetivos + Propiedades/Proyectos */}
