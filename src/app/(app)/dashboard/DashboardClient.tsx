@@ -20,6 +20,7 @@ const DailyInsight     = dynamic(() => import('@/components/DailyInsight'), { ss
 const DailyBriefing    = dynamic(() => import('@/components/DailyBriefing'), { ssr: false });
 const SongOfDay        = dynamic(() => import('@/components/SongOfDay'), { ssr: false });
 const ThemeToggle      = dynamic(() => import('@/components/ThemeToggle'), { ssr: false });
+const NotesEditor      = dynamic(() => import('@/components/notes/NotesEditor'), { ssr: false });
 
 /* ─── Types ─────────────────────────────────────────── */
 type AgentId = 'voice' | 'prio' | 'alert' | 'search' | 'executor' | 'solution';
@@ -707,6 +708,14 @@ export default function DashboardClient({
               </div>
             </div>
 
+          </div>
+
+          {/* Notas */}
+          <div style={{ padding: '4px 24px 0', flexShrink: 0 }}>
+            <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 10, padding: '10px 14px' }}>
+              <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.2em', color: 'var(--text3)', marginBottom: 6 }}>NOTAS</div>
+              <NotesEditor minHeight={70} />
+            </div>
           </div>
 
           {/* Objetivos + Propiedades/Proyectos */}
