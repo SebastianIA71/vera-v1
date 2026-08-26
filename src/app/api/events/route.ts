@@ -12,6 +12,16 @@ export async function GET(req: NextRequest) {
 
   let filtered = rows;
   if (type) filtered = filtered.filter(e => e.type === type);
+
+  // Los viajes pasados no son útiles como opción de etiquetado — se excluyen por defecto
+  if (type === 'viaje' && !searchParams.get('all')) {
+    const now = new Date();
+    filtered = filtered.filter(e => {
+      const end = e.endDate ?? e.startDate;
+      return !end || end >= now;
+    });
+  }
+
   if (upcomingDays) {
     const cutoff = new Date(Date.now() + Number(upcomingDays) * 86400000);
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);

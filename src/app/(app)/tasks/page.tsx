@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function TasksPage() {
   const now = new Date();
-  const [allTasks, inboxItems, allProperties, allProjects, allTrips] = await Promise.all([
+  const [allTasks, inboxItems, allProperties, allProjects, allTripsRaw] = await Promise.all([
     db.select().from(tasks).where(and(
       ne(tasks.status, 'archived'),
       or(isNull(tasks.snoozedUntil), lte(tasks.snoozedUntil, now))!,
@@ -17,11 +17,19 @@ export default async function TasksPage() {
     db.select({ id: projectsTable.id, name: projectsTable.name, color: projectsTable.color })
       .from(projectsTable)
       .where(ne(projectsTable.status, 'archived')),
-    db.select({ id: eventsTable.id, title: eventsTable.title })
+    db.select({ id: eventsTable.id, title: eventsTable.title, startDate: eventsTable.startDate, endDate: eventsTable.endDate })
       .from(eventsTable)
       .where(eq(eventsTable.type, 'viaje'))
       .orderBy(asc(eventsTable.startDate)),
   ]);
+
+  // Sólo viajes en curso o futuros — los pasados dejan de ser útiles como filtro
+  const allTrips = allTripsRaw
+    .filter(t => {
+      const end = t.endDate ?? t.startDate;
+      return !end || end >= now;
+    })
+    .map(t => ({ id: t.id, title: t.title }));
 
   const urgentCount = allTasks.filter(t =>
     (t.prioFinal ?? 0) >= 8 && t.status !== 'done' && t.status !== 'archived'
