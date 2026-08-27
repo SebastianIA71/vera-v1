@@ -6,7 +6,7 @@ import { TIER_DAYS, type ObjectiveTier } from '@/lib/objectives';
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { name, description, color, icon, status, isObjective, objectiveTier } = await req.json();
+  const { name, description, color, icon, status, isObjective, objectiveTier, notionUrl } = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: 'Nombre requerido' }, { status: 400 });
 
   const [existing] = await db.select().from(projects).where(eq(projects.id, Number(id))).limit(1);
@@ -20,6 +20,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     description: description ?? null,
     color:       color       ?? null,
     icon:        icon        ?? null,
+    notionUrl:   notionUrl?.trim() || null,
     status:      status      ?? 'active',
     updatedAt:   now,
   };

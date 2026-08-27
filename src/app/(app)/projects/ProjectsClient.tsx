@@ -14,6 +14,7 @@ type Project = {
   id: number; name: string; description: string | null; color: string | null; icon: string | null; status: string | null;
   dueDate: Date | null; createdAt: Date | null;
   iconUrl?: string | null;
+  notionUrl?: string | null;
   isObjective?: boolean | null;
   objectiveTier?: string | null;
   objectiveStartedAt?: Date | null;
@@ -167,6 +168,16 @@ function ProjectDetail({ project, tasks, onEdit, onArchive, onTaskCreated, onTas
             )}
           </div>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            {project.notionUrl && (
+              <a
+                href={project.notionUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.16em', padding: '6px 12px', borderRadius: 8, border: '.5px solid var(--bg4)', background: 'transparent', color: 'var(--text3)', textDecoration: 'none' }}
+              >
+                NOTION ↗
+              </a>
+            )}
             {project.status !== 'archived' && (
               <button
                 onClick={async () => {

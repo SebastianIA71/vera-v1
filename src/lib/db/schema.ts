@@ -27,6 +27,7 @@ export const projects = sqliteTable('projects', {
   color:       text('color'),
   icon:        text('icon'),        // emoji — se usa si no hay iconUrl
   iconUrl:     text('icon_url'),    // imagen subida (jpg/png/gif/webp) — tiene prioridad sobre icon
+  notionUrl:   text('notion_url'),  // enlace a la pagina de Notion con el contexto del proyecto (para Claude Code, ChatGPT, etc.)
   // Un proyecto plano no tiene fecha final. `dueDate` sólo se usa cuando
   // isObjective=true: representa el fin esperado del periodo ACTUAL —
   // se prorroga automáticamente al vencer (ver src/lib/objectives.ts).

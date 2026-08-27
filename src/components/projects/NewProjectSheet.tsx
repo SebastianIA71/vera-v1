@@ -7,6 +7,7 @@ type Project = {
   id: number; name: string; description: string | null; color: string | null; icon: string | null; status: string | null;
   dueDate: Date | string | null;
   iconUrl?: string | null;
+  notionUrl?: string | null;
   isObjective?: boolean | null;
   objectiveTier?: string | null;
   objectiveStartedAt?: Date | string | null;
@@ -58,6 +59,7 @@ export default function NewProjectSheet({
     status:        editProject?.status        ?? 'active',
     isObjective:   editProject?.isObjective   ?? false,
     objectiveTier: (editProject?.objectiveTier as ObjectiveTier | null) ?? 'semanal',
+    notionUrl:     editProject?.notionUrl     ?? '',
   });
   const set = (k: keyof typeof form, v: string) => setForm(p => ({ ...p, [k]: v }));
   const isEdit = !!editProject;
@@ -143,6 +145,20 @@ export default function NewProjectSheet({
           </div>
 
           <div><label style={LABEL}>DESCRIPCIÓN (opcional)</label><textarea value={form.description} onChange={e => set('description', e.target.value)} placeholder="Objetivo, contexto..." rows={2} style={{ ...INPUT, resize: 'none', lineHeight: 1.5 }} /></div>
+
+          <div>
+            <label style={LABEL}>ENLACE A NOTION (opcional)</label>
+            <input
+              type="url"
+              value={form.notionUrl}
+              onChange={e => set('notionUrl', e.target.value)}
+              placeholder="https://notion.so/..."
+              style={{ ...INPUT, fontSize: 13 }}
+            />
+            <div style={{ marginTop: 6, fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.06em', color: 'var(--text3)' }}>
+              CONTEXTO DEL PROYECTO PARA CLAUDE CODE, CHATGPT, ETC.
+            </div>
+          </div>
 
           <div>
             <label style={LABEL}>ICONO</label>

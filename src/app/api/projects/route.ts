@@ -10,7 +10,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { name, description, color, icon, isObjective, objectiveTier } = await req.json();
+  const { name, description, color, icon, isObjective, objectiveTier, notionUrl } = await req.json();
   if (!name?.trim()) return NextResponse.json({ error: 'Nombre requerido' }, { status: 400 });
 
   const now = new Date();
@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     description: description ?? null,
     color: color ?? null,
     icon: icon ?? null,
+    notionUrl: notionUrl?.trim() || null,
     status: 'active',
     isObjective: wantsObjective,
     objectiveTier: wantsObjective ? objectiveTier : null,
