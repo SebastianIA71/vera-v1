@@ -169,9 +169,9 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
   const DAY_NAMES = ['L','M','X','J','V','S','D'];
 
   const activeTasks = tasks.filter(t => t.status !== 'done' && t.status !== 'archived');
-  const urgentTasks = activeTasks.filter(t => Math.max(t.prioFinal ?? 0, t.prio ?? 0) >= 8);
+  const urgentTasks = activeTasks.filter(t => (t.prioFinal ?? 0) >= 8);
   const topTasks = urgentTasks
-    .sort((a, b) => Math.max(b.prioFinal ?? 0, b.prio ?? 0) - Math.max(a.prioFinal ?? 0, a.prio ?? 0))
+    .sort((a, b) => (b.prioFinal ?? 0) - (a.prioFinal ?? 0))
     .slice(0, 3);
 
   return (
