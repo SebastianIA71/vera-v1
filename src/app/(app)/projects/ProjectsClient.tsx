@@ -84,7 +84,7 @@ function ProjectCard({ project, selected, tasks, onClick }: { project: Project; 
   );
 }
 
-function ProjectDetail({ project, tasks, onEdit, onArchive, onTaskCreated, onTaskUpdate, onMarkDone, isMobile }: {
+function ProjectDetail({ project, tasks, onEdit, onArchive, onTaskCreated, onTaskUpdate, onMarkDone, isMobile, completingIds, onMarkingStart, onUndo }: {
   project: Project;
   tasks: Task[];
   onEdit: () => void;
@@ -93,6 +93,9 @@ function ProjectDetail({ project, tasks, onEdit, onArchive, onTaskCreated, onTas
   onTaskUpdate: (id: number, d: Partial<Task>) => void;
   onMarkDone: (id: number) => void;
   isMobile?: boolean;
+  completingIds: Set<number>;
+  onMarkingStart: (id: number) => void;
+  onUndo: (id: number) => void;
 }) {
   const router = useRouter();
   const [selectedTask, setSelectedTask]   = useState<Task | null>(null);
@@ -118,6 +121,8 @@ function ProjectDetail({ project, tasks, onEdit, onArchive, onTaskCreated, onTas
           onClose={() => setSelectedTask(null)}
           onMarkDone={id => { onMarkDone(id); setSelectedTask(null); }}
           onUpdate={onTaskUpdate}
+          onMarkingStart={onMarkingStart}
+          onUndo={onUndo}
         />
       </div>
     );
@@ -217,23 +222,31 @@ function ProjectDetail({ project, tasks, onEdit, onArchive, onTaskCreated, onTas
                 <div style={{ padding: '10px 24px 4px', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.26em', color: 'var(--text3)' }}>
                   ACTIVAS · {projTasks.length}
                 </div>
-                {projTasks.map(t => (
-                  <div key={t.id} onClick={() => isMobile ? router.push(`/tasks/${t.id}`) : setSelectedTask(t)} style={{
-                    display: 'flex', alignItems: 'center', gap: 12, padding: '10px 24px',
-                    cursor: 'pointer', borderBottom: '.5px solid var(--bg2)',
-                    transition: 'background .1s',
-                  }}
-                    onMouseEnter={e => (e.currentTarget as HTMLDivElement).style.background = 'var(--bg2)'}
-                    onMouseLeave={e => (e.currentTarget as HTMLDivElement).style.background = 'transparent'}
-                  >
-                    <div style={{ width: 16, height: 16, borderRadius: '50%', border: '.5px solid var(--text3)', flexShrink: 0 }} />
-                    <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 12, color, minWidth: 16, textAlign: 'right', flexShrink: 0 }}>{t.prioFinal ?? 0}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
-                      {t.propertyId && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--gold2)', marginTop: 2 }}>{t.propertyId.toUpperCase()}</div>}
+                {projTasks.map(t => {
+                  const completing = completingIds.has(t.id);
+                  return (
+                    <div key={t.id} onClick={() => isMobile ? router.push(`/tasks/${t.id}`) : setSelectedTask(t)} style={{
+                      display: 'flex', alignItems: 'center', gap: 12, padding: '10px 24px',
+                      cursor: 'pointer', borderBottom: '.5px solid var(--bg2)',
+                      transition: 'background .25s',
+                      background: completing ? 'var(--green)14' : 'transparent',
+                    }}
+                      onMouseEnter={e => { if (!completing) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg2)'; }}
+                      onMouseLeave={e => { if (!completing) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                    >
+                      <div style={{
+                        width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+                        border: `.5px solid ${completing ? 'var(--green)' : 'var(--text3)'}`,
+                        background: completing ? 'var(--green)' : 'transparent',
+                      }} />
+                      <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 12, color: completing ? 'var(--green)' : color, minWidth: 16, textAlign: 'right', flexShrink: 0 }}>{t.prioFinal ?? 0}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 13, color: completing ? 'var(--green)' : 'var(--text)', textDecoration: completing ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
+                        {t.propertyId && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.1em', color: 'var(--gold2)', marginTop: 2 }}>{t.propertyId.toUpperCase()}</div>}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </>
             )}
             {doneTasks.length > 0 && (
@@ -278,6 +291,16 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
   const [editing,  setEditing]      = useState<Project | null>(null);
   const [tab,      setTab]          = useState<'active' | 'done'>('active');
   const [isMobile, setIsMobile]     = useState(false);
+  const [completingIds, setCompletingIds] = useState<Set<number>>(new Set());
+  const router = useRouter();
+
+  const markingStart = (id: number) => setCompletingIds(prev => new Set(prev).add(id));
+  const undoMarking = (id: number) => setCompletingIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+  const markDoneAndClear = (id: number) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t));
+    setCompletingIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+    router.refresh(); // refresca contadores del nav sin necesidad de F5
+  };
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 769);
@@ -311,8 +334,11 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
               onArchive={() => { setProjects(prev => prev.map(p => p.id === selected.id ? { ...p, status: 'archived' } : p)); setSelected(null); }}
               onTaskCreated={t => setTasks(prev => [t, ...prev])}
               onTaskUpdate={(id, d) => setTasks(prev => prev.map(t => t.id === id ? { ...t, ...d } : t))}
-              onMarkDone={id => setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t))}
+              onMarkDone={markDoneAndClear}
               isMobile={isMobile}
+              completingIds={completingIds}
+              onMarkingStart={markingStart}
+              onUndo={undoMarking}
             />
           </div>
         </DesktopShell>
@@ -383,8 +409,11 @@ export default function ProjectsClient({ projects: initialProjects, allTasks: in
               onArchive={() => { setProjects(prev => prev.map(p => p.id === selected.id ? { ...p, status: 'archived' } : p)); setSelected(null); }}
               onTaskCreated={t => setTasks(prev => [t, ...prev])}
               onTaskUpdate={(id, d) => setTasks(prev => prev.map(t => t.id === id ? { ...t, ...d } : t))}
-              onMarkDone={id => setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t))}
+              onMarkDone={markDoneAndClear}
               isMobile={false}
+              completingIds={completingIds}
+              onMarkingStart={markingStart}
+              onUndo={undoMarking}
             />
           ) : (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>

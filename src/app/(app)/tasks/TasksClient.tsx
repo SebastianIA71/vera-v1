@@ -100,6 +100,9 @@ export default function TasksClient({
   const [showDormant, setShowDormant] = useState(false);
   const [dormantTasks, setDormantTasks] = useState<Task[]>([]);
   const [loadingDormant, setLoadingDormant] = useState(false);
+  /* IDs de tareas recién marcadas como hechas — se muestran en verde
+   * durante la ventana de undo, antes de desaparecer de la lista. */
+  const [completingIds, setCompletingIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 769);
@@ -141,8 +144,18 @@ export default function TasksClient({
 
   const markDone = (id: number) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t));
+    setCompletingIds(prev => { const next = new Set(prev); next.delete(id); return next; });
     if (selected?.id === id) setSelected(null);
+    router.refresh(); // refresca contadores del nav/DesktopShell sin necesidad de F5
   };
+
+  const markingStart = useCallback((id: number) => {
+    setCompletingIds(prev => new Set(prev).add(id));
+  }, []);
+
+  const undoMarking = useCallback((id: number) => {
+    setCompletingIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+  }, []);
 
   const handleUpdate = (id: number, data: Partial<Task>) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, ...data } : t));
@@ -170,13 +183,20 @@ export default function TasksClient({
 
   const bulkMarkDone = useCallback(async () => {
     const ids = [...selectedIds];
+    // Ponerlas en verde ya mismo, antes de esperar la respuesta del servidor.
+    setCompletingIds(prev => { const next = new Set(prev); ids.forEach(id => next.add(id)); return next; });
+    cancelSelection();
     await Promise.all(ids.map(id =>
       fetch(`/api/tasks/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'done' }) })
     ));
-    setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, status: 'done' } : t));
     toast(`${ids.length} tarea${ids.length !== 1 ? 's' : ''} marcada${ids.length !== 1 ? 's' : ''} como hechas`);
-    cancelSelection();
-  }, [selectedIds, toast, cancelSelection]);
+    // Esperar unos instantes en verde antes de quitarlas de la lista.
+    setTimeout(() => {
+      setTasks(prev => prev.map(t => ids.includes(t.id) ? { ...t, status: 'done' } : t));
+      setCompletingIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
+      router.refresh();
+    }, 1200);
+  }, [selectedIds, toast, cancelSelection, router]);
 
   const bulkArchive = useCallback(async () => {
     const ids = [...selectedIds];
@@ -186,7 +206,8 @@ export default function TasksClient({
     setTasks(prev => prev.filter(t => !selectedIds.has(t.id)));
     toast(`${ids.length} tarea${ids.length !== 1 ? 's' : ''} archivada${ids.length !== 1 ? 's' : ''}`, 'info');
     cancelSelection();
-  }, [selectedIds, toast, cancelSelection]);
+    router.refresh();
+  }, [selectedIds, toast, cancelSelection, router]);
 
   /* Esc cancels selection */
   useEffect(() => {
@@ -214,7 +235,7 @@ export default function TasksClient({
             TAREAS
           </button>
         </div>
-        <TaskDetailPanel key={selected.id} task={selected} onClose={() => setSelected(null)} onMarkDone={markDone} onUpdate={handleUpdate} />
+        <TaskDetailPanel key={selected.id} task={selected} onClose={() => setSelected(null)} onMarkDone={markDone} onUpdate={handleUpdate} onMarkingStart={markingStart} onUndo={undoMarking} />
       </div>
     );
   }
@@ -229,6 +250,8 @@ export default function TasksClient({
           onClose={() => setSelected(null)}
           onMarkDone={markDone}
           onUpdate={handleUpdate}
+          onMarkingStart={markingStart}
+          onUndo={undoMarking}
         />
       )}
     >
@@ -349,7 +372,7 @@ export default function TasksClient({
               <div style={{ padding: '10px 20px 4px', display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.26em', color: 'var(--text3)' }}>
                 <span>NOW · {nowTasks.length} TAREAS</span>
               </div>
-              {nowTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={selectionMode ? () => toggleSelect(t.id) : setSelected} onPrioChange={(id, v) => setTasks(prev => prev.map(x => x.id === id ? { ...x, prioFinal: v } : x))} projects={projects} trips={trips} selectionMode={selectionMode} isChecked={selectedIds.has(t.id)} onCheckbox={() => toggleSelect(t.id)} onLongPress={() => enterSelection(t.id)} />)}
+              {nowTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={selectionMode ? () => toggleSelect(t.id) : setSelected} onPrioChange={(id, v) => setTasks(prev => prev.map(x => x.id === id ? { ...x, prioFinal: v } : x))} projects={projects} trips={trips} selectionMode={selectionMode} isChecked={selectedIds.has(t.id)} onCheckbox={() => toggleSelect(t.id)} onLongPress={() => enterSelection(t.id)} completing={completingIds.has(t.id)} />)}
             </>
           )}
           {restTasks.length > 0 && (
@@ -357,7 +380,7 @@ export default function TasksClient({
               <div style={{ padding: '10px 20px 4px', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.26em', color: 'var(--text3)' }}>
                 RESTO · {restTasks.length} TAREAS
               </div>
-              {restTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={selectionMode ? () => toggleSelect(t.id) : setSelected} onPrioChange={(id, v) => setTasks(prev => prev.map(x => x.id === id ? { ...x, prioFinal: v } : x))} projects={projects} trips={trips} selectionMode={selectionMode} isChecked={selectedIds.has(t.id)} onCheckbox={() => toggleSelect(t.id)} onLongPress={() => enterSelection(t.id)} />)}
+              {restTasks.map(t => <TaskRow key={t.id} task={t} selected={selected?.id === t.id} onSelect={selectionMode ? () => toggleSelect(t.id) : setSelected} onPrioChange={(id, v) => setTasks(prev => prev.map(x => x.id === id ? { ...x, prioFinal: v } : x))} projects={projects} trips={trips} selectionMode={selectionMode} isChecked={selectedIds.has(t.id)} onCheckbox={() => toggleSelect(t.id)} onLongPress={() => enterSelection(t.id)} completing={completingIds.has(t.id)} />)}
             </>
           )}
           {doneTasks.length > 0 && filters.status === 'done' && (
@@ -456,12 +479,12 @@ export default function TasksClient({
   );
 }
 
-function TaskRow({ task, selected, onSelect, onPrioChange, projects, trips, selectionMode, isChecked, onCheckbox, onLongPress }: {
+function TaskRow({ task, selected, onSelect, onPrioChange, projects, trips, selectionMode, isChecked, onCheckbox, onLongPress, completing }: {
   task: Task; selected: boolean; onSelect: (t: Task) => void; onPrioChange: (id: number, v: number) => void;
   projects: { id: number; name: string; color: string | null }[]; trips: { id: number; title: string }[];
-  selectionMode?: boolean; isChecked?: boolean; onCheckbox?: () => void; onLongPress?: () => void;
+  selectionMode?: boolean; isChecked?: boolean; onCheckbox?: () => void; onLongPress?: () => void; completing?: boolean;
 }) {
-  const bc = (isChecked || selected) ? 'var(--gold2)' : taskBorderColor(task.prioFinal ?? 0, task.lastActionAt);
+  const bc = completing ? 'var(--green)' : (isChecked || selected) ? 'var(--gold2)' : taskBorderColor(task.prioFinal ?? 0, task.lastActionAt);
 
   /* Long-press para móvil — 500ms */
   let longPressTimer: ReturnType<typeof setTimeout> | null = null;
@@ -488,13 +511,13 @@ function TaskRow({ task, selected, onSelect, onPrioChange, projects, trips, sele
       style={{
         display: 'flex', alignItems: 'center', gap: 12, padding: '10px 20px',
         cursor: 'pointer', borderBottom: '.5px solid var(--bg2)',
-        position: 'relative', transition: 'background .1s',
-        background: task.prioFinal === 10 ? 'var(--danger-bg)' : (isChecked || selected) ? 'var(--bg2)' : 'transparent',
-        border: task.prioFinal === 10 ? '.5px solid var(--danger-border)' : 'none',
-        borderRadius: task.prioFinal === 10 ? 6 : 0,
+        position: 'relative', transition: 'background .25s, border-color .25s',
+        background: completing ? 'var(--green)14' : task.prioFinal === 10 ? 'var(--danger-bg)' : (isChecked || selected) ? 'var(--bg2)' : 'transparent',
+        border: completing ? '.5px solid var(--green)' : task.prioFinal === 10 ? '.5px solid var(--danger-border)' : 'none',
+        borderRadius: completing || task.prioFinal === 10 ? 6 : 0,
       }}
-      onMouseEnter={e => { if (!selected && !isChecked) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg2)'; }}
-      onMouseLeave={e => { if (!selected && !isChecked) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+      onMouseEnter={e => { if (!selected && !isChecked && !completing) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg2)'; }}
+      onMouseLeave={e => { if (!selected && !isChecked && !completing) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
     >
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: bc, borderRadius: 0 }} />
 
@@ -519,9 +542,16 @@ function TaskRow({ task, selected, onSelect, onPrioChange, projects, trips, sele
         <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 13, color: task.prioFinal === 10 ? '#ffffff' : 'var(--gold2)', lineHeight: 1, minWidth: 18, textAlign: 'center' }}>{task.prioFinal ?? 0}</span>
         <button onClick={e => changePrio(e, +1)} style={{ width: 28, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: 14, lineHeight: 1, WebkitTapHighlightColor: 'transparent' }}>+</button>
       </div>
-      <div style={{ width: 16, height: 16, borderRadius: '50%', border: '.5px solid var(--text3)', flexShrink: 0 }} />
+      <div style={{
+        width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+        border: `.5px solid ${completing ? 'var(--green)' : 'var(--text3)'}`,
+        background: completing ? 'var(--green)' : 'transparent',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {completing && <svg viewBox="0 0 24 24" width={10} height={10} fill="none" stroke="var(--bg)" strokeWidth={3} strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+      </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 15, color: completing ? 'var(--green)' : 'var(--text)', textDecoration: completing ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {task.title}
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 3, fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.1em', color: 'var(--text4)', alignItems: 'center' }}>

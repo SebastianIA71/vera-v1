@@ -27,6 +27,11 @@ type Props = {
   onClose: () => void;
   onMarkDone: (id: number) => void;
   onUpdate?: (id: number, data: Partial<TaskDetail>) => void;
+  /** Se dispara en cuanto se pulsa "Marcar hecha", antes de la espera —
+   * permite que la fila en la lista se ponga en verde ya mientras el panel espera el undo. */
+  onMarkingStart?: (id: number) => void;
+  /** Se dispara al deshacer — permite que la fila en la lista recupere su color normal. */
+  onUndo?: (id: number) => void;
 };
 
 const PROP_COLORS: Record<string, string> = {
@@ -199,7 +204,7 @@ function AttachmentsSection({ taskId }: { taskId: number }) {
   );
 }
 
-export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }: Props) {
+export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate, onMarkingStart, onUndo }: Props) {
   const { toast } = useToast();
   const [notes, setNotes] = useState(task.notes ?? '');
   const [saving, setSaving] = useState(false);
@@ -294,12 +299,14 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'done' }),
     });
-    // No llamar onMarkDone todavía — esperar al timeout para que el undo sea posible
+    // Avisar ya al padre para que la fila en la lista se ponga en verde
+    // mientras esperamos la ventana de undo — no la quitamos todavía.
+    onMarkingStart?.(task.id);
     setJustDone(true);
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
     undoTimerRef.current = setTimeout(() => {
       setJustDone(false);
-      onMarkDone(task.id); // ahora sí notificar al padre
+      onMarkDone(task.id); // ahora sí notificar al padre — quitar de la lista
     }, 5000);
   };
 
@@ -312,6 +319,7 @@ export default function TaskDetailPanel({ task, onClose, onMarkDone, onUpdate }:
       body: JSON.stringify({ status: 'wait' }),
     });
     onUpdate?.(task.id, { status: 'wait' });
+    onUndo?.(task.id);
     toast('Deshecha', 'info');
   };
 

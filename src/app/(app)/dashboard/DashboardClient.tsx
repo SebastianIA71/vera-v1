@@ -31,7 +31,6 @@ type Task = {
   inNow?: boolean | null; type?: string | null; lastActionAt?: Date | null;
   tags?: string | null; dueDate?: Date | null;
 };
-type CompletingTask = Task & { completingAt: number };
 type WeightLogEntry = { date: string; value: number };
 type VehicleSummary = {
   id: number; name: string; brand?: string | null; model?: string | null; plate?: string | null;
@@ -129,7 +128,7 @@ function EntityBadge({ icon, iconUrl, color, count, label, onClick }: {
 }
 
 /* ─── Right Panel ───────────────────────────────────── */
-function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkDone, onNewTask, router }: {
+function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkDone, onNewTask, router, completingIds }: {
   tasks: Task[];
   inboxCount: number;
   nextTrip: { title: string; daysTo: number } | null;
@@ -138,6 +137,7 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
   onMarkDone: (id: number) => void;
   onNewTask: () => void;
   router: ReturnType<typeof useRouter>;
+  completingIds: Set<number>;
 }) {
   const now = new Date();
 
@@ -207,15 +207,26 @@ function RightPanel({ tasks, inboxCount, nextTrip, nextEvent, allEvents, onMarkD
         <div style={{ padding: '0 18px', marginBottom: 8 }}>
           {topTasks.map(task => {
             const prio = task.prioFinal ?? 0;
-            const color = prio >= 9 ? 'var(--red)' : prio >= 7 ? 'var(--amber)' : 'var(--text3)';
+            const completing = completingIds.has(task.id);
+            const color = completing ? 'var(--green)' : prio >= 9 ? 'var(--red)' : prio >= 7 ? 'var(--amber)' : 'var(--text3)';
             return (
-              <div key={task.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '.5px solid var(--bg2)', cursor: 'pointer' }} onClick={() => router.push('/tasks')}>
+              <div key={task.id} style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '8px 6px', margin: '0 -6px',
+                borderBottom: '.5px solid var(--bg2)', borderRadius: completing ? 6 : 0, cursor: 'pointer',
+                background: completing ? 'var(--green)14' : 'transparent', transition: 'background .25s',
+              }} onClick={() => router.push('/tasks')}>
                 <button
-                  onClick={(e) => { e.stopPropagation(); onMarkDone(task.id); }}
-                  style={{ width: 16, height: 16, borderRadius: '50%', border: `.5px solid ${color}`, background: 'transparent', cursor: 'pointer', flexShrink: 0 }}
-                />
+                  onClick={(e) => { e.stopPropagation(); if (!completing) onMarkDone(task.id); }}
+                  style={{
+                    width: 16, height: 16, borderRadius: '50%', border: `.5px solid ${color}`,
+                    background: completing ? 'var(--green)' : 'transparent', cursor: 'pointer', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  {completing && <svg viewBox="0 0 24 24" width={9} height={9} fill="none" stroke="var(--bg)" strokeWidth={3} strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </button>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: completing ? 'var(--green)' : 'var(--text)', textDecoration: completing ? 'line-through' : 'none', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {task.title}
                   </div>
                   {task.propertyId && (
@@ -448,14 +459,23 @@ export default function DashboardClient({
     return () => clearInterval(id);
   }, []);
 
+  const [completingIds, setCompletingIds] = useState<Set<number>>(new Set());
+
   const markDone = useCallback(async (id: number) => {
+    // Ponerla en verde ya mismo, antes de esperar la respuesta del servidor.
+    setCompletingIds(prev => new Set(prev).add(id));
     await fetch(`/api/tasks/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'done' }),
     });
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t));
-  }, []);
+    // Esperar unos instantes en verde antes de quitarla de la lista.
+    setTimeout(() => {
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t));
+      setCompletingIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+      router.refresh(); // refresca contadores del nav sin necesidad de F5
+    }, 1200);
+  }, [router]);
 
   const handleTaskCreated = useCallback((task: Task) => {
     setTasks(prev => [task, ...prev]);
@@ -868,6 +888,7 @@ export default function DashboardClient({
             onMarkDone={markDone}
             onNewTask={() => setShowNewTask(true)}
             router={router}
+            completingIds={completingIds}
           />
         ))}
       </div>

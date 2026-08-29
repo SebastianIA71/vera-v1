@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/Toast';
 
 type Task = { id: number; title: string; propertyId?: string | null; prio?: number | null; prioFinal?: number | null; status?: string | null };
@@ -28,6 +29,7 @@ export default function NewTaskModal({
   defaultProjectId?: number;
 }) {
   const { toast } = useToast();
+  const router = useRouter();
   const [title, setTitle]           = useState('');
   const [titleError, setTitleError] = useState(false);
   const [prio, setPrio]             = useState(5);
@@ -79,6 +81,7 @@ export default function NewTaskModal({
       const task = await res.json();
       onCreated(task);
       toast('Tarea creada');
+      router.refresh(); // refresca contadores del nav/DesktopShell sin necesidad de F5
     } else {
       toast('Error al crear la tarea', 'error');
     }

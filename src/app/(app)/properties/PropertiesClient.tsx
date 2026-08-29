@@ -48,10 +48,17 @@ export default function PropertiesClient({
     return () => window.removeEventListener('resize', check);
   }, []);
 
+  const [completingIds, setCompletingIds] = useState<Set<number>>(new Set());
+
   const markDone = (id: number) => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'done' } : t));
+    setCompletingIds(prev => { const next = new Set(prev); next.delete(id); return next; });
     if (selected?.id === id) setSelected(null);
+    router.refresh(); // refresca contadores del nav sin necesidad de F5
   };
+
+  const markingStart = (id: number) => setCompletingIds(prev => new Set(prev).add(id));
+  const undoMarking = (id: number) => setCompletingIds(prev => { const next = new Set(prev); next.delete(id); return next; });
 
   return (
     <>
@@ -63,6 +70,8 @@ export default function PropertiesClient({
           onClose={() => setSelected(null)}
           onMarkDone={markDone}
           onUpdate={(id, data) => setTasks(prev => prev.map(t => t.id === id ? { ...t, ...data } : t))}
+          onMarkingStart={markingStart}
+          onUndo={undoMarking}
         />
       )}
     >
@@ -139,23 +148,28 @@ export default function PropertiesClient({
                 {/* Task list */}
                 <div style={{ flex: 1, overflowY: 'auto' }}>
                   {propTasks.map(t => {
-                    const bc = taskBorderColor(t);
+                    const completing = completingIds.has(t.id);
+                    const bc = completing ? 'var(--green)' : taskBorderColor(t);
                     const stale = t.lastActionAt ? Math.floor((Date.now() - new Date(t.lastActionAt).getTime()) / 86400000) : 0;
                     return (
                       <div key={t.id} onClick={() => isMobile ? router.push(`/tasks/${t.id}`) : setSelected(t)} style={{
                         display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px',
                         cursor: 'pointer', borderBottom: '.5px solid var(--bg2)',
-                        position: 'relative', transition: 'background .1s',
-                        background: 'transparent',
+                        position: 'relative', transition: 'background .25s',
+                        background: completing ? 'var(--green)14' : 'transparent',
                       }}
-                        onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--bg2)'; }}
-                        onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                        onMouseEnter={e => { if (!completing) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg2)'; }}
+                        onMouseLeave={e => { if (!completing) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
                       >
                         <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: selected?.id === t.id ? 'var(--gold2)' : bc }} />
-                        <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 12, color: 'var(--gold)', minWidth: 16, textAlign: 'right', flexShrink: 0 }}>{t.prioFinal ?? 0}</div>
-                        <div style={{ width: 14, height: 14, borderRadius: '50%', border: '.5px solid var(--text3)', flexShrink: 0 }} />
+                        <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 12, color: completing ? 'var(--green)' : 'var(--gold)', minWidth: 16, textAlign: 'right', flexShrink: 0 }}>{t.prioFinal ?? 0}</div>
+                        <div style={{
+                          width: 14, height: 14, borderRadius: '50%', flexShrink: 0,
+                          border: `.5px solid ${completing ? 'var(--green)' : 'var(--text3)'}`,
+                          background: completing ? 'var(--green)' : 'transparent',
+                        }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.title}</div>
+                          <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 12, color: completing ? 'var(--green)' : 'var(--text)', textDecoration: completing ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.title}</div>
                           <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.08em', color: stale >= 14 ? 'var(--amber)' : 'var(--text4)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {stale >= 14 ? `${stale}D SIN MOVER` : t.status?.toUpperCase()}
                           </div>

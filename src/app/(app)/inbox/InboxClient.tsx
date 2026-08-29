@@ -121,6 +121,7 @@ export default function InboxClient({ initialItems, urgentCount, staleCount, inb
     });
     setItems(prev => prev.map(i => i.id === selected.id ? { ...i, processed: true } : i));
     setSelected(null);
+    router.refresh();
   };
 
   const srcColor = (src?: string | null) => SRC_COLOR[src ?? ''] ?? 'var(--text2)';
