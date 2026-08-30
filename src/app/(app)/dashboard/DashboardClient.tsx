@@ -552,7 +552,7 @@ export default function DashboardClient({
       </div>
 
       {/* LAYOUT */}
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
 
         {/* LEFT PANEL — nav + song */}
         <div style={{ width: 260, flexShrink: 0, borderRight: '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -570,7 +570,7 @@ export default function DashboardClient({
         </div>
 
         {/* CENTER: ORBITAL */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', overflowX: 'hidden', minHeight: 0 }}>
           <div style={{ padding: '16px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexShrink: 0 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
@@ -600,7 +600,7 @@ export default function DashboardClient({
 
 
           {/* Orbital map */}
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', paddingTop: 8, overflow: 'visible' }}>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', paddingTop: 8, overflow: 'visible', minHeight: 480, flexShrink: 0 }}>
 
             {/* ── LEFT: KPI zone (30%) ── */}
             <div style={{ flex: 3, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', padding: '0 8px' }}>

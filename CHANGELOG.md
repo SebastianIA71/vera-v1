@@ -3,6 +3,17 @@
 
 ---
 
+## v1.30 — 30 ago 2026 — Fix scroll Command Centre en pantallas bajas
+
+**Problema:** El Command Centre (`/dashboard`) monta su propio shell con `height: 100vh` y `overflow: hidden` en todas las columnas, pero la columna central no tenía scroll vertical (a diferencia del `DesktopShell` genérico). En portátiles Mac o monitores con menos alto, las tarjetas inferiores (Objetivos, Propiedades, Peso, Vehículos) y el Briefing quedaban recortados sin forma de bajar.
+
+**Solución (`src/app/(app)/dashboard/DashboardClient.tsx`):**
+- Columna central: `overflow: hidden` → `overflowY: auto` + `overflowX: hidden` + `minHeight: 0`.
+- Fila del orbital: `minHeight: 480` + `flexShrink: 0` para que no colapse y el contenido pase a scroll en vez de recortarse.
+- Fila LAYOUT: `minHeight: 0` para permitir el shrink correcto del hijo scrollable.
+
+---
+
 ## v1.01 — Junio 2026
 
 ### 10 jun 2026 — Fix despliegue Vercel + params async
