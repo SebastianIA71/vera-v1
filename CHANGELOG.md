@@ -3,6 +3,34 @@
 
 ---
 
+## v1.31 — 30 ago 2026 — Módulo Suministros (Fase 1: agua Sarapita)
+
+Nueva sección `/suministros` para estimar la factura de agua de Porrassa 60 (Campos)
+a partir de lecturas del contador. Patrón espejo de Vehículos (entidad + log + motor).
+
+**Datos (3 tablas nuevas + migración auto):**
+- `utility_meters` — punto de suministro / contador (type agua|luz|gas, propertyId, tarifa versionada en JSON)
+- `meter_readings` — lecturas (origin manual|foto|factura; sólo `factura`/isCycleClose mueve la referencia)
+- `utility_bills` — facturas reales = ground truth + canario de tarifas (`estimateAtClose` vs `amountTotal`)
+
+**Motor de cálculo** (`src/lib/utilities/`, funciones puras):
+- `water-campos.ts` — fórmula A+B+C+D, tramo A no marginal, cànon D marginal por bloques, redondeo por línea
+- `tariff.ts` — tarifas como datos versionados (`vigenteDesde`), no hardcode
+- `cycle.ts` — bimestres (B1 ene-feb … B6 nov-dic)
+- `estimate.ts` — estimación actual + proyección (estacional con fallback lineal marcado "provisional")
+- **Verificado al céntimo** contra las 4 facturas reales (13→33,10 / 38→109,48 / 109→850,25 / 211→1.698,33)
+- `GET /api/suministros/selftest` — canario permanente del motor
+
+**API:** `/api/suministros` (CRUD medidor), `/api/suministros/[id]/readings`, `/api/suministros/[id]/bills`,
+`/api/suministros/seed` (idempotente: medidor Sarapita + 25 lecturas 2025 + 4 facturas de verificación).
+
+**UI:** página `/suministros` (clon de Vehículos), entrada en nav desktop y móvil, botón "sembrar datos".
+
+**Fuera de Fase 1 (pendiente):** captura por foto + OCR, hooks en ritual/AlertAgent, enlace desde
+Propiedades › Sarapita, confirmar lecturas sin fecha (312/314/319/321) y anclar fuente BOIB exacta.
+
+---
+
 ## v1.30 — 30 ago 2026 — Fix scroll Command Centre en pantallas bajas
 
 **Problema:** El Command Centre (`/dashboard`) monta su propio shell con `height: 100vh` y `overflow: hidden` en todas las columnas, pero la columna central no tenía scroll vertical (a diferencia del `DesktopShell` genérico). En portátiles Mac o monitores con menos alto, las tarjetas inferiores (Objetivos, Propiedades, Peso, Vehículos) y el Briefing quedaban recortados sin forma de bajar.

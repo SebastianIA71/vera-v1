@@ -131,6 +131,59 @@ export async function runAutoMigrations(): Promise<void> {
       id:  'projects.icon_url',
       sql: 'ALTER TABLE projects ADD COLUMN icon_url TEXT',
     },
+    {
+      id:  'create.utility_meters',
+      sql: `CREATE TABLE IF NOT EXISTS utility_meters (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        property_id TEXT REFERENCES properties(id),
+        type TEXT DEFAULT 'agua',
+        name TEXT NOT NULL,
+        provider TEXT,
+        serial TEXT,
+        poliza_ref TEXT,
+        unit TEXT DEFAULT 'm3',
+        billing_months INTEGER DEFAULT 2,
+        cycle_anchor TEXT DEFAULT 'ene',
+        tariff_config TEXT,
+        active INTEGER DEFAULT 1,
+        notes TEXT,
+        created_at INTEGER
+      )`,
+    },
+    {
+      id:  'create.meter_readings',
+      sql: `CREATE TABLE IF NOT EXISTS meter_readings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        meter_id INTEGER NOT NULL REFERENCES utility_meters(id),
+        date TEXT NOT NULL,
+        value REAL NOT NULL,
+        origin TEXT DEFAULT 'manual',
+        is_cycle_close INTEGER DEFAULT 0,
+        bill_id INTEGER,
+        photo_url TEXT,
+        notes TEXT,
+        created_at INTEGER
+      )`,
+    },
+    {
+      id:  'create.utility_bills',
+      sql: `CREATE TABLE IF NOT EXISTS utility_bills (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        meter_id INTEGER NOT NULL REFERENCES utility_meters(id),
+        source TEXT DEFAULT 'municipal',
+        issue_date TEXT,
+        period_start TEXT,
+        period_end TEXT,
+        reading_open REAL,
+        reading_close REAL,
+        consumption INTEGER,
+        amount_total REAL,
+        breakdown TEXT,
+        estimate_at_close REAL,
+        notes TEXT,
+        created_at INTEGER
+      )`,
+    },
   ];
 
   for (const m of migrations) {

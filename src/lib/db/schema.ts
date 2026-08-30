@@ -283,6 +283,65 @@ export const attachments = sqliteTable('attachments', {
   createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow(),
 });
 
+/* ─── SUMINISTROS (agua / luz / gas por propiedad) ───────────────────
+   Patrón espejo de vehicles + km_logs:
+   - utilityMeters  ≈ punto de suministro / contador
+   - meterReadings  ≈ lecturas del contador (como km_logs)
+   - utilityBills   ≈ facturas reales = ground truth + canario de tarifas
+   El motor de cálculo vive en src/lib/utilities/ (funciones puras).       */
+
+export const utilityMeters = sqliteTable('utility_meters', {
+  id:            integer('id').primaryKey({ autoIncrement: true }),
+  propertyId:    text('property_id').references(() => properties.id),
+  type:          text('type').default('agua'),        // 'agua' | 'luz' | 'gas'
+  name:          text('name').notNull(),
+  provider:      text('provider'),
+  serial:        text('serial'),                       // nº de serie del contador
+  polizaRef:     text('poliza_ref'),
+  unit:          text('unit').default('m3'),
+  billingMonths: integer('billing_months').default(2), // bimestral = 2
+  cycleAnchor:   text('cycle_anchor').default('ene'),  // 1er mes del ciclo B1
+  // JSON: array de versiones de tarifa { vigenteDesde, priceA[], cuotaB, ivaB, cuotaC, ivaA, blocksD[] }
+  tariffConfig:  text('tariff_config'),
+  active:        integer('active', { mode: 'boolean' }).default(true),
+  notes:         text('notes'),
+  createdAt:     integer('created_at', { mode: 'timestamp' }).defaultNow(),
+});
+
+export const meterReadings = sqliteTable('meter_readings', {
+  id:           integer('id').primaryKey({ autoIncrement: true }),
+  meterId:      integer('meter_id').notNull().references(() => utilityMeters.id),
+  date:         text('date').notNull(),               // YYYY-MM-DD
+  value:        real('value').notNull(),              // m³ (admite decimales; se factura entero)
+  origin:       text('origin').default('manual'),     // 'factura' | 'foto' | 'manual'
+  isCycleClose: integer('is_cycle_close', { mode: 'boolean' }).default(false),
+  billId:       integer('bill_id'),
+  photoUrl:     text('photo_url'),
+  notes:        text('notes'),
+  createdAt:    integer('created_at', { mode: 'timestamp' }).defaultNow(),
+});
+
+export const utilityBills = sqliteTable('utility_bills', {
+  id:              integer('id').primaryKey({ autoIncrement: true }),
+  meterId:         integer('meter_id').notNull().references(() => utilityMeters.id),
+  source:          text('source').default('municipal'), // 'municipal' | 'atib'
+  issueDate:       text('issue_date'),                   // YYYY-MM-DD
+  periodStart:     text('period_start'),
+  periodEnd:       text('period_end'),
+  readingOpen:     real('reading_open'),
+  readingClose:    real('reading_close'),
+  consumption:     integer('consumption'),              // m³ enteros
+  amountTotal:     real('amount_total'),
+  breakdown:       text('breakdown'),                   // JSON {A, iva10A, B, iva21B, C, D}
+  estimateAtClose: real('estimate_at_close'),           // lo que el motor predijo → delta
+  notes:           text('notes'),
+  createdAt:       integer('created_at', { mode: 'timestamp' }).defaultNow(),
+});
+
+export type UtilityMeterRow = typeof utilityMeters.$inferSelect;
+export type MeterReadingRow = typeof meterReadings.$inferSelect;
+export type UtilityBillRow  = typeof utilityBills.$inferSelect;
+
 export type EventMeta = {
   destination?: string;
   budget?: { total: number; currency: string; spent: number };

@@ -106,6 +106,14 @@ function VehiclesIcon({ size, color }: { size: number; color: string }) {
   )
 }
 
+function SuministrosIcon({ size, color }: { size: number; color: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2.5s6 6.5 6 11a6 6 0 01-12 0c0-4.5 6-11 6-11z" />
+    </svg>
+  )
+}
+
 function ContactsIcon({ size, color }: { size: number; color: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -158,6 +166,7 @@ const MORE_ITEMS: MoreItem[] = [
   { href: '/finance',    label: 'Finanzas',    icon: FinanceIcon },
   { href: '/contracts',  label: 'Contratos',   icon: ContractsIcon },
   { href: '/vehicles',   label: 'Vehículos',   icon: VehiclesIcon },
+  { href: '/suministros', label: 'Suministros', icon: SuministrosIcon },
   { href: '/contacts',   label: 'Contactos',   icon: ContactsIcon },
   { href: '/agents',     label: 'Agentes',     icon: AgentsIcon },
   { href: '/notes',      label: 'Notas',       icon: NotesIcon },

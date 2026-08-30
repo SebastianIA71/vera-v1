@@ -14,6 +14,7 @@ function NavIcon({ icon }: { icon: string }) {
     projects: <svg viewBox="0 0 24 24" width={18} height={18} {...s}><rect x="2" y="3" width="6" height="6" rx="1"/><rect x="9" y="3" width="13" height="2.5" rx="1"/><rect x="2" y="10.5" width="6" height="6" rx="1"/><rect x="9" y="10.5" width="13" height="2.5" rx="1"/><rect x="2" y="18" width="6" height="3" rx="1"/><rect x="9" y="18" width="13" height="2.5" rx="1"/></svg>,
     finance:  <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M17 8.5C15.5 7 13.5 6 11.5 6C7.9 6 5 8.9 5 12.5S7.9 19 11.5 19c2 0 4-1 5.5-2.5"/><line x1="3" y1="11" x2="13" y2="11"/><line x1="3" y1="14" x2="13" y2="14"/></svg>,
     vehicles: <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M5 17H3v-1.8L5.5 9h13L21 15.2V17h-2m-1 1a1.5 1.5 0 0 1-3 0 1.5 1.5 0 0 1 3 0m-10 0a1.5 1.5 0 0 1-3 0 1.5 1.5 0 0 1 3 0"/><path d="M6 15h12"/></svg>,
+    suministros:<svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M12 2.5s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg>,
     contracts:<svg viewBox="0 0 24 24" width={18} height={18} {...s}><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="12" y2="15"/></svg>,
     agents:   <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M12 3L14 10L21 12L14 14L12 21L10 14L3 12L10 10Z"/></svg>,
     contacts: <svg viewBox="0 0 24 24" width={18} height={18} {...s}><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
@@ -119,6 +120,7 @@ export default function DesktopNav({
       <NavItem icon="finance"   label="FINANZAS"    active={isActive('/finance')}    onClick={() => router.push('/finance')} />
       <NavItem icon="contracts" label="CONTRATOS"   active={isActive('/contracts')}  onClick={() => router.push('/contracts')} />
       <NavItem icon="vehicles"  label="VEHÍCULOS"   active={isActive('/vehicles')}   onClick={() => router.push('/vehicles')} />
+      <NavItem icon="suministros" label="SUMINISTROS" active={isActive('/suministros')} onClick={() => router.push('/suministros')} />
       <NavItem icon="contacts"  label="CONTACTOS"   active={isActive('/contacts')}   onClick={() => router.push('/contacts')} />
       <NavItem icon="agents"    label="AGENTES"     active={isActive('/agents')}     onClick={() => router.push('/agents')} />
 
