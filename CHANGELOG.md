@@ -3,6 +3,15 @@
 
 ---
 
+## v1.32 — 31 ago 2026 — Suministros: anonimizar medidor agua Sarapita
+
+Petición de Sebastián: quitar identificadores del medidor de agua de Sarapita
+(código fuente + fila ya sembrada en Turso).
+- Nombre `Agua · Porrassa 60` → `Agua · DSR`
+- `provider` (`Servei Municipal d'Aigua Potable — Ajuntament de Campos`) → eliminado
+- `serial` (`ZA010655`) → eliminado (también quitada la referencia en `notes`)
+- Seed (`/api/suministros/seed`) pasa de idempotencia por `serial` a `propertyId + name`, ya que el serial ya no forma parte del fixture.
+
 ## v1.31 — 30 ago 2026 — Módulo Suministros (Fase 1: agua Sarapita)
 
 Nueva sección `/suministros` para estimar la factura de agua de Porrassa 60 (Campos)

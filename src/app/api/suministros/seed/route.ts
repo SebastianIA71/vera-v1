@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { utilityMeters, meterReadings, utilityBills } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { DEFAULT_WATER_TARIFF_CONFIG, AGUA_CAMPOS_2025 } from '@/lib/utilities/tariff';
 import { computeBill } from '@/lib/utilities/water-campos';
 import { HISTORIC_READINGS, BILL_ORACLE, METER_SEED } from '@/lib/utilities/fixtures';
@@ -9,8 +9,10 @@ import { HISTORIC_READINGS, BILL_ORACLE, METER_SEED } from '@/lib/utilities/fixt
 export const dynamic = 'force-dynamic';
 
 async function seed() {
-  // 1. Medidor (idempotente por serial)
-  const found = await db.select().from(utilityMeters).where(eq(utilityMeters.serial, METER_SEED.serial)).limit(1);
+  // 1. Medidor (idempotente por propiedad + nombre)
+  const found = await db.select().from(utilityMeters)
+    .where(and(eq(utilityMeters.propertyId, METER_SEED.propertyId), eq(utilityMeters.name, METER_SEED.name)))
+    .limit(1);
   let meter = found[0];
   if (!meter) {
     const inserted = await db.insert(utilityMeters).values({

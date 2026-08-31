@@ -1,5 +1,5 @@
 /**
- * Datos de referencia para Sarapita / Aigua Porrassa 60 (contador ZA010655).
+ * Datos de referencia para Sarapita / Aigua DSR.
  * Se usan en el seed (/api/suministros/seed) y en el selftest del motor.
  */
 
@@ -12,7 +12,7 @@ export const BILL_ORACLE: { consumo: number; total: number }[] = [
 ];
 
 /**
- * Lecturas históricas aportadas (contador ZA010655). Formato DD/MM/YY → ISO.
+ * Lecturas históricas aportadas. Formato DD/MM/YY → ISO.
  * Las 4 lecturas sin fecha del original (312, 314, 319, 321) quedan FUERA
  * hasta poder ordenarlas — no se siembran.
  */
@@ -47,15 +47,13 @@ export const HISTORIC_READINGS: { date: string; value: number }[] = [
 export const METER_SEED = {
   propertyId: 'sarapita',
   type: 'agua',
-  name: 'Agua · Porrassa 60',
-  provider: "Servei Municipal d'Aigua Potable — Ajuntament de Campos",
-  serial: 'ZA010655',
+  name: 'Agua · DSR',
   polizaRef: '101633',
   unit: 'm3',
   billingMonths: 2,
   cycleAnchor: 'ene',
   notes:
-    'Contador Sagemcom S23ZA010655, instalado 05/2023. Ciclo bimestral. ' +
+    'Contador instalado 05/2023. Ciclo bimestral. ' +
     'Doble facturación: municipal (Ajuntament) + cànon sanejament (ATIB). ' +
     'Lecturas sin fecha pendientes: 312, 314, 319, 321.',
 };
