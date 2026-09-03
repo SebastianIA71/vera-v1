@@ -80,6 +80,60 @@ function DeltaChip({ label, pct, abs }: { label: string; pct: number | null; abs
   );
 }
 
+/* ─── gráfico de tarta ───────────────────────────────── */
+type PieSlice = { label: string; value: number; color: string };
+
+function PieChart({ slices, size = 128 }: { slices: PieSlice[]; size?: number }) {
+  const total = slices.reduce((s, x) => s + x.value, 0) || 1;
+  const r = size / 2;
+  let angle = -90;
+  const toXY = (a: number) => {
+    const rad = (a * Math.PI) / 180;
+    return [r + r * Math.cos(rad), r + r * Math.sin(rad)];
+  };
+  const arcs = slices.map(s => {
+    const frac = s.value / total;
+    const startAngle = angle;
+    const endAngle = angle + frac * 360;
+    angle = endAngle;
+    const large = endAngle - startAngle > 180 ? 1 : 0;
+    const [x1, y1] = toXY(startAngle);
+    const [x2, y2] = toXY(endAngle);
+    const d = frac >= 0.999
+      ? `M ${r} ${0} A ${r} ${r} 0 1 1 ${r - 0.01} 0 Z`
+      : `M ${r} ${r} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
+    return { d, color: s.color, label: s.label, pct: frac * 100, value: s.value };
+  });
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
+        {arcs.map((a, i) => <path key={i} d={a.d} fill={a.color} stroke="var(--bg2)" strokeWidth="1.5" />)}
+      </svg>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+        {arcs.map((a, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 9, height: 9, borderRadius: 2, background: a.color, flexShrink: 0 }} />
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.08em', color: 'var(--text2)', minWidth: 32 }}>{a.label}</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 12, fontWeight: 700, color: a.color }}>{a.pct.toFixed(1)}%</span>
+            <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)' }}>{fmtThousands(a.value)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PieCard({ title, slices }: { title: string; slices: PieSlice[] }) {
+  return (
+    <div style={{ flex: '1 1 300px', minWidth: 280, background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14, padding: '18px 20px' }}>
+      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', color: 'var(--text3)', marginBottom: 16 }}>
+        {title}
+      </div>
+      <PieChart slices={slices} />
+    </div>
+  );
+}
+
 function BigMetricCard({ label, sub, vals, color, big = false }: {
   label: string; sub?: string; vals: number[]; color: string; big?: boolean;
 }) {
@@ -139,6 +193,11 @@ export function GraficosSection({ records }: { records: Rec[] }) {
   const propEquityVals = (key: 'lf' | 'rs', share: number) =>
     asc.map(r => n((r as unknown as Record<string, number | null>)[key]) - n(r.x1) * share);
 
+  const last = asc[asc.length - 1];
+  const lastLN = n(last.x1);
+  const lfValue = n(last.lf), rsValue = n(last.rs);
+  const lfLoan = lastLN * 0.30, rsLoan = lastLN * 0.70;
+
   return (
     <div style={{ padding: '28px 32px 100px', maxWidth: 1160, margin: '0 auto' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 16 }}>
@@ -165,6 +224,34 @@ export function GraficosSection({ records }: { records: Rec[] }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(200px, 1fr))', gap: 16 }}>
         <BigMetricCard label="LF · EQUITY" sub="Palma de Mallorca" vals={propEquityVals('lf', 0.30)} color="var(--gold2)" />
         <BigMetricCard label="RS · EQUITY" sub="Campos · Sa Ràpita" vals={propEquityVals('rs', 0.70)} color="var(--blue)" />
+      </div>
+
+      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.24em', color: 'var(--text3)', marginBottom: 12, marginTop: 28 }}>
+        COMPOSICIÓN
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+        <PieCard
+          title="INMUEBLES — % DEL VALOR TOTAL"
+          slices={PROP_META.map(p => ({
+            label: p.label,
+            value: n((last as unknown as Record<string, number | null>)[p.key]),
+            color: p.color,
+          }))}
+        />
+        <PieCard
+          title="LF — HIPOTECA VS. EQUITY"
+          slices={[
+            { label: 'LOAN', value: lfLoan, color: 'var(--red)' },
+            { label: 'EQUITY', value: lfValue - lfLoan, color: 'var(--gold2)' },
+          ]}
+        />
+        <PieCard
+          title="RS — HIPOTECA VS. EQUITY"
+          slices={[
+            { label: 'LOAN', value: rsLoan, color: 'var(--red)' },
+            { label: 'EQUITY', value: rsValue - rsLoan, color: 'var(--blue)' },
+          ]}
+        />
       </div>
     </div>
   );
