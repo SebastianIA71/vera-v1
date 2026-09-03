@@ -21,10 +21,10 @@ function fmtBig(v: number): string {
   return sign + abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
-/* valor en miles de € — "5,7% (72,4M€)" (M = mil, no millón) */
+/* valor en miles de € — "5,7% (72,4M€)" (M = mil, no millón).
+   Los campos ya se guardan en miles de €, así que no hay que dividir de nuevo. */
 function fmtThousands(v: number): string {
-  const th = v / 1000;
-  const s = Math.abs(th).toFixed(1).replace('.', ',');
+  const s = Math.abs(v).toFixed(1).replace('.', ',');
   return `${v < 0 ? '-' : ''}${s}M€`;
 }
 
@@ -72,7 +72,7 @@ function DeltaChip({ label, pct, abs }: { label: string; pct: number | null; abs
         {pct === null ? '—' : `${pct > 0 ? '↑' : pct < 0 ? '↓' : '·'} ${Math.abs(pct).toFixed(1)}%`}
       </div>
       {abs !== null && (
-        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)' }}>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, fontWeight: 600, color }}>
           ({fmtThousands(abs)})
         </div>
       )}
