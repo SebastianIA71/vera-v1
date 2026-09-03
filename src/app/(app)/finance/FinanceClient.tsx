@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import DesktopShell from '@/components/layout/DesktopShell';
 import MobilePageHeader from '@/components/layout/MobilePageHeader';
 import { FinanceSparklineHeader } from '@/components/finance/FinanceSparklineHeader';
+import { GraficosSection } from '@/components/finance/GraficosSection';
 
 type FinanceRecord = {
   id: number; date: string;
@@ -222,10 +223,10 @@ function FinanceForm({ initial, onSave, onDelete, onCancel, saving }: {
       {/* Libre */}
       <div style={{ marginBottom: 14 }}>
         <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, letterSpacing: '.26em', color: 'var(--amber)', borderBottom: '.5px solid var(--amber)33', paddingBottom: 5, marginBottom: 8 }}>
-          LIBRE — X1 · X2 · X3 · X4 · X5 · X6
+          LIBRE — LN · X2 · X3 · X4 · X5 · X6
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-          <NumInput label="X1" value={form.x1} onChange={v => set('x1', v)} color="var(--amber)" />
+          <NumInput label="LN" value={form.x1} onChange={v => set('x1', v)} color="var(--amber)" />
           <NumInput label="X2" value={form.x2} onChange={v => set('x2', v)} color="var(--amber)" />
           <NumInput label="X3" value={form.x3} onChange={v => set('x3', v)} color="var(--amber)" />
           <NumInput label="X4" value={form.x4} onChange={v => set('x4', v)} color="var(--amber)" />
@@ -373,7 +374,7 @@ export default function FinanceClient({ initialRecords }: { initialRecords: Fina
   const [saving, setSaving] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [seeding, setSeeding] = useState(false);
-  const [activeTab, setActiveTab] = useState<'registros'|'gastos'>('registros');
+  const [activeTab, setActiveTab] = useState<'registros'|'gastos'|'graficos'>('registros');
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 769);
@@ -433,7 +434,7 @@ export default function FinanceClient({ initialRecords }: { initialRecords: Fina
 
       {/* ── Tab selector ── */}
       <div style={{ display:'flex', gap:6, padding:'12px 18px 0', borderBottom:'.5px solid var(--bg4)', flexShrink:0 }}>
-        {(['registros','gastos'] as const).map(t => (
+        {(['registros','gastos','graficos'] as const).map(t => (
           <button key={t} onClick={()=>setActiveTab(t)} style={{ padding:'7px 16px', borderRadius:'8px 8px 0 0', border:`.5px solid ${activeTab===t?'var(--gold2)':'var(--bg4)'}`, borderBottom:activeTab===t?'.5px solid var(--bg)':'none', background:activeTab===t?'var(--bg)':'transparent', color:activeTab===t?'var(--gold2)':'var(--text3)', fontFamily:'var(--font-dm-mono)', fontSize:10, letterSpacing:'.16em', cursor:'pointer', marginBottom:-1 }}>
             {t.toUpperCase()}
           </button>
@@ -442,6 +443,13 @@ export default function FinanceClient({ initialRecords }: { initialRecords: Fina
 
       {/* ── Gastos tab ── */}
       {activeTab === 'gastos' && <GastosSection isMobile={isMobile} />}
+
+      {/* ── Gráficos tab ── */}
+      {activeTab === 'graficos' && (
+        <div style={{ flex: 1, overflowY: 'auto' }}>
+          <GraficosSection records={records} />
+        </div>
+      )}
 
       {/* ── Header métricas ── */}
       {activeTab === 'registros' && <><div style={{ padding: '14px 18px 0', flexShrink: 0 }}>

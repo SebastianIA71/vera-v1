@@ -184,6 +184,17 @@ export async function runAutoMigrations(): Promise<void> {
         created_at INTEGER
       )`,
     },
+    {
+      id:  'create.benchmarks',
+      sql: `CREATE TABLE IF NOT EXISTS benchmarks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        date TEXT NOT NULL,
+        value REAL NOT NULL,
+        source TEXT,
+        created_at INTEGER
+      )`,
+    },
   ];
 
   for (const m of migrations) {
