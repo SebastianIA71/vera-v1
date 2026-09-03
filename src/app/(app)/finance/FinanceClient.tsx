@@ -427,29 +427,48 @@ export default function FinanceClient({ initialRecords }: { initialRecords: Fina
     setSeeding(false);
   };
 
+  /* ── Tab selector (compartido) ── */
+  const TabBar = (
+    <div style={{ display:'flex', gap:6, padding:'12px 18px 0', borderBottom:'.5px solid var(--bg4)', flexShrink:0 }}>
+      {(['registros','gastos','graficos'] as const).map(t => (
+        <button key={t} onClick={()=>setActiveTab(t)} style={{ padding:'7px 16px', borderRadius:'8px 8px 0 0', border:`.5px solid ${activeTab===t?'var(--gold2)':'var(--bg4)'}`, borderBottom:activeTab===t?'.5px solid var(--bg)':'none', background:activeTab===t?'var(--bg)':'transparent', color:activeTab===t?'var(--gold2)':'var(--text3)', fontFamily:'var(--font-dm-mono)', fontSize:10, letterSpacing:'.16em', cursor:'pointer', marginBottom:-1 }}>
+          {t.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (activeTab === 'graficos') {
+    if (isMobile) {
+      return (
+        <div style={{ minHeight: '100dvh', background: 'var(--bg)', paddingBottom: 80 }}>
+          <MobilePageHeader title="Finanzas" />
+          {TabBar}
+          <GraficosSection records={records} />
+        </div>
+      );
+    }
+    return (
+      <DesktopShell urgentCount={0} staleCount={0} inboxCount={0}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {TabBar}
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            <GraficosSection records={records} />
+          </div>
+        </div>
+      </DesktopShell>
+    );
+  }
+
   /* ── List panel ── */
   const ListPanel = (
     <div style={{ width: isMobile ? '100%' : 420, flexShrink: 0, borderRight: isMobile ? 'none' : '.5px solid var(--bg4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {isMobile && <MobilePageHeader title="Finanzas" />}
 
-      {/* ── Tab selector ── */}
-      <div style={{ display:'flex', gap:6, padding:'12px 18px 0', borderBottom:'.5px solid var(--bg4)', flexShrink:0 }}>
-        {(['registros','gastos','graficos'] as const).map(t => (
-          <button key={t} onClick={()=>setActiveTab(t)} style={{ padding:'7px 16px', borderRadius:'8px 8px 0 0', border:`.5px solid ${activeTab===t?'var(--gold2)':'var(--bg4)'}`, borderBottom:activeTab===t?'.5px solid var(--bg)':'none', background:activeTab===t?'var(--bg)':'transparent', color:activeTab===t?'var(--gold2)':'var(--text3)', fontFamily:'var(--font-dm-mono)', fontSize:10, letterSpacing:'.16em', cursor:'pointer', marginBottom:-1 }}>
-            {t.toUpperCase()}
-          </button>
-        ))}
-      </div>
+      {TabBar}
 
       {/* ── Gastos tab ── */}
       {activeTab === 'gastos' && <GastosSection isMobile={isMobile} />}
-
-      {/* ── Gráficos tab ── */}
-      {activeTab === 'graficos' && (
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          <GraficosSection records={records} />
-        </div>
-      )}
 
       {/* ── Header métricas ── */}
       {activeTab === 'registros' && <><div style={{ padding: '14px 18px 0', flexShrink: 0 }}>

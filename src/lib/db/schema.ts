@@ -262,17 +262,6 @@ export const financeRecords = sqliteTable('finance_records', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }).defaultNow(),
 });
 
-// Índices de referencia externos (vivienda: Idealista/INE zona; pensión: MSCI World u otro)
-// value = variación % mensual del índice. Se rellenan a mano o vía búsqueda asistida.
-export const benchmarks = sqliteTable('benchmarks', {
-  id:        integer('id').primaryKey({ autoIncrement: true }),
-  category:  text('category').notNull(), // 'vivienda' | 'pension'
-  date:      text('date').notNull(),     // YYYY-MM-DD, primer día del mes
-  value:     real('value').notNull(),    // % variación mensual
-  source:    text('source'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).defaultNow(),
-});
-
 export const expenses = sqliteTable('expenses', {
   id:          integer('id').primaryKey({ autoIncrement: true }),
   propertyId:  text('property_id').references(() => properties.id),

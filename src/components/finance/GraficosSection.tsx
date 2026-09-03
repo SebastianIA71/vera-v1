@@ -1,21 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { LineAreaChart, CompareBarChart, WaterfallChart, KpiCard } from './FinanceCharts';
-
 type Rec = {
   date: string;
   lf: number | null; rs: number | null; gh: number | null; mh: number | null;
   x1: number | null; ps: number | null; pm: number | null;
 };
 
-type Benchmark = { id: number; category: string; date: string; value: number; source: string | null };
-
-const MONTHS_SHORT = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-function fmtShort(d: string): string {
-  const [y, m] = d.split('-');
-  return `${MONTHS_SHORT[Number(m) - 1]} ${y.slice(2)}`;
-}
 const n = (v: number | null | undefined) => v ?? 0;
 
 const PROP_META = [
@@ -25,212 +15,112 @@ const PROP_META = [
   { key: 'mh' as const, label: 'MH', location: 'Palma de Mallorca', mortgageShare: 0, color: 'var(--purple)' },
 ];
 
-/* ─── Panel de índice de referencia (buscar + manual) ───── */
-function BenchmarkPanel({ category, label, onSaved }: { category: 'vivienda' | 'pension'; label: string; onSaved: () => void }) {
-  const [searching, setSearching] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [draft, setDraft] = useState<{ value: number; source: string; summary: string } | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [manual, setManual] = useState('');
+function fmtBig(v: number): string {
+  const sign = v < 0 ? '-' : '';
+  const abs = Math.round(Math.abs(v));
+  return sign + abs.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
 
-  const search = async () => {
-    setSearching(true); setNotice(null); setDraft(null);
-    try {
-      const res = await fetch('/api/finance/benchmarks/search', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ category }),
-      }).then(r => r.json());
-      if (res.mode === 'draft') setDraft({ value: res.value, source: res.source, summary: res.summary });
-      else setNotice(res.notice ?? 'Sin resultado.');
-    } catch {
-      setNotice('Error al buscar. Inténtalo de nuevo.');
-    } finally {
-      setSearching(false);
-    }
-  };
+function deltaPct(vals: number[], idx: number, back: number): number | null {
+  const j = idx - back;
+  if (j < 0) return null;
+  const prev = vals[j];
+  if (prev === 0) return null;
+  return ((vals[idx] - prev) / Math.abs(prev)) * 100;
+}
 
-  const save = async (value: number, source: string) => {
-    setSaving(true);
-    try {
-      const date = new Date().toISOString().slice(0, 7) + '-01';
-      await fetch('/api/finance/benchmarks', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category, date, value, source }),
-      });
-      setDraft(null); setManual(''); setNotice(null);
-      onSaved();
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const btnStyle: React.CSSProperties = { padding: '6px 12px', borderRadius: 8, border: '.5px solid var(--gold2)', background: 'transparent', color: 'var(--gold)', fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', cursor: 'pointer' };
-  const inpStyle: React.CSSProperties = { background: 'var(--bg3)', border: '.5px solid var(--bg4)', borderRadius: 8, padding: '6px 9px', color: 'var(--text)', fontFamily: 'var(--font-dm-mono)', fontSize: 11, outline: 'none', width: 80 };
-
+function DeltaChip({ label, value }: { label: string; value: number | null }) {
+  const color = value === null ? 'var(--text3)' : value > 0 ? 'var(--green)' : value < 0 ? 'var(--red)' : 'var(--text3)';
   return (
-    <div style={{ marginTop: 8, padding: '10px 12px', background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 10 }}>
-      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--text3)', marginBottom: 8 }}>
-        ÍNDICE DE REFERENCIA — {label}
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, minWidth: 62 }}>
+      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: 'var(--text3)' }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 16, fontWeight: 600, color }}>
+        {value === null ? '—' : `${value > 0 ? '↑' : value < 0 ? '↓' : '·'} ${Math.abs(value).toFixed(1)}%`}
       </div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <button onClick={search} disabled={searching} style={{ ...btnStyle, opacity: searching ? 0.5 : 1 }}>
-          {searching ? '···' : '🔍 BUSCAR ÍNDICE'}
-        </button>
-        <span style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)' }}>o a mano:</span>
-        <input value={manual} onChange={e => setManual(e.target.value)} type="number" step="0.01" placeholder="% mes" style={inpStyle} />
-        <button onClick={() => manual && save(Number(manual), 'Manual')} disabled={!manual || saving} style={{ ...btnStyle, opacity: (!manual || saving) ? 0.4 : 1 }}>
-          GUARDAR
-        </button>
-      </div>
-
-      {draft && (
-        <div style={{ marginTop: 8, padding: '8px 10px', background: 'var(--bg3)', borderRadius: 8, border: '.5px solid var(--gold-ring)' }}>
-          <div style={{ fontFamily: 'var(--font-syne)', fontSize: 14, color: 'var(--gold)', marginBottom: 3 }}>{draft.value > 0 ? '+' : ''}{draft.value.toFixed(2)}%</div>
-          {draft.summary && <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, color: 'var(--text2)', marginBottom: 3 }}>{draft.summary}</div>}
-          {draft.source && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', marginBottom: 6, wordBreak: 'break-all' }}>{draft.source}</div>}
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={() => save(draft.value, draft.source)} disabled={saving} style={{ ...btnStyle, opacity: saving ? 0.5 : 1 }}>{saving ? '···' : 'CONFIRMAR ✓'}</button>
-            <button onClick={() => setDraft(null)} style={{ ...btnStyle, borderColor: 'var(--text3)', color: 'var(--text3)' }}>DESCARTAR</button>
-          </div>
-        </div>
-      )}
-      {notice && <div style={{ marginTop: 6, fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--amber)' }}>{notice}</div>}
     </div>
   );
 }
 
-/* ─── Sección principal ──────────────────────────────── */
+function BigMetricCard({ label, sub, value, deltas, color, big = false }: {
+  label: string; sub?: string; value: number;
+  deltas: { m1: number | null; m6: number | null; y1: number | null };
+  color: string; big?: boolean;
+}) {
+  return (
+    <div style={{
+      flex: big ? '1 1 340px' : '1 1 230px',
+      background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 14,
+      padding: big ? '24px 28px' : '18px 20px',
+    }}>
+      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: big ? 12 : 11, letterSpacing: '.22em', color, marginBottom: sub ? 2 : 12 }}>
+        {label}
+      </div>
+      {sub && <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, color: 'var(--text3)', marginBottom: 12 }}>{sub}</div>}
+      <div style={{
+        fontFamily: '"Arial Black", Arial, sans-serif', fontWeight: 900,
+        fontSize: big ? 56 : 36, color: 'var(--text)', lineHeight: 1, marginBottom: 18, letterSpacing: '-.02em',
+      }}>
+        {fmtBig(value)}
+      </div>
+      <div style={{ display: 'flex', gap: 20 }}>
+        <DeltaChip label="MENSUAL" value={deltas.m1} />
+        <DeltaChip label="6 MESES" value={deltas.m6} />
+        <DeltaChip label="ANUAL" value={deltas.y1} />
+      </div>
+    </div>
+  );
+}
+
 export function GraficosSection({ records }: { records: Rec[] }) {
-  const [benchmarks, setBenchmarks] = useState<Record<string, Benchmark[]>>({ vivienda: [], pension: [] });
-
-  const loadBenchmarks = useCallback(async () => {
-    const [v, p] = await Promise.all([
-      fetch('/api/finance/benchmarks?category=vivienda').then(r => r.json()).catch(() => []),
-      fetch('/api/finance/benchmarks?category=pension').then(r => r.json()).catch(() => []),
-    ]);
-    setBenchmarks({ vivienda: v, pension: p });
-  }, []);
-
-  useEffect(() => { loadBenchmarks(); }, [loadBenchmarks]);
-
   if (records.length < 2) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.16em', color: 'var(--text3)' }}>
-        HACEN FALTA AL MENOS 2 REGISTROS PARA VER GRÁFICOS
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 260, gap: 10 }}>
+        <div style={{ fontFamily: 'var(--font-syne)', fontSize: 40, color: 'var(--gold)' }}>✦</div>
+        <div style={{ fontFamily: 'var(--font-syne)', fontSize: 16, color: 'var(--text)' }}>Sin datos suficientes</div>
+        <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.16em', color: 'var(--text3)' }}>
+          HACEN FALTA AL MENOS 2 REGISTROS
+        </div>
       </div>
     );
   }
 
-  const asc = [...records].sort((a, b) => a.date.localeCompare(b.date)).slice(-24);
-  const labels = asc.map(r => fmtShort(r.date));
+  const asc = [...records].sort((a, b) => a.date.localeCompare(b.date));
+  const i = asc.length - 1;
 
   const viviendaValues = asc.map(r => n(r.lf) + n(r.rs) + n(r.gh) + n(r.mh));
   const mortgages = asc.map(r => n(r.x1));
-  const equities = asc.map((_, i) => viviendaValues[i] - mortgages[i]);
+  const equities = asc.map((_, idx) => viviendaValues[idx] - mortgages[idx]);
   const pensionValues = asc.map(r => n(r.ps) + n(r.pm));
-  const patrimonioNeto = asc.map((_, i) => equities[i] + pensionValues[i]);
+  const patrimonioNeto = asc.map((_, idx) => equities[idx] + pensionValues[idx]);
 
-  const pctChange = (vals: number[]) => vals.map((v, i) => {
-    if (i === 0 || vals[i - 1] === 0) return null;
-    return ((v - vals[i - 1]) / Math.abs(vals[i - 1])) * 100;
+  const deltasFor = (vals: number[]) => ({
+    m1: deltaPct(vals, i, 1),
+    m6: deltaPct(vals, i, 6),
+    y1: deltaPct(vals, i, 12),
   });
-  const viviendaPct = pctChange(viviendaValues);
-  const pensionPct = pctChange(pensionValues);
-
-  const benchFor = (category: string) => asc.map(r => {
-    const row = benchmarks[category]?.find(b => b.date.slice(0, 7) === r.date.slice(0, 7));
-    return row ? row.value : null;
-  });
-  const viviendaBench = benchFor('vivienda');
-  const pensionBench = benchFor('pension');
-
-  const last = asc[asc.length - 1];
-  const lastMortgage = mortgages[mortgages.length - 1];
-
-  const waterfallSteps = (() => {
-    if (asc.length < 2) return null;
-    const i = asc.length - 1;
-    const deltaEquity = equities[i] - equities[i - 1];
-    const deltaPension = pensionValues[i] - pensionValues[i - 1];
-    return [
-      { label: labels[i - 1], value: patrimonioNeto[i - 1], kind: 'start' as const },
-      { label: 'VIVIENDA', value: deltaEquity, kind: 'delta' as const },
-      { label: 'PENSIÓN', value: deltaPension, kind: 'delta' as const },
-      { label: labels[i], value: patrimonioNeto[i], kind: 'end' as const },
-    ];
-  })();
-
-  const SectionCard = ({ title, hint, color, children }: { title: string; hint: string; color: string; children: React.ReactNode }) => (
-    <div style={{ background: 'var(--bg2)', border: '.5px solid var(--bg4)', borderRadius: 12, padding: '16px 18px', marginBottom: 16 }}>
-      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 11, letterSpacing: '.24em', color, marginBottom: 3 }}>{title}</div>
-      <div style={{ fontFamily: 'var(--font-dm-sans)', fontSize: 11, color: 'var(--text3)', marginBottom: 12 }}>{hint}</div>
-      {children}
-    </div>
-  );
 
   return (
-    <div style={{ padding: '16px 20px 80px' }}>
-      {/* Patrimonio neto — vista global primero */}
-      <SectionCard title="PATRIMONIO NETO" hint="Equity vivienda + pensión, mes a mes." color="var(--gold)">
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
-          <KpiCard label="EQUITY VIVIENDA" value={equities[equities.length - 1]} values={equities} prevValue={equities.length >= 2 ? equities[equities.length - 2] : undefined} color="var(--blue)" />
-          <KpiCard label="PENSIÓN" value={pensionValues[pensionValues.length - 1]} values={pensionValues} prevValue={pensionValues.length >= 2 ? pensionValues[pensionValues.length - 2] : undefined} color="var(--cyan)" />
-          <KpiCard label="PATRIMONIO NETO" value={patrimonioNeto[patrimonioNeto.length - 1]} values={patrimonioNeto} prevValue={patrimonioNeto.length >= 2 ? patrimonioNeto[patrimonioNeto.length - 2] : undefined} color="var(--gold)" />
-        </div>
-        <LineAreaChart labels={labels} series={[{ name: 'PATRIMONIO NETO', color: 'var(--gold)', values: patrimonioNeto, area: true }]} />
-        {waterfallSteps && (
-          <div style={{ marginTop: 14 }}>
-            <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', color: 'var(--text3)', marginBottom: 4 }}>
-              QUÉ APORTÓ CADA PATA ESTE MES
-            </div>
-            <WaterfallChart steps={waterfallSteps} />
-          </div>
-        )}
-      </SectionCard>
+    <div style={{ padding: '28px 32px 100px', maxWidth: 1120, margin: '0 auto' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 16 }}>
+        <BigMetricCard label="PATRIMONIO NETO" value={patrimonioNeto[i]} deltas={deltasFor(patrimonioNeto)} color="var(--gold)" big />
+      </div>
 
-      {/* Vivienda */}
-      <SectionCard title="VIVIENDA" hint="Valor total vs. equity (valor − hipoteca pendiente)." color="var(--blue)">
-        <LineAreaChart
-          labels={labels}
-          series={[
-            { name: 'VALOR TOTAL', color: 'var(--blue)', values: viviendaValues, area: true },
-            { name: 'EQUITY', color: 'var(--gold)', values: equities },
-          ]}
-        />
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-          {PROP_META.map(p => {
-            const val = n((last as unknown as Record<string, number | null>)[p.key]);
-            const debt = lastMortgage * p.mortgageShare;
-            const eq = val - debt;
-            return (
-              <div key={p.key} style={{ flex: 1, minWidth: 110, background: 'var(--bg3)', border: `.5px solid ${p.color}33`, borderRadius: 8, padding: '8px 10px' }}>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.12em', color: p.color, marginBottom: 2 }}>{p.label}</div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)', marginBottom: 5 }}>{p.location}</div>
-                <div style={{ fontFamily: 'var(--font-syne)', fontWeight: 600, fontSize: 15, color: 'var(--text)' }}>{eq.toFixed(0)}</div>
-                <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 8, color: 'var(--text3)' }}>equity {debt > 0 ? `· hip. ${debt.toFixed(0)}` : '· sin hipoteca'}</div>
-              </div>
-            );
-          })}
-        </div>
-        <div style={{ marginTop: 14 }}>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', color: 'var(--text3)', marginBottom: 4 }}>
-            VARIACIÓN % MENSUAL VS. ÍNDICE DE ZONA
-          </div>
-          <CompareBarChart labels={labels} values={viviendaPct} compareValues={viviendaBench} color="var(--blue)" />
-        </div>
-        <BenchmarkPanel category="vivienda" label="precio vivienda Baleares" onSaved={loadBenchmarks} />
-      </SectionCard>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, marginBottom: 28 }}>
+        <BigMetricCard label="EQUITY VIVIENDA" value={equities[i]} deltas={deltasFor(equities)} color="var(--blue)" />
+        <BigMetricCard label="PENSIÓN" value={pensionValues[i]} deltas={deltasFor(pensionValues)} color="var(--cyan)" />
+      </div>
 
-      {/* Pensión */}
-      <SectionCard title="PLAN DE PENSIONES" hint="Valor total PS+PM. Incluye aportaciones — sin desglosar aún." color="var(--cyan)">
-        <LineAreaChart labels={labels} series={[{ name: 'VALOR TOTAL', color: 'var(--cyan)', values: pensionValues, area: true }]} />
-        <div style={{ marginTop: 14 }}>
-          <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 9, letterSpacing: '.14em', color: 'var(--text3)', marginBottom: 4 }}>
-            VARIACIÓN % MENSUAL VS. MSCI WORLD
-          </div>
-          <CompareBarChart labels={labels} values={pensionPct} compareValues={pensionBench} color="var(--cyan)" />
-        </div>
-        <BenchmarkPanel category="pension" label="MSCI World" onSaved={loadBenchmarks} />
-      </SectionCard>
+      <div style={{ fontFamily: 'var(--font-dm-mono)', fontSize: 10, letterSpacing: '.24em', color: 'var(--text3)', marginBottom: 12 }}>
+        INMUEBLES
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+        {PROP_META.map(p => {
+          const vals = asc.map(r => n((r as unknown as Record<string, number | null>)[p.key]) - n(r.x1) * p.mortgageShare);
+          return (
+            <BigMetricCard key={p.key} label={p.label} sub={p.location} value={vals[i]} deltas={deltasFor(vals)} color={p.color} />
+          );
+        })}
+      </div>
     </div>
   );
 }
